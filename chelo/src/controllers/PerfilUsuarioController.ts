@@ -5,7 +5,7 @@ import { generateJWT } from "../utils/jst"
 
 export class PerfilUsuarioController {
 
-   
+
     static createPerfilUsuario = async (req: Request, res: Response) => {
         try {
 
@@ -37,56 +37,57 @@ export class PerfilUsuarioController {
             res.status(500).json({ error: "Error al crear perfil usuario" })
         }
     }
-  
-   static login = async (req: Request, res: Response) => {
-    try {
 
-        const { email, password } = req.body
+    static login = async (req: Request, res: Response) => {
+        try {
 
-        const perfil = await PerfilUsuario.findOne({
-            email,
-            estado: true
-        })
+            const { email, password } = req.body
 
-        if (!perfil) {
-            return res.status(404).json({
-                error: "Usuario no encontrado"
+            const perfil = await PerfilUsuario.findOne({
+                email,
+                estado: true
+            })
+
+            if (!perfil) {
+                return res.status(404).json({
+                    error: "Usuario no encontrado"
+                })
+            }
+
+            const isMatch = await bcrypt.compare(
+                password,
+                perfil.password
+            )
+
+            if (!isMatch) {
+                return res.status(400).json({
+                    error: "Contraseña incorrecta"
+                })
+            }
+
+            //  GENERAR TOKEN
+            const tokenjwt = generateJWT({
+                id: perfil._id.toString(),
+                name: perfil.nombres
+            })
+
+            //  RESPUESTA ÚNICA
+            return res.status(200).json({
+                message: "Login correcto",
+                tokenjwt,
+                usuario: perfil
+            })
+
+        } catch (error) {
+
+            console.log(error)
+
+            return res.status(500).json({
+                error: "Error en login",
+                detalle: error instanceof Error ? error.message : error
             })
         }
-
-        const isMatch = await bcrypt.compare(
-            password,
-            perfil.password
-        )
-
-        if (!isMatch) {
-            return res.status(400).json({
-                error: "Contraseña incorrecta"
-            })
-        }
-
-        //  GENERAR TOKEN
-        const tokenjwt = generateJWT({
-            id: perfil._id.toString(),
-            name: perfil.nombres
-        })
-
-        //  RESPUESTA ÚNICA
-        return res.status(200).json({
-            message: "Login correcto",
-            tokenjwt,
-            usuario: perfil
-        })
-
-    } catch (error) {
-
-        console.log(error)
-
-        return res.status(500).json({
-            error: "Error en login"
-        })
     }
-}
 
 
     // 🔐 Actualizar password
@@ -137,7 +138,7 @@ export class PerfilUsuarioController {
     static getAllPerfilUsuarios = async (req: Request, res: Response) => {
         try {
             const perfiles = await PerfilUsuario.find({})
-                
+
                 .populate('idRol')
                 .populate('idSucursal')
 
@@ -154,7 +155,7 @@ export class PerfilUsuarioController {
 
         try {
             const perfil = await PerfilUsuario.findById(id)
-                
+
                 .populate('idRol')
                 .populate('idSucursal')
 
@@ -185,7 +186,7 @@ export class PerfilUsuarioController {
             }
 
             //  actualización manual (igual a tu estilo)
-            
+
             perfil.idRol = req.body.idRol || perfil.idRol
             perfil.idSucursal = req.body.idSucursal || perfil.idSucursal
 
@@ -248,137 +249,137 @@ export class PerfilUsuarioController {
     OBTENER PERFILES POR SUCURSAL
 ========================= */
 
-static getPerfilUsuariosBySucursal = async (
-    req: Request,
-    res: Response
-) => {
+    static getPerfilUsuariosBySucursal = async (
+        req: Request,
+        res: Response
+    ) => {
 
-    const { idSucursal } = req.params;
+        const { idSucursal } = req.params;
 
-    try {
+        try {
 
-        const perfiles = await PerfilUsuario.find({
-            idSucursal,
-        })
-            
-            .populate({
-                path: "idRol",
-                select: "_id nombre nombreRol descripcion estado",
+            const perfiles = await PerfilUsuario.find({
+                idSucursal,
             })
-            .populate({
-                path: "idSucursal",
-                select: "_id nombreSucursal nombre ubicacionSucursal estado",
-            })
-            .sort({
-                fechaCreacion: -1,
-            })
-            .lean();
 
-        if (perfiles.length === 0) {
+                .populate({
+                    path: "idRol",
+                    select: "_id nombre nombreRol descripcion estado",
+                })
+                .populate({
+                    path: "idSucursal",
+                    select: "_id nombreSucursal nombre ubicacionSucursal estado",
+                })
+                .sort({
+                    fechaCreacion: -1,
+                })
+                .lean();
+
+            if (perfiles.length === 0) {
+                return res.json({
+                    sucursal: null,
+                    perfiles: [],
+                });
+            }
+
+            const primerPerfil: any = perfiles[0];
+
+            const sucursal = primerPerfil.idSucursal
+                ? {
+                    _id: primerPerfil.idSucursal._id,
+                    nombreSucursal:
+                        primerPerfil.idSucursal.nombreSucursal ||
+                        primerPerfil.idSucursal.nombre ||
+                        "Sucursal",
+                    ubicacionSucursal:
+                        primerPerfil.idSucursal.ubicacionSucursal || "",
+                    estado:
+                        primerPerfil.idSucursal.estado,
+                }
+                : null;
+
+            const perfilesLimpios = perfiles.map(
+                (perfil: any) => ({
+
+                    _id:
+                        perfil._id,
+
+
+                    rol:
+                        perfil.idRol
+                            ? {
+                                _id: perfil.idRol._id,
+                                nombre:
+                                    perfil.idRol.nombre ||
+                                    perfil.idRol.nombreRol ||
+                                    "Rol",
+                                descripcion:
+                                    perfil.idRol.descripcion,
+                                estado:
+                                    perfil.idRol.estado,
+                            }
+                            : null,
+
+                    nombres:
+                        perfil.nombres,
+
+                    apellidos:
+                        perfil.apellidos,
+
+                    edad:
+                        perfil.edad,
+
+                    sexo:
+                        perfil.sexo,
+
+                    ci:
+                        perfil.ci,
+
+                    telefono:
+                        perfil.telefono,
+
+                    email:
+                        perfil.email,
+
+                    estado:
+                        perfil.estado,
+
+                    creadoPor:
+                        perfil.creadoPor,
+
+                    actualizadoPor:
+                        perfil.actualizadoPor,
+
+                    eliminadoPor:
+                        perfil.eliminadoPor,
+
+                    fechaCreacion:
+                        perfil.fechaCreacion,
+
+                    fechaActualizacion:
+                        perfil.fechaActualizacion,
+
+                    fechaEliminado:
+                        perfil.fechaEliminado,
+
+                })
+            );
+
             return res.json({
-                sucursal: null,
-                perfiles: [],
+                sucursal,
+                perfiles: perfilesLimpios,
             });
+
+        } catch (error) {
+
+            console.log(error);
+
+            return res.status(500).json({
+                error: "Error al obtener perfiles por sucursal",
+            });
+
         }
 
-        const primerPerfil: any = perfiles[0];
-
-        const sucursal = primerPerfil.idSucursal
-            ? {
-                _id: primerPerfil.idSucursal._id,
-                nombreSucursal:
-                    primerPerfil.idSucursal.nombreSucursal ||
-                    primerPerfil.idSucursal.nombre ||
-                    "Sucursal",
-                ubicacionSucursal:
-                    primerPerfil.idSucursal.ubicacionSucursal || "",
-                estado:
-                    primerPerfil.idSucursal.estado,
-            }
-            : null;
-
-        const perfilesLimpios = perfiles.map(
-            (perfil: any) => ({
-
-                _id:
-                    perfil._id,
-
-              
-                rol:
-                    perfil.idRol
-                        ? {
-                            _id: perfil.idRol._id,
-                            nombre:
-                                perfil.idRol.nombre ||
-                                perfil.idRol.nombreRol ||
-                                "Rol",
-                            descripcion:
-                                perfil.idRol.descripcion,
-                            estado:
-                                perfil.idRol.estado,
-                        }
-                        : null,
-
-                nombres:
-                    perfil.nombres,
-
-                apellidos:
-                    perfil.apellidos,
-
-                edad:
-                    perfil.edad,
-
-                sexo:
-                    perfil.sexo,
-
-                ci:
-                    perfil.ci,
-
-                telefono:
-                    perfil.telefono,
-
-                email:
-                    perfil.email,
-
-                estado:
-                    perfil.estado,
-
-                creadoPor:
-                    perfil.creadoPor,
-
-                actualizadoPor:
-                    perfil.actualizadoPor,
-
-                eliminadoPor:
-                    perfil.eliminadoPor,
-
-                fechaCreacion:
-                    perfil.fechaCreacion,
-
-                fechaActualizacion:
-                    perfil.fechaActualizacion,
-
-                fechaEliminado:
-                    perfil.fechaEliminado,
-
-            })
-        );
-
-        return res.json({
-            sucursal,
-            perfiles: perfilesLimpios,
-        });
-
-    } catch (error) {
-
-        console.log(error);
-
-        return res.status(500).json({
-            error: "Error al obtener perfiles por sucursal",
-        });
-
-    }
-
-};
+    };
 }
 
