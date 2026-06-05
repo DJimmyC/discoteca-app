@@ -13,14 +13,17 @@ const router = Router()
  *       properties:
  *         _id:
  *           type: string
- *           example: "64f123abc456"
+ *           example: ""
  *        
  *         idRol:
  *           type: string
- *           example: "64f123abc456"
+ *           example: ""
  *         idSucursal:
  *           type: string
- *           example: "64f123abc456"
+ *           example: ""
+ *         idAlmacen:
+ *           type: string
+ *           example: ""
  *         nombres:
  *           type: string
  *           example: "Juan"
@@ -72,6 +75,7 @@ const router = Router()
  *       required:
  *         - idRol
  *         - idSucursal
+ *         - idAlmacen
  *         - nombres
  *         - apellidos
  *         - password
@@ -79,6 +83,8 @@ const router = Router()
  *         idRol:
  *           type: string
  *         idSucursal:
+ *           type: string
+ *         idAlmacen:
  *           type: string
  *         nombres:
  *           type: string

@@ -109,8 +109,8 @@ import detallesolicitudRoutes from './routes/detallSolicitudRoutes'
 import detalleTransferenciaRoutes from './routes/detalleTransferenciaRoutes'
 import trasnferenciaInventarioRoutes from './routes/transferenciaInventarioRoutes'
 import inventarioRoutes from './routes/inventarioRoutes'
-import movimientoInventarioRoutes from './routes/movimientoInventarioRoutes'
-import reporteRoutes from './routes/reporteRoutes'
+import movimientoRoutes from './routes/movimientoRoutes'
+
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger";
 
@@ -163,8 +163,8 @@ app.use('/api/transferenciainventario', trasnferenciaInventarioRoutes)
 app.use('/api/detalletransferencia', detalleTransferenciaRoutes)
 app.use('/api/inventario', inventarioRoutes)
 app.use('/api/almacen', almacenRoutes)
-app.use('/api/movimientoinventario', movimientoInventarioRoutes)
-app.use('/api/reportes', reporteRoutes)
+app.use('/api/movimiento', movimientoRoutes)
+
 
 // documentacion
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))

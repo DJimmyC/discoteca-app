@@ -21,8 +21,6 @@ import {
   createPerfilUsuario,
 } from "@/api/PerfilUsuarioApi";
 
-
-
 import {
   getRoles,
 } from "@/api/RolApi";
@@ -30,6 +28,10 @@ import {
 import {
   getSucursal,
 } from "@/api/SucursalApi";
+
+import {
+  getAlmacenesBySucursal,
+} from "@/api/AlmacenApi";
 
 import type {
   PerfilUsuarioForm as PerfilUsuarioFormType,
@@ -43,11 +45,11 @@ export default function CreatePerfilUsuarioView() {
   const [formData, setFormData] =
     useState<PerfilUsuarioFormType>({
 
-     
-
       idRol: "",
 
       idSucursal: "",
+
+      idAlmacen: "",
 
       nombres: "",
 
@@ -75,8 +77,6 @@ export default function CreatePerfilUsuarioView() {
       QUERIES
   ========================= */
 
-
-
   const {
     data: roles = [],
   } = useQuery({
@@ -98,6 +98,35 @@ export default function CreatePerfilUsuarioView() {
   });
 
   /* =========================
+      ALMACENES POR SUCURSAL
+  ========================= */
+
+  const {
+    data: almacenesResponse,
+    isLoading: loadingAlmacenes,
+  } = useQuery({
+
+    queryKey: [
+      "almacenes-sucursal",
+      formData.idSucursal,
+    ],
+
+    queryFn: () =>
+      getAlmacenesBySucursal(
+        formData.idSucursal
+      ),
+
+    enabled:
+      !!formData.idSucursal,
+
+  });
+
+  const almacenes =
+    Array.isArray(almacenesResponse)
+      ? almacenesResponse
+      : almacenesResponse?.almacenes || [];
+
+  /* =========================
       MUTATION
   ========================= */
 
@@ -117,7 +146,9 @@ export default function CreatePerfilUsuarioView() {
 
         icon: "success",
 
-        title: data,
+        title:
+          data.message ||
+          "Perfil usuario creado correctamente",
 
         timer: 2000,
 
@@ -158,6 +189,39 @@ export default function CreatePerfilUsuarioView() {
 
     e.preventDefault();
 
+    if (!formData.idRol) {
+
+      Swal.fire({
+        icon: "warning",
+        title: "Seleccione un rol",
+      });
+
+      return;
+
+    }
+
+    if (!formData.idSucursal) {
+
+      Swal.fire({
+        icon: "warning",
+        title: "Seleccione una sucursal",
+      });
+
+      return;
+
+    }
+
+    if (!formData.idAlmacen) {
+
+      Swal.fire({
+        icon: "warning",
+        title: "Seleccione un almacén",
+      });
+
+      return;
+
+    }
+
     mutate(formData);
 
   };
@@ -184,10 +248,13 @@ export default function CreatePerfilUsuarioView() {
 
             onSubmit={handleSubmit}
 
-
             roles={roles}
 
             sucursales={sucursales}
+
+            almacenes={almacenes}
+
+            loadingAlmacenes={loadingAlmacenes}
 
             loading={isPending}
 

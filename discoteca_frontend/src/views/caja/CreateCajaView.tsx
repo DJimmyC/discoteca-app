@@ -1,5 +1,3 @@
-// src/views/caja/CreateCajaView.tsx
-
 import {
   useState,
 } from "react";

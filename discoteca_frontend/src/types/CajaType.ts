@@ -206,8 +206,7 @@ export const SucursalPopulateSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
-        .optional(),
+      ObjectIdStringSchema,
 
     nombreSucursal:
       z.string()

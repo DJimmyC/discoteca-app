@@ -150,9 +150,7 @@ export default function EditAlmacenView() {
         tipo:
           data.tipo || "principal",
 
-        ubicacion:
-          data.ubicacion || "",
-
+       
         estado:
           data.estado ?? true,
 

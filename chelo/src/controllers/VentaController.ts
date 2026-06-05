@@ -143,6 +143,33 @@ export class VentaController {
         }
     }
 
+      static cortesiaVenta = async (req: Request, res: Response) => {
+        const { id } = req.params
+
+        try {
+            const venta = await Venta.findById(id)
+
+            if (!venta) {
+                return res.status(404).json({
+                    error: 'Venta no encontrada'
+                })
+            }
+
+            //  eliminación lógica
+            venta.estado = "cortesia"
+            venta.eliminadoPor = req.body.eliminadoPor || 1
+            venta.fechaEliminado = new Date()
+
+            await venta.save()
+
+            res.send('Cortesia')
+
+        } catch (error) {
+            console.log(error)
+            res.status(500).json({ error: 'Error con la cortesia' })
+        }
+    }
+
 
 
     // Obtener ventas por perfil con sus detalles

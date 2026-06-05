@@ -35,9 +35,7 @@ const router = Router()
  *         subtotal:
  *           type: number
  *           example: 100
- *         descuento:
- *           type: number
- *           example: 10
+ *       
  *         total:
  *           type: number
  *           example: 90
@@ -91,8 +89,6 @@ const router = Router()
  *           type: string
  *           format: date-time
  *         subtotal:
- *           type: number
- *         descuento:
  *           type: number
  *         metodoPago:
  *           type: string
@@ -250,5 +246,44 @@ router.put('/:id', VentaController.updateVenta)
  *         description: Error al eliminar
  */
 router.delete('/:id', VentaController.deleteVenta)
+
+/**
+ * @openapi
+ * /api/venta/{id}/cortesia:
+ *   patch:
+ *     tags:
+ *       - Venta
+ *     summary: Marcar venta como cortesía
+ *     description: Cambia el estado de una venta a "cortesia".
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID de la venta.
+ *         schema:
+ *           type: string
+ *         example: "64f123abc456"
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               eliminadoPor:
+ *                 type: string
+ *                 example: "admin"
+ *     responses:
+ *       200:
+ *         description: Venta marcada como cortesía correctamente
+ *       404:
+ *         description: Venta no encontrada
+ *       500:
+ *         description: Error con la cortesía
+ */
+router.patch(
+    "/:id/cortesia",
+    VentaController.cortesiaVenta
+);
 
 export default router

@@ -90,7 +90,7 @@ const VentaSchema: Schema = new Schema(
     estado: {
       type: String,
       required: true,
-      enum: ["pagado", "anulado"],
+      enum: ["pagado", "anulado","cortesia"],
       default: "pagado",
     },
 

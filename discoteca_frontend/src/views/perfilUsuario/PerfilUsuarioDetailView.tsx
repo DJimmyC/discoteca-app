@@ -375,7 +375,7 @@ export default function PerfilUsuarioDetailView() {
                   </th>
 
                   <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-slate-500">
-                    Usuario
+                    Almacen
                   </th>
 
                   <th className="px-6 py-4 text-center text-xs font-black uppercase tracking-wider text-slate-500">
@@ -438,8 +438,29 @@ export default function PerfilUsuarioDetailView() {
                       </div>
 
                     </td>
+                    {/* ROL */}
+                    <td className="px-6 py-5 text-center">
 
-                   
+                      <div className="flex items-center justify-center gap-2 text-slate-700">
+
+                        <Shield className="h-4 w-4" />
+
+                        <span className="font-medium">
+
+                          {
+                            typeof perfil.idAlmacen === "string"
+
+                              ? perfil.idAlmacen
+
+                              : perfil.idAlmacen?.nombre
+                          }
+
+                        </span>
+
+                      </div>
+
+                    </td>
+
 
                     {/* ROL */}
                     <td className="px-6 py-5 text-center">

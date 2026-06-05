@@ -76,7 +76,7 @@ export async function getPerfilUsuarios() {
         "/perfilusuario"
       );
 
-      
+      console.log(data)
       const response =
       PerfilUsuarioArraySchema.safeParse(
         data

@@ -141,6 +141,7 @@ export class PerfilUsuarioController {
 
                 .populate('idRol')
                 .populate('idSucursal')
+                .populate('idAlmacen')
 
             res.json(perfiles)
         } catch (error) {
@@ -158,6 +159,7 @@ export class PerfilUsuarioController {
 
                 .populate('idRol')
                 .populate('idSucursal')
+                .populate('idAlmacen')
 
             if (!perfil) {
                 const error = new Error('Perfil usuario no encontrado')
@@ -189,7 +191,7 @@ export class PerfilUsuarioController {
 
             perfil.idRol = req.body.idRol || perfil.idRol
             perfil.idSucursal = req.body.idSucursal || perfil.idSucursal
-
+            perfil.idAlmacen = req.body.idAlmacen || perfil.idAlmacen
             perfil.nombres = req.body.nombres || perfil.nombres
             perfil.apellidos = req.body.apellidos || perfil.apellidos
             perfil.edad = req.body.edad ?? perfil.edad
@@ -270,6 +272,10 @@ export class PerfilUsuarioController {
                     path: "idSucursal",
                     select: "_id nombreSucursal nombre ubicacionSucursal estado",
                 })
+                .populate({
+                    path: "idAlmacen",
+                    select: "_id nombre nombre ubicacionSucursal estado",
+                })
                 .sort({
                     fechaCreacion: -1,
                 })
@@ -319,6 +325,16 @@ export class PerfilUsuarioController {
                                     perfil.idRol.estado,
                             }
                             : null,
+                    almacen:
+                        perfil.idAlmacen
+                            ?{
+                                _id: perfil.idAlmacen._id,
+                                nombre:
+                                    perfil.idAlmacen.nombre||"almacen",
+                                tipo: perfil.idAlmacen.tipo|| "categoria almacen"
+
+                            }
+                            :null,
 
                     nombres:
                         perfil.nombres,

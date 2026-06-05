@@ -5,7 +5,9 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-
+import {
+  createMovimiento,
+} from "@/api/MovimientoApi";
 import {
   useMutation,
 } from "@tanstack/react-query";
@@ -80,7 +82,7 @@ export default function
       observacion: "",
 
       creadoPor:
-        perfil?.nombres || "",
+        perfil?._id || "",
 
       actualizadoPor: "",
 
@@ -90,58 +92,179 @@ export default function
       MUTATION
   ========================= */
 
-  const {
+const {
 
-    mutate,
+  mutate,
 
-    isPending,
+  isPending,
 
-  } = useMutation({
+} = useMutation({
 
-    mutationFn:
-      createCierreCaja,
+  mutationFn: async (
+    dataForm:
+      CierreCajaFormType
+  ) => {
 
-    onSuccess: async (
-      data
-    ) => {
+    /* =========================
+        1. CREAR CIERRE DE CAJA
+    ========================= */
 
-      await Swal.fire({
-
-        icon: "success",
-
-        title:
-          data,
-
-        timer: 2000,
-
-        showConfirmButton: false,
-
-      });
-
-      navigate(
-
-        `/sucursal/${sucursalId}/caja/${cajaId}/cierre`
-
+    const cierre =
+      await createCierreCaja(
+        dataForm
       );
 
-    },
+    /* =========================
+        NORMALIZAR ID PERFIL
+    ========================= */
 
-    onError: async (
-      error: any
-    ) => {
+    const idPerfilMovimiento =
+      typeof dataForm.idPerfil === "string"
+        ? dataForm.idPerfil
+        : dataForm.idPerfil?._id || "";
 
-      await Swal.fire({
+    /* =========================
+        CALCULOS DEL CIERRE
+    ========================= */
 
-        icon: "error",
+    const montoInicial =
+      Number(
+        dataForm.montoInicial || 0
+      );
 
-        title:
-          error.message,
+    const totalVentas =
+      Number(
+        dataForm.totalVentas || 0
+      );
 
-      });
+    const totalEgresos =
+      Number(
+        dataForm.totalEgresos || 0
+      );
 
-    },
+    const montoReal =
+      Number(
+        dataForm.montoReal || 0
+      );
 
-  });
+    const montoEsperado =
+      montoInicial +
+      totalVentas -
+      totalEgresos;
+
+    const diferenciaMonto =
+      montoReal -
+      montoEsperado;
+
+    /* =========================
+        2. CREAR MOVIMIENTO
+    ========================= */
+
+    await createMovimiento({
+
+      fecha:
+        dataForm.fechaCierre ||
+        new Date().toISOString(),
+
+      tipoMovimiento:
+        "cierre_caja",
+
+      modulo:
+        "cierre",
+
+      idSucursal:
+        sucursalId,
+
+      idCaja:
+        cajaId,
+
+      idPerfil:
+        idPerfilMovimiento,
+
+      montoInicial,
+
+      montoEntrada:
+        totalVentas,
+
+      montoSalida:
+        totalEgresos,
+
+      montoEsperado,
+
+      montoFisico:
+        montoReal,
+
+      diferenciaMonto,
+
+      total:
+        totalVentas,
+
+      estado:
+        diferenciaMonto === 0
+          ? "cuadrado"
+          : "descuadre",
+
+      observacion:
+        dataForm.observacion ||
+        "Cierre de caja",
+
+      referenciaModelo:
+        "CierreCaja",
+
+      creadoPor:
+        dataForm.creadoPor ||
+        perfil?.nombres ||
+        "admin",
+
+    });
+
+    return cierre;
+
+  },
+
+  onSuccess: async (
+    data
+  ) => {
+
+    await Swal.fire({
+
+      icon: "success",
+
+      title:
+        typeof data === "string"
+          ? data
+          : "Cierre registrado correctamente",
+
+      timer: 2000,
+
+      showConfirmButton: false,
+
+    });
+
+    navigate(
+
+      `/sucursal/${sucursalId}/caja/${cajaId}/cierre`
+
+    );
+
+  },
+
+  onError: async (
+    error: any
+  ) => {
+
+    await Swal.fire({
+
+      icon: "error",
+
+      title:
+        error.message,
+
+    });
+
+  },
+
+});
 
   /* =========================
       SUBMIT

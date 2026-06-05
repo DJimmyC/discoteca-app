@@ -61,7 +61,7 @@ const AlmacenSchema: Schema = new Schema(
     creadoPor: {
       type: String,
       trim: true,
-      maxlength: 20,
+      maxlength: 50,
     },
 
     fechaActualizacion: {
@@ -71,7 +71,7 @@ const AlmacenSchema: Schema = new Schema(
     actualizadoPor: {
       type: String,
       trim: true,
-      maxlength: 20,
+      maxlength: 50,
     },
 
     fechaEliminado: {
@@ -81,7 +81,7 @@ const AlmacenSchema: Schema = new Schema(
     eliminadoPor: {
       type: String,
       trim: true,
-      maxlength: 20,
+      maxlength: 50,
     },
   },
   {

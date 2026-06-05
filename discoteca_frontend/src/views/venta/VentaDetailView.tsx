@@ -1,33 +1,9 @@
 // src/views/venta/VentaDetailView.tsx
 
-import {
-  useMemo,
-  useState,
-} from "react";
-
-import {
-  useNavigate,
-} from "react-router-dom";
-
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-
-import {
-  CheckCircle,
-  ClipboardList,
-  CreditCard,
-  DollarSign,
-  LogOut,
-  Menu,
-  ReceiptText,
-  Search,
-  Trash2,
-  XCircle,
-} from "lucide-react";
-
+import { useMemo, useState, } from "react";
+import { useNavigate, } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient, } from "@tanstack/react-query";
+import { CheckCircle, ClipboardList, CreditCard, DollarSign, LogOut, Menu, ReceiptText, Search, Trash2, XCircle, } from "lucide-react";
 import Swal from "sweetalert2";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   deleteVentaById,
   getVentasConDetallesPorPerfil,
+  cortesiaVentaById,
 } from "@/api/VentaApi";
 
 export default function VentaDetailView() {
@@ -177,6 +154,95 @@ export default function VentaDetailView() {
   };
 
   /* =========================
+    MARCAR VENTA COMO CORTESIA
+========================= */
+
+  const {
+    mutate: marcarCortesia,
+    isPending: marcandoCortesia,
+  } = useMutation({
+
+    mutationFn:
+      cortesiaVentaById,
+
+    onSuccess: () => {
+
+      Swal.fire({
+        icon: "success",
+        title: "Venta en cortesía",
+        text: "La venta fue marcada como cortesía correctamente",
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: [
+          "ventas-con-detalles",
+          idPerfil,
+        ],
+      });
+
+    },
+
+    onError: (error) => {
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Error al marcar la venta como cortesía",
+      });
+
+    },
+
+  });
+  /* =========================
+      HANDLE CORTESIA
+  ========================= */
+
+  const handleCortesiaVenta = async (
+    ventaId?: string
+  ) => {
+
+    if (!ventaId) {
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se encontró el ID de la venta",
+      });
+
+      return;
+
+    }
+
+    const result =
+      await Swal.fire({
+        icon: "question",
+        title: "¿Marcar como cortesía?",
+        text: "Esta acción cambiará el estado de la venta a cortesía.",
+        showCancelButton: true,
+        confirmButtonText: "Sí, cortesía",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#eab308",
+      });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    marcarCortesia({
+
+      id:
+        ventaId,
+
+      eliminadoPor:
+        perfil?.nombres || "sistema",
+
+    });
+
+  };
+  /* =========================
       HELPERS
   ========================= */
 
@@ -239,6 +305,15 @@ export default function VentaDetailView() {
         className:
           "bg-red-500/10 text-red-400 border-red-500/30",
         icon: XCircle,
+      };
+    }
+
+    if (estado === "cortesia") {
+      return {
+        texto: "Cortesía",
+        className:
+          "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
+        icon: CheckCircle,
       };
     }
 
@@ -339,7 +414,7 @@ export default function VentaDetailView() {
         0
       );
 
-  
+
 
     return {
       cantidad:
@@ -350,7 +425,7 @@ export default function VentaDetailView() {
 
       totalVentas,
 
-      
+
     };
 
   }, [data]);
@@ -668,23 +743,44 @@ export default function VentaDetailView() {
                         </span>
 
                         {venta.estado !== "anulado" &&
-                          venta.estado !== "eliminado" && (
+                          venta.estado !== "eliminado" &&
+                          venta.estado !== "cortesia" && (
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleAnularVenta(
-                                  venta._id
-                                )
-                              }
-                              disabled={
-                                anulandoVenta
-                              }
-                              className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Anular
-                            </button>
+                            <>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleCortesiaVenta(
+                                    venta._id
+                                  )
+                                }
+                                disabled={
+                                  marcandoCortesia
+                                }
+                                className="inline-flex items-center gap-2 rounded-2xl bg-yellow-500 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-white"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                Cortesía
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleAnularVenta(
+                                    venta._id
+                                  )
+                                }
+                                disabled={
+                                  anulandoVenta
+                                }
+                                className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Anular
+                              </button>
+
+                            </>
 
                           )}
 
@@ -847,7 +943,7 @@ export default function VentaDetailView() {
 
                       </div>
 
-                     
+
 
                       <div className="text-left md:text-right">
 

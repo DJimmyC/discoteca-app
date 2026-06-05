@@ -423,6 +423,35 @@ export default function DetalleComandaView() {
   }, [data, search]);
 
   /* =========================
+    NORMALIZAR CAJAS PARA EL MODAL
+========================= */
+
+const cajasParaModal = useMemo(() => {
+
+  return cajas
+    .filter(
+      (caja) =>
+        typeof caja._id === "string" &&
+        caja._id.length > 0
+    )
+    .map((caja) => ({
+
+      _id:
+        caja._id as string,
+
+      nombre:
+        caja.nombre || "Caja",
+
+      descripcion:
+        caja.descripcion || "",
+
+      estado:
+        caja.estado ?? true,
+
+    }));
+
+}, [cajas]);
+  /* =========================
       CERRAR SESION
   ========================= */
 
@@ -479,56 +508,7 @@ export default function DetalleComandaView() {
 
     <div className="min-h-screen bg-slate-950 text-white">
 
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-fuchsia-500/20 bg-slate-950/95 backdrop-blur">
-
-        <div className="flex h-20 items-center justify-between px-6">
-
-          <div className="flex items-center gap-4">
-
-            <button
-              type="button"
-              className="rounded-xl border border-fuchsia-500/30 p-3 text-fuchsia-400 hover:bg-fuchsia-500/10"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-
-            <div className="flex items-center gap-3">
-
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-fuchsia-600/20 shadow-[0_0_25px_#d946ef]">
-
-                <ClipboardList className="h-7 w-7 text-fuchsia-400" />
-
-              </div>
-
-              <div>
-
-                <h1 className="text-2xl font-black text-fuchsia-400">
-                  {perfilAuth?.nombres}
-                </h1>
-
-                <p className="text-xs tracking-[3px] text-slate-400">
-                  LISTA DE COMANDAS
-                </p>
-
-              </div>
-
-            </div>
-
-          </div>
-
-          <button
-            type="button"
-            onClick={cerrarSesion}
-            className="flex items-center gap-2 rounded-2xl bg-red-500/10 px-5 py-3 font-bold text-red-400 hover:bg-red-500/20"
-          >
-            <LogOut className="h-5 w-5" />
-            Salir
-          </button>
-
-        </div>
-
-      </header>
+    
 
       {/* CONTENIDO */}
       <main className="p-6">
@@ -890,7 +870,7 @@ export default function DetalleComandaView() {
           setModalVentaOpen(false)
         }
         comanda={comandaSeleccionada}
-        cajas={cajas}
+        cajas={cajasParaModal}
         idPerfil={idPerfil || ""}
         idSucursal={idSucursal || ""}
         creadoPor={perfilAuth?.nombres || "sistema"}

@@ -1,6 +1,3 @@
-
-// src/views/aperturacaja/CreateAperturaCajaView.tsx
-
 import {
   useState,
 } from "react";
@@ -21,6 +18,9 @@ import {
 } from "framer-motion";
 
 import MenuList from "@/components/MenuList";
+import {
+  createMovimiento,
+} from "@/api/MovimientoApi";
 
 import AperturaCajaForm from "@/components/aperturacaja/AperturaCajaForm";
 
@@ -60,6 +60,10 @@ CreateAperturaCajaView() {
       .slice(0, 5);
 const {data: perfil} = useAuth();
 
+const idPerfil =
+  typeof perfil?._id === "string"
+    ? perfil._id
+    : perfil?._id! || "";
   /* =========================
       FORM DATA
   ========================= */
@@ -89,8 +93,7 @@ const {data: perfil} = useAuth();
     estado:
       true,
 
-    creadoPor:
-      "admin",
+    creadoPor: idPerfil!,
 
   });
 
@@ -98,65 +101,126 @@ const {data: perfil} = useAuth();
       MUTATION
   ========================= */
 
-  const {
+const {
 
-    mutate,
+  mutate,
 
-    isPending,
+  isPending,
 
-  } = useMutation({
+} = useMutation({
 
-    mutationFn:
-      createAperturaCaja,
+  mutationFn: async (
+    dataForm:
+      AperturaCajaFormType
+  ) => {
 
-    onSuccess:
-      async (
-        data
-      ) => {
+    const apertura =
+      await createAperturaCaja(
+        dataForm
+      );
 
-        await Swal.fire({
+    await createMovimiento({
 
-          icon:
-            "success",
+      fecha:
+        dataForm.fecha,
 
-          title:
-            data,
+      tipoMovimiento:
+        "apertura_caja",
 
-          timer:
-            2000,
+      modulo:
+        "caja",
 
-          showConfirmButton:
-            false,
+      idSucursal:
+        sucursalId || "",
 
-        });
+      idCaja:
+        cajaId || "",
 
-        navigate(
+      idPerfil:
+        dataForm.idPerfil,
 
-          `/sucursal/${sucursalId}/caja`
+      montoInicial:
+        Number(
+          dataForm.montoInicial
+        ),
 
-        );
+      montoEntrada:
+        Number(
+          dataForm.montoInicial
+        ),
 
-      },
+      total:
+        Number(
+          dataForm.montoInicial
+        ),
 
-    onError:
-      async (
-        error: any
-      ) => {
+      estado:
+        "activo",
 
-        await Swal.fire({
+      observacion:
+        dataForm.observacion ||
+        "Apertura de caja",
 
-          icon:
-            "error",
+      referenciaModelo:
+        "AperturaCaja",
 
-          title:
-            error.message,
+      creadoPor:
+        dataForm.creadoPor ||
+        "admin",
 
-        });
+    });
 
-      },
+    return apertura;
 
-  });
+  },
 
+  onSuccess:
+    async (
+      data
+    ) => {
+
+      await Swal.fire({
+
+        icon:
+          "success",
+
+        title:
+          data,
+
+        timer:
+          2000,
+
+        showConfirmButton:
+          false,
+
+      });
+
+      navigate(
+
+        `/sucursal/${sucursalId}/caja`
+
+      );
+
+    },
+
+  onError:
+    async (
+      error: any
+    ) => {
+
+      await Swal.fire({
+
+        icon:
+          "error",
+
+        title:
+          error.message,
+
+      });
+
+    },
+
+});
   /* =========================
       SUBMIT
   ========================= */

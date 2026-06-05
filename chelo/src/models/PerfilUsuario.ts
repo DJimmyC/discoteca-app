@@ -1,9 +1,10 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface PerfilUsuarioType extends Document {
-  
+
   idRol: mongoose.Types.ObjectId;
   idSucursal: mongoose.Types.ObjectId;
+  idAlmacen: mongoose.Types.ObjectId;
 
   nombres: string;
   apellidos: string;
@@ -25,7 +26,7 @@ export interface PerfilUsuarioType extends Document {
 
 const PerfilUsuarioSchema: Schema = new Schema(
   {
-    
+
     idRol: {
       type: Schema.Types.ObjectId,
       ref: "Rol",
@@ -34,6 +35,12 @@ const PerfilUsuarioSchema: Schema = new Schema(
     idSucursal: {
       type: Schema.Types.ObjectId,
       ref: "Sucursal",
+      required: true,
+    },
+
+    idAlmacen: {
+      type: Schema.Types.ObjectId,
+      ref: "Almacen",
       required: true,
     },
 
@@ -81,8 +88,8 @@ const PerfilUsuarioSchema: Schema = new Schema(
     },
 
     password: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     estado: {
       type: Boolean,
@@ -126,12 +133,8 @@ const PerfilUsuarioSchema: Schema = new Schema(
   }
 );
 
-// Índice para evitar duplicados (muy importante)
-PerfilUsuarioSchema.index(
-  { idRol: 1, idSucursal: 1 },
-  { unique: true }
-);
 
-const PerfilUsuario = mongoose.model<PerfilUsuarioType>(  "PerfilUsuario",  PerfilUsuarioSchema);
+
+const PerfilUsuario = mongoose.model<PerfilUsuarioType>("PerfilUsuario", PerfilUsuarioSchema);
 
 export default PerfilUsuario;

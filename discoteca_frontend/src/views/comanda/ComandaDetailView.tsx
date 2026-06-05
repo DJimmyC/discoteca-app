@@ -89,6 +89,11 @@ export default function ComandaDetailView() {
   const idPerfil =
     perfil?._id;
 
+  const idAlmacen =
+  typeof perfil?.idAlmacen === "object"
+    ? perfil.idAlmacen?._id
+    : perfil?.idAlmacen;
+
   /* =========================
       GET INVENTARIO BARRA
   ========================= */
@@ -113,6 +118,33 @@ export default function ComandaDetailView() {
       !!idSucursal,
 
   });
+  console.log(inventarioBarra)
+  /* =========================
+    FILTRAR INVENTARIO POR ALMACEN DEL PERFIL
+========================= */
+
+const inventarioBarraFiltrado =
+  useMemo(() => {
+
+    if (!idAlmacen) {
+      return [];
+    }
+
+    return inventarioBarra.filter((item: any) => {
+
+      const idAlmacenInventario =
+        typeof item.idAlmacen === "object"
+          ? item.idAlmacen?._id
+          : item.idAlmacen!;
+      return String(idAlmacenInventario) === String(idAlmacen);
+
+    });
+
+  }, [
+    inventarioBarra,
+    idAlmacen,
+  ]);
+  
 
   /* =========================
       CREAR COMANDA + DETALLES
@@ -279,7 +311,7 @@ export default function ComandaDetailView() {
 
   const productos = useMemo(() => {
 
-    return inventarioBarra.map((item) => {
+    return inventarioBarraFiltrado.map((item) => {
 
       const producto =
         typeof item.idProducto === "object" &&
@@ -317,7 +349,8 @@ export default function ComandaDetailView() {
 
     });
 
-  }, [inventarioBarra]);
+  }, [inventarioBarraFiltrado]);
+  console.log(productos)
 
   /* =========================
       BUSCADOR
@@ -538,56 +571,7 @@ export default function ComandaDetailView() {
 
     <div className="min-h-screen bg-slate-950 text-white">
 
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-fuchsia-500/20 bg-slate-950/95 backdrop-blur">
-
-        <div className="flex h-20 items-center justify-between px-6">
-
-          <div className="flex items-center gap-4">
-
-            <button
-              type="button"
-              className="rounded-xl border border-fuchsia-500/30 p-3 text-fuchsia-400 hover:bg-fuchsia-500/10"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-
-            <div className="flex items-center gap-3">
-
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-fuchsia-600/20 shadow-[0_0_25px_#d946ef]">
-
-                <ClipboardList className="h-7 w-7 text-fuchsia-400" />
-
-              </div>
-
-              <div>
-
-                <h1 className="text-2xl font-black text-fuchsia-400">
-                  {perfil?.nombres}
-                </h1>
-
-                <p className="text-xs tracking-[3px] text-slate-400">
-                  COMANDA
-                </p>
-
-              </div>
-
-            </div>
-
-          </div>
-
-          <button
-            type="button"
-            onClick={cerrarSesion}
-            className="flex items-center gap-2 rounded-2xl bg-red-500/10 px-5 py-3 font-bold text-red-400 hover:bg-red-500/20"
-          >
-            <LogOut className="h-5 w-5" />
-            Salir
-          </button>
-
-        </div>
-
-      </header>
+    
 
       {/* CONTENIDO */}
       <main className="grid gap-6 p-6 lg:grid-cols-[1fr_420px]">
@@ -895,3 +879,4 @@ export default function ComandaDetailView() {
   );
 
 }
+

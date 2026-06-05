@@ -74,7 +74,7 @@ const AperturaCajaSchema: Schema = new Schema(
     creadoPor: {
       type: String,
       trim: true,
-      maxlength: 10,
+      maxlength: 50,
     },
 
     fechaActualizacion: {
@@ -84,7 +84,7 @@ const AperturaCajaSchema: Schema = new Schema(
     actualizadoPor: {
       type: String,
       trim: true,
-      maxlength: 10,
+      maxlength: 50,
     },
 
     fechaEliminado: {
@@ -94,7 +94,7 @@ const AperturaCajaSchema: Schema = new Schema(
     eliminadoPor: {
       type: String,
       trim: true,
-      maxlength: 10,
+      maxlength: 50,
     },
   },
   {
