@@ -431,6 +431,22 @@ export default function MeseroLayout() {
               Mi Perfil
             </span>
           </NavLink>
+           <NavLink
+            to="/"
+            className={({
+              isActive,
+            }) =>
+              navLinkClass(
+                isActive
+              )
+            }
+          >
+            <ClipboardList size={20} />
+
+            <span>
+              Admin
+            </span>
+          </NavLink>
 
         </nav>
 
