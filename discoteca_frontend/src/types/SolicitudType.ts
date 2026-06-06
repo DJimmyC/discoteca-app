@@ -1,500 +1,65 @@
-// // src/types/SolicitudType.ts
-
-// import { z } from "zod";
-
-// /* =========================
-//     OBJECT ID SAFE
-// ========================= */
-
-// const ObjectIdStringSchema =
-//   z.preprocess(
-//     (val) => {
-
-//       if (
-//         typeof val === "object" &&
-//         val !== null &&
-//         "_id" in val
-//       ) {
-//         return (val as { _id: unknown })._id;
-//       }
-
-//       return val;
-
-//     },
-//     z.string()
-//   );
-
-// /* =========================
-//     PERFIL POPULATE
-// ========================= */
-
-// export const PerfilSolicitudSchema =
-//   z.object({
-
-//     _id:
-//       ObjectIdStringSchema
-//         .optional(),
-
-//     nombres:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     apellidos:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     email:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     telefono:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     ci:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//   }).nullable();
-
-// /* =========================
-//     SUCURSAL POPULATE
-// ========================= */
-
-// export const SucursalSolicitudSchema =
-//   z.object({
-
-//     _id:
-//       ObjectIdStringSchema,
-
-//     nombreSucursal:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     ubicacionSucursal:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//   }).nullable();
-
-// /* =========================
-//     ALMACEN POPULATE
-// ========================= */
-
-// export const AlmacenSolicitudSchema =
-//   z.object({
-
-//     _id:
-//       ObjectIdStringSchema
-//         .optional(),
-
-//     nombre:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     tipo:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     descripcion:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     ubicacion:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     estado:
-//       z.boolean()
-//         .nullable()
-//         .optional(),
-
-//   }).nullable();
-
-// /* =========================
-//     ESTADO SOLICITUD
-// ========================= */
-
-// export const EstadoSolicitudSchema =
-//   z.enum([
-
-//     "pendiente",
-
-//     "en_revision",
-
-//     "aprobada",
-
-//     "rechazada",
-
-//     "en_proceso",
-
-//     "en_transito",
-
-//     "completada",
-
-//     "anulada",
-
-//   ]);
-
-// /* =========================
-//     SOLICITUD BASE
-// ========================= */
-
-// export const SolicitudSchema =
-//   z.object({
-
-//     _id:
-//       ObjectIdStringSchema
-//         .optional(),
-
-//     idPerfil:
-//       z.union([
-//         ObjectIdStringSchema,
-//         PerfilSolicitudSchema,
-//         z.null(),
-//       ]),
-
-//     idSucursal:
-//       z.union([
-//         ObjectIdStringSchema,
-//         SucursalSolicitudSchema,
-//         z.null(),
-//       ]),
-
-//     idAlmacenOrigen:
-//       z.union([
-//         ObjectIdStringSchema,
-//         AlmacenSolicitudSchema,
-//         z.null(),
-//       ]).optional(),
-
-//     idAlmacenDestino:
-//       z.union([
-//         ObjectIdStringSchema,
-//         AlmacenSolicitudSchema,
-//         z.null(),
-//       ]).optional(),
-
-//     fechaSolicitud:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     estado:
-//       EstadoSolicitudSchema,
-
-//     observacion:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     creadoPor:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     actualizadoPor:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     eliminadoPor:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     fechaCreacion:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     fechaActualizacion:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     fechaEliminado:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//   });
-
-// /* =========================
-//     SOLICITUD LIST
-// ========================= */
-
-// export const SolicitudListSchema =
-//   SolicitudSchema.pick({
-
-//     _id: true,
-
-//     idPerfil: true,
-
-//     idSucursal: true,
-
-//     idAlmacenOrigen: true,
-
-//     idAlmacenDestino: true,
-
-//     fechaSolicitud: true,
-
-//     estado: true,
-
-//     observacion: true,
-
-//     creadoPor: true,
-
-//     fechaCreacion: true,
-
-//   });
-
-// /* =========================
-//     ARRAY NORMAL
-// ========================= */
-
-// export const SolicitudArraySchema =
-//   z.array(
-//     SolicitudListSchema
-//   );
-
-// /* =========================
-//     SOLICITUD LIMPIA POR SUCURSAL
-//     Respuesta del nuevo servicio:
-//     {
-//       sucursal,
-//       solicitudes: []
-//     }
-// ========================= */
-
-// export const SolicitudPorSucursalSchema =
-//   z.object({
-
-//     _id:
-//       ObjectIdStringSchema
-//         .optional(),
-
-//     perfil:
-//       PerfilSolicitudSchema
-//         .optional(),
-
-//     almacenOrigen:
-//       AlmacenSolicitudSchema
-//         .optional(),
-
-//     almacenDestino:
-//       AlmacenSolicitudSchema
-//         .optional(),
-
-//     fechaSolicitud:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     estado:
-//       EstadoSolicitudSchema,
-
-//     observacion:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     creadoPor:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     actualizadoPor:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     eliminadoPor:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     fechaCreacion:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     fechaActualizacion:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     fechaEliminado:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//   });
-
-// export const SolicitudesPorSucursalResponseSchema =
-//   z.object({
-
-//     sucursal:
-//       SucursalSolicitudSchema,
-
-//     solicitudes:
-//       z.array(
-//         SolicitudPorSucursalSchema
-//       ),
-
-//   });
-
-// /* =========================
-//     RESPONSE CREATE
-// ========================= */
-
-// export const CreateSolicitudResponseSchema =
-//   z.object({
-
-//     message:
-//       z.string()
-//         .optional(),
-
-//     solicitud:
-//       SolicitudSchema
-//         .optional(),
-
-//   }).passthrough();
-
-// /* =========================
-//     TYPES
-// ========================= */
-
-// export type SolicitudType =
-//   z.infer<
-//     typeof SolicitudSchema
-//   >;
-
-// export type SolicitudListType =
-//   z.infer<
-//     typeof SolicitudListSchema
-//   >;
-
-// export type SolicitudPorSucursalType =
-//   z.infer<
-//     typeof SolicitudPorSucursalSchema
-//   >;
-
-// export type SolicitudesPorSucursalResponseType =
-//   z.infer<
-//     typeof SolicitudesPorSucursalResponseSchema
-//   >;
-
-// export type EstadoSolicitud =
-//   z.infer<
-//     typeof EstadoSolicitudSchema
-//   >;
-
-// /* =========================
-//     FORM DATA
-// ========================= */
-
-// export type SolicitudForm =
-//   Pick<
-
-//     SolicitudType,
-
-//     | "idPerfil"
-//     | "idSucursal"
-//     | "estado"
-//     | "observacion"
-//     | "creadoPor"
-
-//   > & {
-
-//     idAlmacenOrigen?:
-//       string | null;
-
-//     idAlmacenDestino?:
-//       string | null;
-
-//     fechaSolicitud?:
-//       string | null;
-
-//     actualizadoPor?:
-//       string | null;
-
-//   };
-
-// export type SolicitudFormData =
-//   SolicitudForm;
-
-// /* =========================
-//     UPDATE TYPE
-// ========================= */
-
-// export type UpdateSolicitudType = {
-
-//   solicitudId:
-//     string;
-
-//   formData:
-//     Partial<SolicitudForm>;
-
-// };
-
-// /* =========================
-//     DELETE TYPE
-// ========================= */
-
-// export type DeleteSolicitudType = {
-
-//   id:
-//     string;
-
-//   eliminadoPor:
-//     string;
-
-// };
 // src/types/SolicitudType.ts
 
-import { z } from "zod";
+import {
+  z,
+} from "zod";
 
 /* =========================
-    OBJECT ID SAFE
+    OBJECT ID SEGURO
+
+    Acepta:
+    - un string
+    - un objeto que contiene _id
 ========================= */
 
-const ObjectIdStringSchema =
+export const ObjectIdSolicitudSchema =
   z.preprocess(
-    (val) => {
+    (
+      valor
+    ) => {
 
       if (
-        typeof val === "object" &&
-        val !== null &&
-        "_id" in val
+        typeof valor ===
+          "object" &&
+        valor !== null &&
+        "_id" in valor
       ) {
-        return (val as { _id: unknown })._id;
+
+        return (
+          valor as {
+            _id:
+              unknown;
+          }
+        )._id;
+
       }
 
-      if (
-        typeof val === "object" &&
-        val !== null &&
-        "toString" in val
-      ) {
-        return String(val);
-      }
-
-      return val;
+      return valor;
 
     },
     z.string()
   );
+
+/* =========================
+    ESTADO SOLICITUD
+========================= */
+
+export const EstadoSolicitudSchema =
+  z.enum([
+
+    "pendiente",
+
+    "aprobada",
+
+    "parcialmente_atendida",
+
+    "atendida",
+
+    "rechazada",
+
+    "anulada",
+
+  ]);
 
 /* =========================
     PERFIL POPULATE
@@ -504,8 +69,7 @@ export const PerfilSolicitudSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
-        .optional(),
+      ObjectIdSolicitudSchema,
 
     nombres:
       z.string()
@@ -532,7 +96,7 @@ export const PerfilSolicitudSchema =
         .nullable()
         .optional(),
 
-  }).nullable();
+  }).passthrough();
 
 /* =========================
     SUCURSAL POPULATE
@@ -542,10 +106,14 @@ export const SucursalSolicitudSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
-        .optional(),
+      ObjectIdSolicitudSchema,
 
     nombreSucursal:
+      z.string()
+        .nullable()
+        .optional(),
+
+    nombre:
       z.string()
         .nullable()
         .optional(),
@@ -555,17 +123,28 @@ export const SucursalSolicitudSchema =
         .nullable()
         .optional(),
 
-  }).nullable();
+  }).passthrough();
 
 /* =========================
-    ALMACEN POPULATE
+    ALMACÉN POPULATE
 ========================= */
 
 export const AlmacenSolicitudSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
+      ObjectIdSolicitudSchema,
+
+    idSucursal:
+      z.union([
+
+        ObjectIdSolicitudSchema,
+
+        SucursalSolicitudSchema,
+
+        z.null(),
+
+      ])
         .optional(),
 
     nombre:
@@ -590,21 +169,19 @@ export const AlmacenSolicitudSchema =
 
     estado:
       z.boolean()
-        .nullable()
         .optional(),
 
-  }).nullable();
+  }).passthrough();
 
 /* =========================
     PRODUCTO DETALLE
 ========================= */
 
-export const ProductoDetalleSolicitudInternoSchema =
+export const ProductoSolicitudSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
-        .optional(),
+      ObjectIdSolicitudSchema,
 
     nombre:
       z.string()
@@ -623,37 +200,70 @@ export const ProductoDetalleSolicitudInternoSchema =
 
     estado:
       z.boolean()
-        .nullable()
         .optional(),
 
-  }).nullable();
+  }).passthrough();
 
 /* =========================
-    DETALLE INTERNO
+    DETALLE DE SOLICITUD
 ========================= */
 
-export const DetalleSolicitudInternoSchema =
+export const DetalleDentroSolicitudSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
+      ObjectIdSolicitudSchema
         .optional(),
 
+    /*
+      Algunos endpoints pueden devolver:
+
+      idProducto: "ID"
+
+      o:
+
+      idProducto: {
+        _id,
+        nombre,
+        ...
+      }
+    */
+    idProducto:
+      z.union([
+
+        ObjectIdSolicitudSchema,
+
+        ProductoSolicitudSchema,
+
+        z.null(),
+
+      ])
+        .optional(),
+
+    /*
+      El método getSolicitudesBySucursal
+      devuelve el producto con el nombre
+      "producto".
+    */
     producto:
-      ProductoDetalleSolicitudInternoSchema,
+      ProductoSolicitudSchema
+        .nullable()
+        .optional(),
 
     cantidadSolicitada:
-      z.number(),
+      z.coerce
+        .number()
+        .default(0),
 
     cantidadAprobada:
-      z.number()
-        .nullable()
-        .optional(),
+      z.coerce
+        .number()
+        .default(0),
 
     cantidadAtendida:
-      z.number()
-        .nullable()
-        .optional(),
+      z.coerce
+        .number()
+        .default(0),
 
     unidad:
       z.string()
@@ -700,48 +310,28 @@ export const DetalleSolicitudInternoSchema =
         .nullable()
         .optional(),
 
-  });
+  }).passthrough();
 
 /* =========================
-    ESTADO SOLICITUD
-========================= */
+    SOLICITUD GENERAL
 
-export const EstadoSolicitudSchema =
-  z.enum([
-
-    "pendiente",
-
-    "en_revision",
-
-    "aprobada",
-
-    "rechazada",
-
-    "en_proceso",
-
-    "en_transito",
-
-    "completada",
-
-    "anulada",
-
-  ]).or(z.string());
-
-/* =========================
-    SOLICITUD NORMAL
+    Utilizada para:
+    - crear
+    - obtener por ID
+    - listar solicitudes
 ========================= */
 
 export const SolicitudSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
+      ObjectIdSolicitudSchema
         .optional(),
 
     idPerfil:
       z.union([
 
-        ObjectIdStringSchema,
+        ObjectIdSolicitudSchema,
 
         PerfilSolicitudSchema,
 
@@ -752,7 +342,7 @@ export const SolicitudSchema =
     idSucursal:
       z.union([
 
-        ObjectIdStringSchema,
+        ObjectIdSolicitudSchema,
 
         SucursalSolicitudSchema,
 
@@ -763,24 +353,25 @@ export const SolicitudSchema =
     idAlmacenOrigen:
       z.union([
 
-        ObjectIdStringSchema,
+        ObjectIdSolicitudSchema,
 
         AlmacenSolicitudSchema,
 
         z.null(),
 
-      ]).optional(),
+      ])
+        .optional(),
 
     idAlmacenDestino:
       z.union([
 
-        ObjectIdStringSchema,
+        ObjectIdSolicitudSchema,
 
         AlmacenSolicitudSchema,
 
         z.null(),
 
-      ]).optional(),
+      ]),
 
     fechaSolicitud:
       z.string()
@@ -825,83 +416,57 @@ export const SolicitudSchema =
         .nullable()
         .optional(),
 
-  });
+  }).passthrough();
 
 /* =========================
-    SOLICITUD LISTA NORMAL
-========================= */
-
-export const SolicitudListSchema =
-  SolicitudSchema.pick({
-
-    _id: true,
-
-    idPerfil: true,
-
-    idSucursal: true,
-
-    idAlmacenOrigen: true,
-
-    idAlmacenDestino: true,
-
-    fechaSolicitud: true,
-
-    estado: true,
-
-    observacion: true,
-
-    creadoPor: true,
-
-    fechaCreacion: true,
-
-  });
-
-/* =========================
-    ARRAY NORMAL
+    ARRAY DE SOLICITUDES
 ========================= */
 
 export const SolicitudArraySchema =
   z.array(
-    SolicitudListSchema
+    SolicitudSchema
   );
 
 /* =========================
+    RESPUESTA CREAR
+========================= */
+
+export const CreateSolicitudResponseSchema =
+  z.object({
+
+    message:
+      z.string(),
+
+    solicitud:
+      SolicitudSchema,
+
+  }).passthrough();
+
+/* =========================
     SOLICITUD POR SUCURSAL
-    Respuesta limpia del backend:
-    {
-      sucursal,
-      solicitudes: [
-        {
-          perfil,
-          almacenOrigen,
-          almacenDestino,
-          detalles,
-          totalProductos,
-          totalSolicitado,
-          totalAprobado
-        }
-      ]
-    }
+    CON SUS DETALLES
+
+    Coincide con la respuesta de:
+    GET /api/solicitud/sucursal/:idSucursal
 ========================= */
 
 export const SolicitudPorSucursalSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
-        .optional(),
+      ObjectIdSolicitudSchema,
 
     perfil:
       PerfilSolicitudSchema
-        .optional(),
+        .nullable(),
 
     almacenOrigen:
       AlmacenSolicitudSchema
-        .optional(),
+        .nullable(),
 
     almacenDestino:
       AlmacenSolicitudSchema
-        .optional(),
+        .nullable(),
 
     fechaSolicitud:
       z.string()
@@ -948,24 +513,46 @@ export const SolicitudPorSucursalSchema =
 
     detalles:
       z.array(
-        DetalleSolicitudInternoSchema
+        DetalleDentroSolicitudSchema
       )
-        .optional()
         .default([]),
 
     totalProductos:
-      z.number()
-        .optional(),
+      z.coerce
+        .number()
+        .default(0),
 
     totalSolicitado:
-      z.number()
-        .optional(),
+      z.coerce
+        .number()
+        .default(0),
 
     totalAprobado:
-      z.number()
-        .optional(),
+      z.coerce
+        .number()
+        .default(0),
 
-  });
+    /*
+      Tu backend puede no devolver todavía
+      totalAtendido. Por eso tiene valor
+      predeterminado.
+    */
+    totalAtendido:
+      z.coerce
+        .number()
+        .default(0),
+
+  }).passthrough();
+
+/* =========================
+    ALIAS DEL SCHEMA
+
+    Conservamos este nombre para no romper
+    otras vistas que ya lo utilizan.
+========================= */
+
+export const SolicitudConDetallesSchema =
+  SolicitudPorSucursalSchema;
 
 /* =========================
     RESPUESTA POR SUCURSAL
@@ -975,34 +562,52 @@ export const SolicitudesPorSucursalResponseSchema =
   z.object({
 
     sucursal:
-      SucursalSolicitudSchema,
+      SucursalSolicitudSchema
+        .nullable(),
 
     solicitudes:
       z.array(
         SolicitudPorSucursalSchema
       ),
 
-  });
-
-/* =========================
-    RESPONSE CREATE
-========================= */
-
-export const CreateSolicitudResponseSchema =
-  z.object({
-
-    message:
-      z.string()
-        .optional(),
-
-    solicitud:
-      SolicitudSchema
-        .optional(),
-
   }).passthrough();
 
 /* =========================
-    TYPES
+    TYPES DE CATÁLOGOS
+========================= */
+
+export type EstadoSolicitud =
+  z.infer<
+    typeof EstadoSolicitudSchema
+  >;
+
+export type PerfilSolicitudType =
+  z.infer<
+    typeof PerfilSolicitudSchema
+  >;
+
+export type SucursalSolicitudType =
+  z.infer<
+    typeof SucursalSolicitudSchema
+  >;
+
+export type AlmacenSolicitudType =
+  z.infer<
+    typeof AlmacenSolicitudSchema
+  >;
+
+export type ProductoSolicitudType =
+  z.infer<
+    typeof ProductoSolicitudSchema
+  >;
+
+export type DetalleDentroSolicitudType =
+  z.infer<
+    typeof DetalleDentroSolicitudSchema
+  >;
+
+/* =========================
+    TYPES DE SOLICITUD
 ========================= */
 
 export type SolicitudType =
@@ -1010,68 +615,97 @@ export type SolicitudType =
     typeof SolicitudSchema
   >;
 
-export type SolicitudListType =
-  z.infer<
-    typeof SolicitudListSchema
-  >;
-
+/*
+  Este es el tipo que te faltaba
+  y que importa SolicitudDetailView.
+*/
 export type SolicitudPorSucursalType =
   z.infer<
     typeof SolicitudPorSucursalSchema
   >;
+
+/*
+  Alias para mantener compatibilidad con
+  componentes o vistas anteriores.
+*/
+export type SolicitudConDetallesType =
+  SolicitudPorSucursalType;
 
 export type SolicitudesPorSucursalResponseType =
   z.infer<
     typeof SolicitudesPorSucursalResponseSchema
   >;
 
-export type DetalleSolicitudInternoType =
-  z.infer<
-    typeof DetalleSolicitudInternoSchema
-  >;
-
-export type EstadoSolicitud =
-  z.infer<
-    typeof EstadoSolicitudSchema
-  >;
-
 /* =========================
-    FORM DATA
+    FORM CREAR SOLICITUD
 ========================= */
 
-export type SolicitudForm =
-  Pick<
+export type SolicitudForm = {
 
-    SolicitudType,
+  idPerfil:
+    string;
 
-    | "idPerfil"
-    | "idSucursal"
-    | "estado"
-    | "observacion"
-    | "creadoPor"
+  idSucursal:
+    string;
 
-  > & {
+  idAlmacenOrigen?:
+    string | null;
 
-    idAlmacenOrigen?:
-      string | null;
+  idAlmacenDestino:
+    string;
 
-    idAlmacenDestino?:
-      string | null;
+  fechaSolicitud?:
+    string;
 
-    fechaSolicitud?:
-      string | null;
+  estado?:
+    EstadoSolicitud;
 
-    actualizadoPor?:
-      string | null;
+  observacion?:
+    string | null;
 
-  };
+  creadoPor?:
+    string | null;
+
+};
+
+/* =========================
+    ALIAS FORM DATA
+========================= */
 
 export type SolicitudFormData =
   SolicitudForm;
 
 /* =========================
-    UPDATE TYPE
+    ACTUALIZAR SOLICITUD
 ========================= */
+
+export type UpdateSolicitudForm = {
+
+  idPerfil?:
+    string;
+
+  idSucursal?:
+    string;
+
+  idAlmacenOrigen?:
+    string | null;
+
+  idAlmacenDestino?:
+    string;
+
+  fechaSolicitud?:
+    string;
+
+  estado?:
+    EstadoSolicitud;
+
+  observacion?:
+    string | null;
+
+  actualizadoPor?:
+    string | null;
+
+};
 
 export type UpdateSolicitudType = {
 
@@ -1079,12 +713,12 @@ export type UpdateSolicitudType = {
     string;
 
   formData:
-    Partial<SolicitudForm>;
+    UpdateSolicitudForm;
 
 };
 
 /* =========================
-    DELETE TYPE
+    ELIMINAR SOLICITUD
 ========================= */
 
 export type DeleteSolicitudType = {
@@ -1092,7 +726,7 @@ export type DeleteSolicitudType = {
   id:
     string;
 
-  eliminadoPor:
+  eliminadoPor?:
     string;
 
 };

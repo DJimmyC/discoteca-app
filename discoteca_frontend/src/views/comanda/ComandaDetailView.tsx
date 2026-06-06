@@ -90,9 +90,9 @@ export default function ComandaDetailView() {
     perfil?._id;
 
   const idAlmacen =
-  typeof perfil?.idAlmacen === "object"
-    ? perfil.idAlmacen?._id
-    : perfil?.idAlmacen;
+    typeof perfil?.idAlmacen === "object"
+      ? perfil.idAlmacen?._id
+      : perfil?.idAlmacen;
 
   /* =========================
       GET INVENTARIO BARRA
@@ -123,28 +123,28 @@ export default function ComandaDetailView() {
     FILTRAR INVENTARIO POR ALMACEN DEL PERFIL
 ========================= */
 
-const inventarioBarraFiltrado =
-  useMemo(() => {
+  const inventarioBarraFiltrado =
+    useMemo(() => {
 
-    if (!idAlmacen) {
-      return [];
-    }
+      if (!idAlmacen) {
+        return [];
+      }
 
-    return inventarioBarra.filter((item: any) => {
+      return inventarioBarra.filter((item: any) => {
 
-      const idAlmacenInventario =
-        typeof item.idAlmacen === "object"
-          ? item.idAlmacen?._id
-          : item.idAlmacen!;
-      return String(idAlmacenInventario) === String(idAlmacen);
+        const idAlmacenInventario =
+          typeof item.idAlmacen === "object"
+            ? item.idAlmacen?._id
+            : item.idAlmacen!;
+        return String(idAlmacenInventario) === String(idAlmacen);
 
-    });
+      });
 
-  }, [
-    inventarioBarra,
-    idAlmacen,
-  ]);
-  
+    }, [
+      inventarioBarra,
+      idAlmacen,
+    ]);
+
 
   /* =========================
       CREAR COMANDA + DETALLES
@@ -166,6 +166,23 @@ const inventarioBarraFiltrado =
       if (!idSucursal) {
         throw new Error(
           "No se encontró la sucursal del usuario"
+        );
+      }
+      if (!idAlmacen) {
+        throw new Error(
+          "El perfil no tiene un almacén asignado"
+        );
+      }
+
+      const detalleSinInventario =
+        comanda.find(
+          (item) =>
+            !item.idInventario
+        );
+
+      if (detalleSinInventario) {
+        throw new Error(
+          `El producto ${detalleSinInventario.nombre} no tiene inventario asociado`
         );
       }
 
@@ -225,6 +242,11 @@ const inventarioBarraFiltrado =
           idProducto:
             item.idProducto,
 
+          idInventario:
+            item.idInventario,
+
+          idAlmacen,
+
           cantidad:
             item.cantidad,
 
@@ -232,7 +254,8 @@ const inventarioBarraFiltrado =
             item.precio,
 
           subtotal:
-            item.precio * item.cantidad,
+            item.precio *
+            item.cantidad,
 
           estado:
             "activo" as const,
@@ -241,18 +264,10 @@ const inventarioBarraFiltrado =
             "",
 
           creadoPor:
-            perfil?.nombres || "sistema",
-
-          /*
-            Si tu modelo de DetalleComanda todavía no tiene idInventario,
-            puedes dejarlo porque en tu type está opcional.
-            Si el backend no lo acepta, bórralo.
-          */
-          idInventario:
-            item.idInventario,
+            perfil?.nombres ||
+            "sistema",
 
         }));
-
       await createManyDetalleComanda(
         detalles
       );
@@ -315,7 +330,7 @@ const inventarioBarraFiltrado =
 
       const producto =
         typeof item.idProducto === "object" &&
-        item.idProducto !== null
+          item.idProducto !== null
           ? item.idProducto
           : null;
 
@@ -403,12 +418,12 @@ const inventarioBarraFiltrado =
 
         return prev.map((item) =>
           item.idInventario ===
-          producto.idInventario
+            producto.idInventario
             ? {
-                ...item,
-                cantidad:
-                  item.cantidad + 1,
-              }
+              ...item,
+              cantidad:
+                item.cantidad + 1,
+            }
             : item
         );
 
@@ -475,10 +490,10 @@ const inventarioBarraFiltrado =
         .map((item) =>
           item.idInventario === idInventario
             ? {
-                ...item,
-                cantidad:
-                  item.cantidad - 1,
-              }
+              ...item,
+              cantidad:
+                item.cantidad - 1,
+            }
             : item
         )
         .filter(
@@ -571,7 +586,7 @@ const inventarioBarraFiltrado =
 
     <div className="min-h-screen bg-slate-950 text-white">
 
-    
+
 
       {/* CONTENIDO */}
       <main className="grid gap-6 p-6 lg:grid-cols-[1fr_420px]">

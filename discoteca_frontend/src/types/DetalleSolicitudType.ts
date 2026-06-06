@@ -1,28 +1,29 @@
 // src/types/DetalleSolicitudType.ts
 
-import { z } from "zod";
+import {
+  z,
+} from "zod";
 
 /* =========================
-    OBJECT ID SAFE
+    ESTADO DETALLE
 ========================= */
 
-const ObjectIdStringSchema =
-  z.preprocess(
-    (val) => {
+export const EstadoDetalleSolicitudSchema =
+  z.enum([
 
-      if (
-        typeof val === "object" &&
-        val !== null &&
-        "_id" in val
-      ) {
-        return (val as { _id: unknown })._id;
-      }
+    "pendiente",
 
-      return val;
+    "aprobado",
 
-    },
-    z.string()
-  );
+    "parcial",
+
+    "atendido",
+
+    "rechazado",
+
+    "anulado",
+
+  ]);
 
 /* =========================
     PRODUCTO POPULATE
@@ -32,8 +33,7 @@ export const ProductoDetalleSolicitudSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
-        .optional(),
+      z.string(),
 
     nombre:
       z.string()
@@ -52,28 +52,21 @@ export const ProductoDetalleSolicitudSchema =
 
     estado:
       z.boolean()
-        .nullable()
         .optional(),
 
-  }).nullable();
+  }).passthrough();
 
 /* =========================
-    SOLICITUD POPULATE SIMPLE
+    SOLICITUD POPULATE
 ========================= */
 
-export const SolicitudPopulateSchema =
+export const SolicitudDetallePopulateSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
-        .optional(),
+      z.string(),
 
     estado:
-      z.string()
-        .nullable()
-        .optional(),
-
-    observacion:
       z.string()
         .nullable()
         .optional(),
@@ -83,25 +76,30 @@ export const SolicitudPopulateSchema =
         .nullable()
         .optional(),
 
-  }).nullable();
+    observacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+  }).passthrough();
 
 /* =========================
-    DETALLE SOLICITUD SCHEMA
+    DETALLE SCHEMA
 ========================= */
 
 export const DetalleSolicitudSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
+      z.string()
         .optional(),
 
     idSolicitud:
       z.union([
 
-        ObjectIdStringSchema,
+        z.string(),
 
-        SolicitudPopulateSchema,
+        SolicitudDetallePopulateSchema,
 
         z.null(),
 
@@ -110,7 +108,7 @@ export const DetalleSolicitudSchema =
     idProducto:
       z.union([
 
-        ObjectIdStringSchema,
+        z.string(),
 
         ProductoDetalleSolicitudSchema,
 
@@ -119,29 +117,29 @@ export const DetalleSolicitudSchema =
       ]),
 
     cantidadSolicitada:
-      z.number(),
+      z.coerce
+        .number(),
 
     cantidadAprobada:
-      z.number()
-        .nullable()
-        .optional(),
+      z.coerce
+        .number()
+        .default(0),
 
     cantidadAtendida:
-      z.number()
-        .nullable()
-        .optional(),
+      z.coerce
+        .number()
+        .default(0),
 
     unidad:
       z.string()
         .nullable()
         .optional(),
 
-    observacion:
-      z.string()
-        .nullable()
-        .optional(),
-
     estado:
+      EstadoDetalleSolicitudSchema
+        .default("pendiente"),
+
+    observacion:
       z.string()
         .nullable()
         .optional(),
@@ -176,36 +174,7 @@ export const DetalleSolicitudSchema =
         .nullable()
         .optional(),
 
-  });
-
-/* =========================
-    LIST SCHEMA
-========================= */
-
-export const DetalleSolicitudListSchema =
-  DetalleSolicitudSchema.pick({
-
-    _id: true,
-
-    idSolicitud: true,
-
-    idProducto: true,
-
-    cantidadSolicitada: true,
-
-    cantidadAprobada: true,
-
-    cantidadAtendida: true,
-
-    unidad: true,
-
-    observacion: true,
-
-    estado: true,
-
-    fechaCreacion: true,
-
-  });
+  }).passthrough();
 
 /* =========================
     ARRAY
@@ -213,7 +182,7 @@ export const DetalleSolicitudListSchema =
 
 export const DetalleSolicitudArraySchema =
   z.array(
-    DetalleSolicitudListSchema
+    DetalleSolicitudSchema
   );
 
 /* =========================
@@ -224,12 +193,10 @@ export const CreateDetalleSolicitudResponseSchema =
   z.object({
 
     message:
-      z.string()
-        .optional(),
+      z.string(),
 
     detalle:
-      DetalleSolicitudSchema
-        .optional(),
+      DetalleSolicitudSchema,
 
   }).passthrough();
 
@@ -237,59 +204,53 @@ export const CreateDetalleSolicitudResponseSchema =
     TYPES
 ========================= */
 
+export type EstadoDetalleSolicitud =
+  z.infer<
+    typeof EstadoDetalleSolicitudSchema
+  >;
+
 export type DetalleSolicitudType =
   z.infer<
     typeof DetalleSolicitudSchema
   >;
 
-export type DetalleSolicitudListType =
-  z.infer<
-    typeof DetalleSolicitudListSchema
-  >;
-
 /* =========================
-    FORM DATA
+    FORM
 ========================= */
 
-export type DetalleSolicitudForm =
-  Pick<
+export type DetalleSolicitudForm = {
 
-    DetalleSolicitudType,
+  idSolicitud:
+    string;
 
-    | "cantidadSolicitada"
-    | "observacion"
-    | "creadoPor"
+  idProducto:
+    string;
 
-  > & {
+  cantidadSolicitada:
+    number;
 
-    idSolicitud:
-      string;
+  cantidadAprobada?:
+    number;
 
-    idProducto:
-      string;
+  cantidadAtendida?:
+    number;
 
-    cantidadAprobada?:
-      number | null;
+  unidad?:
+    string | null;
 
-    cantidadAtendida?:
-      number | null;
+  estado?:
+    EstadoDetalleSolicitud;
 
-    unidad?:
-      string | null;
+  observacion?:
+    string | null;
 
-    estado?:
-      string | null;
+  creadoPor?:
+    string | null;
 
-    actualizadoPor?:
-      string | null;
-
-  };
-
-export type DetalleSolicitudFormData =
-  DetalleSolicitudForm;
+};
 
 /* =========================
-    UPDATE TYPE
+    UPDATE
 ========================= */
 
 export type UpdateDetalleSolicitudType = {
@@ -298,12 +259,19 @@ export type UpdateDetalleSolicitudType = {
     string;
 
   formData:
-    Partial<DetalleSolicitudForm>;
+    Partial<
+      DetalleSolicitudForm
+    > & {
+
+      actualizadoPor?:
+        string | null;
+
+    };
 
 };
 
 /* =========================
-    DELETE TYPE
+    DELETE
 ========================= */
 
 export type DeleteDetalleSolicitudType = {
@@ -311,7 +279,7 @@ export type DeleteDetalleSolicitudType = {
   id:
     string;
 
-  eliminadoPor:
+  eliminadoPor?:
     string;
 
 };

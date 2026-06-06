@@ -8,17 +8,21 @@ import { z } from "zod";
 
 const ObjectIdStringSchema =
   z.preprocess(
-    (val) => {
+    (value) => {
 
       if (
-        typeof val === "object" &&
-        val !== null &&
-        "_id" in val
+        typeof value === "object" &&
+        value !== null &&
+        "_id" in value
       ) {
-        return (val as { _id: unknown })._id;
+        return (
+          value as {
+            _id: unknown;
+          }
+        )._id;
       }
 
-      return val;
+      return value;
 
     },
     z.string()
@@ -36,6 +40,7 @@ export const ComandaPopulateSchema =
 
     numeroComanda:
       z.string()
+        .nullable()
         .optional(),
 
     estado:
@@ -80,8 +85,36 @@ export const ProductoPopulateSchema =
   }).passthrough();
 
 /* =========================
+    ALMACÉN POPULATE
+========================= */
+
+export const AlmacenPopulateSchema =
+  z.object({
+
+    _id:
+      ObjectIdStringSchema,
+
+    nombre:
+      z.string()
+        .optional(),
+
+    descripcion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    tipo:
+      z.string()
+        .optional(),
+
+    estado:
+      z.boolean()
+        .optional(),
+
+  }).passthrough();
+
+/* =========================
     INVENTARIO POPULATE
-    OPCIONAL, SI LUEGO AGREGAS idInventario
 ========================= */
 
 export const InventarioPopulateSchema =
@@ -90,11 +123,33 @@ export const InventarioPopulateSchema =
     _id:
       ObjectIdStringSchema,
 
+    idAlmacen:
+      z.union([
+        ObjectIdStringSchema,
+        AlmacenPopulateSchema,
+        z.null(),
+      ]).optional(),
+
+    idProducto:
+      z.union([
+        ObjectIdStringSchema,
+        ProductoPopulateSchema,
+        z.null(),
+      ]).optional(),
+
     cantidad:
       z.number()
         .optional(),
 
+    costoUnitario:
+      z.number()
+        .optional(),
+
     precioVenta:
+      z.number()
+        .optional(),
+
+    stockMinimo:
       z.number()
         .optional(),
 
@@ -105,22 +160,17 @@ export const InventarioPopulateSchema =
   }).passthrough();
 
 /* =========================
-    ESTADO DETALLE COMANDA
+    ESTADO
 ========================= */
 
 export const EstadoDetalleComandaSchema =
   z.enum([
-
     "activo",
-
     "eliminado",
-
-    "anulado",
-
   ]);
 
 /* =========================
-    DETALLE COMANDA SCHEMA
+    DETALLE COMANDA
 ========================= */
 
 export const DetalleComandaSchema =
@@ -130,50 +180,33 @@ export const DetalleComandaSchema =
       ObjectIdStringSchema
         .optional(),
 
-    /* =========================
-        RELACIONES
-    ========================= */
-
     idComanda:
       z.union([
-
         ObjectIdStringSchema,
-
         ComandaPopulateSchema,
-
         z.null(),
-
       ]),
 
     idProducto:
       z.union([
-
         ObjectIdStringSchema,
-
         ProductoPopulateSchema,
-
         z.null(),
-
       ]),
 
-    /*
-      Si decides agregar idInventario en tu modelo,
-      ya queda preparado.
-    */
     idInventario:
       z.union([
-
         ObjectIdStringSchema,
-
         InventarioPopulateSchema,
-
         z.null(),
+      ]),
 
-      ]).optional(),
-
-    /* =========================
-        DATOS DEL DETALLE
-    ========================= */
+    idAlmacen:
+      z.union([
+        ObjectIdStringSchema,
+        AlmacenPopulateSchema,
+        z.null(),
+      ]),
 
     cantidad:
       z.number(),
@@ -191,10 +224,6 @@ export const DetalleComandaSchema =
       z.string()
         .nullable()
         .optional(),
-
-    /* =========================
-        AUDITORÍA
-    ========================= */
 
     creadoPor:
       z.string()
@@ -226,56 +255,45 @@ export const DetalleComandaSchema =
         .nullable()
         .optional(),
 
-  });
+  }).passthrough();
 
 /* =========================
-    DETALLE LIST SCHEMA
+    RESPUESTA CREACIÓN
 ========================= */
 
-export const DetalleComandaListSchema =
-  DetalleComandaSchema.pick({
+export const CreateDetalleComandaResponseSchema =
+  z.object({
 
-    _id: true,
+    message:
+      z.string()
+        .optional(),
 
-    idComanda: true,
+    detalle:
+      DetalleComandaSchema,
 
-    idProducto: true,
-
-    idInventario: true,
-
-    cantidad: true,
-
-    precioUnitario: true,
-
-    subtotal: true,
-
-    estado: true,
-
-    observacion: true,
-
-    fechaCreacion: true,
-
-  });
+  }).passthrough();
 
 /* =========================
-    ARRAY SCHEMA
+    ARRAY
 ========================= */
 
 export const DetalleComandaArraySchema =
   z.array(
-    DetalleComandaListSchema
+    DetalleComandaSchema
   );
 
 /* =========================
-    SAFE SCHEMA
+    SAFE
 ========================= */
 
 export const DetalleComandaSafeSchema =
   DetalleComandaSchema.omit({
 
-    eliminadoPor: true,
+    eliminadoPor:
+      true,
 
-    fechaEliminado: true,
+    fechaEliminado:
+      true,
 
   });
 
@@ -288,52 +306,61 @@ export type DetalleComandaType =
     typeof DetalleComandaSchema
   >;
 
-export type DetalleComandaListType =
-  z.infer<
-    typeof DetalleComandaListSchema
-  >;
-
 export type EstadoDetalleComanda =
   z.infer<
     typeof EstadoDetalleComandaSchema
   >;
 
 /* =========================
-    FORM DATA
+    FORM PARA CREAR
 ========================= */
 
-export type DetalleComandaForm =
-  Pick<
+export type DetalleComandaForm = {
 
-    DetalleComandaType,
+  idComanda:
+    string;
 
-    | "idComanda"
-    | "idProducto"
-    | "cantidad"
-    | "precioUnitario"
-    | "subtotal"
-    | "observacion"
-    | "creadoPor"
+  idProducto:
+    string;
 
-  > & {
+  idInventario:
+    string;
 
-    estado?:
-      EstadoDetalleComanda;
+  idAlmacen:
+    string;
 
-    idInventario?:
-      string;
+  cantidad:
+    number;
 
-  };
+  precioUnitario:
+    number;
+
+  subtotal:
+    number;
+
+  estado?:
+    EstadoDetalleComanda;
+
+  observacion?:
+    string | null;
+
+  creadoPor?:
+    string | null;
+
+  actualizadoPor?:
+    string | null;
+
+};
 
 /* =========================
-    FORM DATA ALIAS
+    ALIAS
 ========================= */
 
 export type DetalleComandaFormData =
   DetalleComandaForm;
 
 /* =========================
-    UPDATE TYPE
+    UPDATE
 ========================= */
 
 export type UpdateDetalleComandaType = {
@@ -347,7 +374,7 @@ export type UpdateDetalleComandaType = {
 };
 
 /* =========================
-    DELETE TYPE
+    DELETE
 ========================= */
 
 export type DeleteDetalleComandaType = {

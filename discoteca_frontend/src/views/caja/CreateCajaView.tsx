@@ -17,7 +17,7 @@ import {
   motion,
 } from "framer-motion";
 
-import MenuListDashboard from "@/components/MenuListDashboard";
+import MenuList from "@/components/MenuList";
 
 import CajaForm from "@/components/caja/CajaForm";
 
@@ -128,7 +128,7 @@ export default function CreateCajaView() {
     <div className="flex min-h-screen bg-slate-50">
 
       {/* SIDEBAR */}
-      <MenuListDashboard />
+      <MenuList />
 
       {/* CONTENT */}
       <main className="flex-1 p-8">

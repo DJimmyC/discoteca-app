@@ -1,28 +1,182 @@
-// src/views/venta/VentaDetailView.tsx
-
-import { useMemo, useState, } from "react";
-import { useNavigate, } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient, } from "@tanstack/react-query";
-import { CheckCircle, ClipboardList, CreditCard, DollarSign, LogOut, Menu, ReceiptText, Search, Trash2, XCircle, } from "lucide-react";
-import Swal from "sweetalert2";
-
-import { useAuth } from "@/hooks/useAuth";
 
 import {
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+
+import {
+  Ban,
+  Banknote,
+  Box,
+  CalendarDays,
+  CheckCircle2,
+  CircleDollarSign,
+  Gift,
+  Package,
+  ReceiptText,
+  RefreshCcw,
+  Search,
+  Store,
+  UserRound,
+  XCircle,
+} from "lucide-react";
+
+import Swal from "sweetalert2";
+
+import {
+  useAuth,
+} from "@/hooks/useAuth";
+
+import {
+  cortesiaVentaById,
   deleteVentaById,
   getVentasConDetallesPorPerfil,
-  cortesiaVentaById,
 } from "@/api/VentaApi";
+
+import {
+  createMovimiento,
+} from "@/api/MovimientoApi";
+
+import type {
+  MovimientoForm,
+} from "@/types/MovimientoType";
+
+import type {
+  VentaConDetallesType,
+} from "@/types/VentaType";
+
+/* =========================
+    OBTENER ID DE RELACIÓN
+========================= */
+type ResumenVentas = {
+  pagadas: number;
+  cortesias: number;
+  anuladas: number;
+
+  totalPagado: number;
+  totalCortesia: number;
+  totalAnulado: number;
+};
+
+function obtenerTexto(
+  valor: unknown,
+  valorDefecto = ""
+): string {
+
+  if (
+    typeof valor === "string" ||
+    typeof valor === "number"
+  ) {
+    return String(valor);
+  }
+
+  return valorDefecto;
+}
+
+function obtenerNumero(
+  valor: unknown
+): number {
+
+  const numero =
+    Number(valor);
+
+  return Number.isFinite(numero)
+    ? numero
+    : 0;
+}
+function obtenerIdRelacion(
+  relacion:
+    | string
+    | {
+        _id?: string;
+      }
+    | null
+    | undefined
+): string {
+
+  if (
+    typeof relacion ===
+    "string"
+  ) {
+    return relacion;
+  }
+
+  return relacion?._id || "";
+
+}
+
+/* =========================
+    FORMATEAR FECHA
+========================= */
+
+function formatearFecha(
+  fecha?:
+    string | null
+): string {
+
+  if (!fecha) {
+    return "Sin fecha";
+  }
+
+  const fechaConvertida =
+    new Date(fecha);
+
+  if (
+    Number.isNaN(
+      fechaConvertida.getTime()
+    )
+  ) {
+    return "Fecha inválida";
+  }
+
+  return fechaConvertida
+    .toLocaleString(
+      "es-BO",
+      {
+        dateStyle:
+          "medium",
+
+        timeStyle:
+          "short",
+      }
+    );
+
+}
+
+/* =========================
+    FORMATEAR DINERO
+========================= */
+
+function formatearDinero(
+  monto:
+    number | undefined
+): string {
+
+  return `Bs. ${Number(
+    monto || 0
+  ).toFixed(2)}`;
+
+}
+
+/* =========================
+    COMPONENTE
+========================= */
 
 export default function VentaDetailView() {
 
-  const navigate = useNavigate();
-
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   const {
     data: perfil,
-    isLoading: loadingAuth,
+    isLoading:
+      loadingPerfil,
   } = useAuth();
 
   const [
@@ -31,20 +185,33 @@ export default function VentaDetailView() {
   ] = useState("");
 
   /* =========================
-      ID PERFIL DESDE AUTH
+      IDS NORMALIZADOS
   ========================= */
 
   const idPerfil =
-    perfil?._id;
+    obtenerIdRelacion(
+      perfil?._id
+    );
+
+  const idSucursalPerfil =
+    obtenerIdRelacion(
+      perfil?.idSucursal
+    );
+
+  const nombreUsuario =
+    perfil?.nombres ||
+    "sistema";
 
   /* =========================
-      GET VENTAS CON DETALLES
+      CONSULTAR VENTAS
   ========================= */
 
   const {
     data,
-    isLoading,
+    isLoading:
+      loadingVentas,
     isError,
+    error,
   } = useQuery({
 
     queryKey: [
@@ -54,55 +221,795 @@ export default function VentaDetailView() {
 
     queryFn: () =>
       getVentasConDetallesPorPerfil(
-        idPerfil!
+        idPerfil
       ),
 
     enabled:
-      !!idPerfil,
+      Boolean(idPerfil),
 
   });
+
+  /* =========================
+      VENTAS FILTRADAS
+  ========================= */
+
+  const ventasFiltradas =
+    useMemo(() => {
+
+      const ventas =
+        data?.ventas || [];
+
+      const busqueda =
+        search
+          .trim()
+          .toLowerCase();
+
+      if (!busqueda) {
+        return ventas;
+      }
+
+      return ventas.filter(
+        (venta) => {
+
+          const productos =
+            venta.detalles
+              .map(
+                (detalle) =>
+                  [
+                    detalle
+                      .producto
+                      ?.nombre,
+                    detalle
+                      .producto
+                      ?.marca,
+                    detalle
+                      .producto
+                      ?.descripcion,
+                  ]
+                    .filter(
+                      Boolean
+                    )
+                    .join(" ")
+              )
+              .join(" ");
+
+          const texto = [
+            venta.numeroVenta,
+            venta.estado,
+            venta.metodoPago,
+            venta.observacion,
+            venta
+              .comanda
+              ?.numeroComanda,
+            venta
+              .caja
+              ?.nombre,
+            productos,
+          ]
+            .filter(
+              Boolean
+            )
+            .join(" ")
+            .toLowerCase();
+
+          return texto.includes(
+            busqueda
+          );
+
+        }
+      );
+
+    }, [
+      data,
+      search,
+    ]);
+
+  /* =========================
+      RESUMEN
+  ========================= */
+
+ /* =========================
+    RESUMEN DE VENTAS
+========================= */
+
+const resumen =
+  useMemo<ResumenVentas>(() => {
+
+    const ventas =
+      data?.ventas ?? [];
+
+    return ventas.reduce<ResumenVentas>(
+      (
+        acumulado,
+        venta
+      ) => {
+
+        const totalVenta =
+          obtenerNumero(
+            venta.total
+          );
+
+        if (
+          venta.estado ===
+          "pagado"
+        ) {
+
+          acumulado.pagadas =
+            acumulado.pagadas + 1;
+
+          acumulado.totalPagado =
+            acumulado.totalPagado +
+            totalVenta;
+
+        }
+
+        if (
+          venta.estado ===
+          "cortesia"
+        ) {
+
+          acumulado.cortesias =
+            acumulado.cortesias + 1;
+
+          acumulado.totalCortesia =
+            acumulado.totalCortesia +
+            totalVenta;
+
+        }
+
+        if (
+          venta.estado ===
+          "anulado"
+        ) {
+
+          acumulado.anuladas =
+            acumulado.anuladas + 1;
+
+          acumulado.totalAnulado =
+            acumulado.totalAnulado +
+            totalVenta;
+
+        }
+
+        return acumulado;
+
+      },
+      {
+        pagadas: 0,
+        cortesias: 0,
+        anuladas: 0,
+
+        totalPagado: 0,
+        totalCortesia: 0,
+        totalAnulado: 0,
+      }
+    );
+
+  }, [
+    data?.ventas,
+  ]);
 
   /* =========================
       ANULAR VENTA
   ========================= */
 
+  type AnularVentaPayload = {
+
+    venta:
+      VentaConDetallesType;
+
+    eliminadoPor:
+      string;
+
+  };
+
   const {
-    mutate: anularVenta,
-    isPending: anulandoVenta,
+    mutate:
+      anularVenta,
+
+    isPending:
+      anulandoVenta,
   } = useMutation({
 
     mutationFn:
-      deleteVentaById,
+      async ({
+        venta,
+        eliminadoPor,
+      }: AnularVentaPayload) => {
 
-    onSuccess: () => {
+        if (!venta._id) {
 
-      Swal.fire({
-        icon: "success",
-        title: "Venta anulada",
-        text: "La venta fue anulada correctamente",
-      });
+          throw new Error(
+            "No se encontró el ID de la venta"
+          );
 
-      queryClient.invalidateQueries({
-        queryKey: [
-          "ventas-con-detalles",
-          idPerfil,
-        ],
-      });
+        }
 
-    },
+        const idVenta =
+          String(
+            venta._id
+          );
 
-    onError: (error) => {
+        const idCaja =
+          obtenerIdRelacion(
+            venta.caja
+          );
 
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Error al anular la venta",
-      });
+        const idComanda =
+          obtenerIdRelacion(
+            venta.comanda
+          );
 
-    },
+        const idSucursal =
+          data?.sucursal?._id ||
+          idSucursalPerfil ||
+          "";
+
+        /*
+          1. Anular venta.
+
+          El backend:
+          - cambia venta a anulado
+          - marca detalles eliminados
+          - restaura el inventario
+        */
+
+        const respuesta =
+          await deleteVentaById({
+
+            id:
+              idVenta,
+
+            eliminadoPor,
+
+          });
+
+        /*
+          2. Movimiento de reversión financiera
+        */
+
+        const movimientoAnulacion:
+          MovimientoForm = {
+
+          fecha:
+            new Date()
+              .toISOString(),
+
+          tipoMovimiento:
+            "venta_anulada",
+
+          origenMovimiento:
+            "venta",
+
+          modulo:
+            "venta",
+
+          idVenta,
+
+          idComanda:
+            idComanda ||
+            undefined,
+
+          idSucursal:
+            idSucursal ||
+            undefined,
+
+          idCaja:
+            idCaja ||
+            undefined,
+
+          idPerfil:
+            idPerfil ||
+            undefined,
+
+          metodoPago:
+            venta.metodoPago,
+
+          montoSalida:
+            Number(
+              venta.total || 0
+            ),
+
+          subtotal:
+            Number(
+              venta.subtotal || 0
+            ),
+
+          descuento:
+            Number(
+              venta.descuento || 0
+            ),
+
+          total:
+            Number(
+              venta.total || 0
+            ),
+
+          estado:
+            "anulado",
+
+          referenciaId:
+            idVenta,
+
+          referenciaModelo:
+            "Venta",
+
+          observacion:
+            `Anulación de la venta ${
+              venta.numeroVenta ||
+              idVenta
+            }`,
+
+          creadoPor:
+            eliminadoPor,
+
+        };
+
+        await createMovimiento(
+          movimientoAnulacion
+        );
+
+        /*
+          3. Registrar cada devolución
+          de producto al inventario.
+
+          Aquí no se modifica nuevamente
+          el stock. Solo se registra el
+          historial del movimiento.
+        */
+
+        for (
+          const detalle
+          of venta.detalles
+        ) {
+
+          const idProducto =
+            obtenerIdRelacion(
+              detalle.idProducto
+            ) ||
+            detalle.producto
+              ?._id ||
+            "";
+
+          const idInventario =
+            obtenerIdRelacion(
+              detalle.idInventario
+            );
+
+          const idAlmacen =
+            obtenerIdRelacion(
+              detalle.idAlmacen
+            );
+
+          if (
+            !idProducto ||
+            !idInventario ||
+            !idAlmacen
+          ) {
+
+            console.warn(
+              "No se registró movimiento de devolución porque faltan relaciones:",
+              detalle
+            );
+
+            continue;
+
+          }
+
+          const cantidad =
+            Number(
+              detalle.cantidad || 0
+            );
+
+          const movimientoInventario:
+            MovimientoForm = {
+
+            fecha:
+              new Date()
+                .toISOString(),
+
+            tipoMovimiento:
+              "entrada_inventario",
+
+            origenMovimiento:
+              "venta",
+
+            modulo:
+              "inventario",
+
+            idVenta,
+
+            idComanda:
+              idComanda ||
+              undefined,
+
+            idSucursal:
+              idSucursal ||
+              undefined,
+
+            idCaja:
+              idCaja ||
+              undefined,
+
+            idPerfil:
+              idPerfil ||
+              undefined,
+
+            idProducto,
+
+            idInventario,
+
+            idAlmacen,
+
+            cantidad,
+
+            cantidadEntrada:
+              cantidad,
+
+            precioUnitario:
+              Number(
+                detalle
+                  .precioUnitario ||
+                0
+              ),
+
+            costoUnitario:
+              Number(
+                detalle
+                  .costoUnitario ||
+                0
+              ),
+
+            subtotal:
+              Number(
+                detalle.subtotal ||
+                0
+              ),
+
+            total:
+              Number(
+                detalle.subtotal ||
+                0
+              ),
+
+            estado:
+              "activo",
+
+            referenciaId:
+              idVenta,
+
+            referenciaModelo:
+              "Venta",
+
+            observacion:
+              `Devolución por anulación: ${
+                detalle
+                  .producto
+                  ?.nombre ||
+                "Producto"
+              }`,
+
+            creadoPor:
+              eliminadoPor,
+
+          };
+
+          await createMovimiento(
+            movimientoInventario
+          );
+
+        }
+
+        return respuesta;
+
+      },
+
+    onSuccess:
+      async () => {
+
+        await Swal.fire({
+
+          icon:
+            "success",
+
+          title:
+            "Venta anulada",
+
+          text:
+            "Se anuló la venta y se registraron los movimientos de reversión.",
+
+          timer:
+            2500,
+
+          showConfirmButton:
+            false,
+
+        });
+
+        await queryClient
+          .invalidateQueries({
+
+            queryKey: [
+              "ventas-con-detalles",
+              idPerfil,
+            ],
+
+          });
+
+        await queryClient
+          .invalidateQueries({
+
+            queryKey: [
+              "movimientos",
+            ],
+
+          });
+
+        await queryClient
+          .invalidateQueries({
+
+            queryKey: [
+              "inventario-barra",
+              idSucursalPerfil,
+            ],
+
+          });
+
+      },
+
+    onError:
+      async (
+        error
+      ) => {
+
+        await Swal.fire({
+
+          icon:
+            "error",
+
+          title:
+            "Error al anular",
+
+          text:
+            error instanceof Error
+              ? error.message
+              : "No se pudo anular la venta",
+
+        });
+
+      },
+
+  });
+
+  /* =========================
+      CORTESÍA
+  ========================= */
+
+  type CortesiaVentaPayload = {
+
+    venta:
+      VentaConDetallesType;
+
+    actualizadoPor:
+      string;
+
+    observacion:
+      string;
+
+  };
+
+  const {
+    mutate:
+      marcarCortesia,
+
+    isPending:
+      marcandoCortesia,
+  } = useMutation({
+
+    mutationFn:
+      async ({
+        venta,
+        actualizadoPor,
+        observacion,
+      }: CortesiaVentaPayload) => {
+
+        if (!venta._id) {
+
+          throw new Error(
+            "No se encontró el ID de la venta"
+          );
+
+        }
+
+        const idVenta =
+          String(
+            venta._id
+          );
+
+        const idCaja =
+          obtenerIdRelacion(
+            venta.caja
+          );
+
+        const idComanda =
+          obtenerIdRelacion(
+            venta.comanda
+          );
+
+        const idSucursal =
+          data?.sucursal?._id ||
+          idSucursalPerfil ||
+          "";
+
+        /*
+          1. Convertir la venta
+          en cortesía.
+
+          No se devuelve inventario.
+        */
+
+        const respuesta =
+          await cortesiaVentaById({
+
+            id:
+              idVenta,
+
+            actualizadoPor,
+
+            observacion,
+
+          });
+
+        /*
+          2. Registrar reversión
+          del ingreso como cortesía.
+        */
+
+        const movimientoCortesia:
+          MovimientoForm = {
+
+          fecha:
+            new Date()
+              .toISOString(),
+
+          tipoMovimiento:
+            "cortesia",
+
+          origenMovimiento:
+            "cortesia",
+
+          modulo:
+            "venta",
+
+          idVenta,
+
+          idComanda:
+            idComanda ||
+            undefined,
+
+          idSucursal:
+            idSucursal ||
+            undefined,
+
+          idCaja:
+            idCaja ||
+            undefined,
+
+          idPerfil:
+            idPerfil ||
+            undefined,
+
+          metodoPago:
+            venta.metodoPago,
+
+          montoSalida:
+            Number(
+              venta.total || 0
+            ),
+
+          subtotal:
+            Number(
+              venta.subtotal || 0
+            ),
+
+          descuento:
+            Number(
+              venta.descuento || 0
+            ),
+
+          total:
+            Number(
+              venta.total || 0
+            ),
+
+          estado:
+            "cortesia",
+
+          referenciaId:
+            idVenta,
+
+          referenciaModelo:
+            "Venta",
+
+          observacion,
+
+          creadoPor:
+            actualizadoPor,
+
+        };
+
+        await createMovimiento(
+          movimientoCortesia
+        );
+
+        return respuesta;
+
+      },
+
+    onSuccess:
+      async () => {
+
+        await Swal.fire({
+
+          icon:
+            "success",
+
+          title:
+            "Cortesía registrada",
+
+          text:
+            "La venta fue convertida en cortesía y se registró el movimiento.",
+
+          timer:
+            2500,
+
+          showConfirmButton:
+            false,
+
+        });
+
+        await queryClient
+          .invalidateQueries({
+
+            queryKey: [
+              "ventas-con-detalles",
+              idPerfil,
+            ],
+
+          });
+
+        await queryClient
+          .invalidateQueries({
+
+            queryKey: [
+              "movimientos",
+            ],
+
+          });
+
+      },
+
+    onError:
+      async (
+        error
+      ) => {
+
+        await Swal.fire({
+
+          icon:
+            "error",
+
+          title:
+            "Error con la cortesía",
+
+          text:
+            error instanceof Error
+              ? error.message
+              : "No se pudo registrar la cortesía",
+
+        });
+
+      },
 
   });
 
@@ -110,355 +1017,287 @@ export default function VentaDetailView() {
       HANDLE ANULAR
   ========================= */
 
-  const handleAnularVenta = async (
-    ventaId?: string
-  ) => {
+  const handleAnularVenta =
+    async (
+      venta:
+        VentaConDetallesType
+    ) => {
 
-    if (!ventaId) {
+      if (!venta._id) {
 
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se encontró el ID de la venta",
-      });
+        await Swal.fire({
 
-      return;
+          icon:
+            "error",
 
-    }
+          title:
+            "Venta inválida",
 
-    const result =
-      await Swal.fire({
-        icon: "warning",
-        title: "¿Anular venta?",
-        text: "Esta acción cambiará el estado de la venta a anulado.",
-        showCancelButton: true,
-        confirmButtonText: "Sí, anular",
-        cancelButtonText: "Cancelar",
-        confirmButtonColor: "#dc2626",
-      });
+          text:
+            "No se encontró el ID de la venta.",
 
-    if (!result.isConfirmed) {
-      return;
-    }
+        });
 
-    anularVenta({
+        return;
 
-      id:
-        ventaId,
-
-      eliminadoPor:
-        perfil?.nombres || "sistema",
-
-    });
-
-  };
-
-  /* =========================
-    MARCAR VENTA COMO CORTESIA
-========================= */
-
-  const {
-    mutate: marcarCortesia,
-    isPending: marcandoCortesia,
-  } = useMutation({
-
-    mutationFn:
-      cortesiaVentaById,
-
-    onSuccess: () => {
-
-      Swal.fire({
-        icon: "success",
-        title: "Venta en cortesía",
-        text: "La venta fue marcada como cortesía correctamente",
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: [
-          "ventas-con-detalles",
-          idPerfil,
-        ],
-      });
-
-    },
-
-    onError: (error) => {
-
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Error al marcar la venta como cortesía",
-      });
-
-    },
-
-  });
-  /* =========================
-      HANDLE CORTESIA
-  ========================= */
-
-  const handleCortesiaVenta = async (
-    ventaId?: string
-  ) => {
-
-    if (!ventaId) {
-
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se encontró el ID de la venta",
-      });
-
-      return;
-
-    }
-
-    const result =
-      await Swal.fire({
-        icon: "question",
-        title: "¿Marcar como cortesía?",
-        text: "Esta acción cambiará el estado de la venta a cortesía.",
-        showCancelButton: true,
-        confirmButtonText: "Sí, cortesía",
-        cancelButtonText: "Cancelar",
-        confirmButtonColor: "#eab308",
-      });
-
-    if (!result.isConfirmed) {
-      return;
-    }
-
-    marcarCortesia({
-
-      id:
-        ventaId,
-
-      eliminadoPor:
-        perfil?.nombres || "sistema",
-
-    });
-
-  };
-  /* =========================
-      HELPERS
-  ========================= */
-
-  const formatearFecha = (
-    fecha?: string | null
-  ) => {
-
-    if (!fecha) {
-      return "Sin fecha";
-    }
-
-    return new Date(fecha).toLocaleString(
-      "es-BO",
-      {
-        dateStyle: "short",
-        timeStyle: "short",
       }
-    );
 
-  };
+      const resultado =
+        await Swal.fire({
 
-  const formatearMetodoPago = (
-    metodo: string
-  ) => {
+          icon:
+            "warning",
 
-    if (metodo === "efectivo") {
-      return "Efectivo";
-    }
+          title:
+            "¿Anular esta venta?",
 
-    if (metodo === "qr") {
-      return "QR";
-    }
+          html: `
+            <p>La venta será anulada.</p>
+            <p>Los productos volverán al inventario.</p>
+            <p>También se registrarán los movimientos de reversión.</p>
+          `,
 
-    if (metodo === "tarjeta") {
-      return "Tarjeta";
-    }
+          showCancelButton:
+            true,
 
-    if (metodo === "transferencia") {
-      return "Transferencia";
-    }
+          confirmButtonText:
+            "Sí, anular",
 
-    if (metodo === "mixto") {
-      return "Mixto";
-    }
+          cancelButtonText:
+            "Cancelar",
 
-    return metodo;
+          confirmButtonColor:
+            "#dc2626",
 
-  };
+        });
 
-  const getEstadoStyle = (
-    estado: string
-  ) => {
+      if (
+        !resultado.isConfirmed
+      ) {
+        return;
+      }
 
-    if (
-      estado === "anulado" ||
-      estado === "eliminado"
-    ) {
-      return {
-        texto: "Anulado",
-        className:
-          "bg-red-500/10 text-red-400 border-red-500/30",
-        icon: XCircle,
-      };
-    }
+      anularVenta({
 
-    if (estado === "cortesia") {
-      return {
-        texto: "Cortesía",
-        className:
-          "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
-        icon: CheckCircle,
-      };
-    }
+        venta,
 
-    if (
-      estado === "pagado" ||
-      estado === "registrado" ||
-      estado === "completado"
-    ) {
-      return {
-        texto: estado,
-        className:
-          "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-        icon: CheckCircle,
-      };
-    }
+        eliminadoPor:
+          nombreUsuario,
 
-    return {
-      texto: estado || "Registrado",
-      className:
-        "bg-blue-500/10 text-blue-400 border-blue-500/30",
-      icon: ReceiptText,
-    };
-
-  };
-
-  /* =========================
-      BUSCADOR
-  ========================= */
-
-  const ventasFiltradas = useMemo(() => {
-
-    const ventas =
-      data?.ventas || [];
-
-    const searchValue =
-      search.trim().toLowerCase();
-
-    if (!searchValue) {
-      return ventas;
-    }
-
-    return ventas.filter((venta) => {
-
-      const productosTexto =
-        venta.detalles
-          .map((detalle) =>
-            `
-              ${detalle.producto?.nombre || ""}
-              ${detalle.producto?.marca || ""}
-              ${detalle.producto?.descripcion || ""}
-            `
-          )
-          .join(" ");
-
-      const texto = `
-        ${venta.numeroVenta || ""}
-        ${venta.estado || ""}
-        ${venta.metodoPago || ""}
-        ${venta.observacion || ""}
-        ${venta.total || ""}
-        ${venta.subtotal || ""}
-        
-        ${venta.creadoPor || ""}
-        ${venta.comanda?.numeroComanda || ""}
-        ${venta.caja?.nombre || ""}
-        ${venta.caja?.descripcion || ""}
-        ${productosTexto}
-      `.toLowerCase();
-
-      return texto.includes(
-        searchValue
-      );
-
-    });
-
-  }, [data, search]);
-
-  /* =========================
-      TOTALES GENERALES
-  ========================= */
-
-  const resumen = useMemo(() => {
-
-    const ventas =
-      data?.ventas || [];
-
-    const ventasValidas =
-      ventas.filter(
-        (venta) =>
-          venta.estado !== "anulado" &&
-          venta.estado !== "eliminado"
-      );
-
-    const totalVentas =
-      ventasValidas.reduce(
-        (acc, venta) =>
-          acc + Number(venta.total || 0),
-        0
-      );
-
-
-
-    return {
-      cantidad:
-        ventas.length,
-
-      cantidadValidas:
-        ventasValidas.length,
-
-      totalVentas,
-
+      });
 
     };
 
-  }, [data]);
-
   /* =========================
-      CERRAR SESION
+      HANDLE CORTESÍA
   ========================= */
 
-  const cerrarSesion = () => {
+  const handleCortesiaVenta =
+    async (
+      venta:
+        VentaConDetallesType
+    ) => {
 
-    localStorage.removeItem(
-      "AUTH_TOKEN"
-    );
+      if (!venta._id) {
 
-    navigate("/auth/login");
+        await Swal.fire({
 
-  };
+          icon:
+            "error",
+
+          title:
+            "Venta inválida",
+
+          text:
+            "No se encontró el ID de la venta.",
+
+        });
+
+        return;
+
+      }
+
+      const resultado =
+        await Swal.fire({
+
+          icon:
+            "question",
+
+          title:
+            "¿Convertir en cortesía?",
+
+          text:
+            "La venta dejará de considerarse ingreso, pero los productos permanecerán descontados del inventario.",
+
+          input:
+            "textarea",
+
+          inputLabel:
+            "Motivo de la cortesía",
+
+          inputPlaceholder:
+            "Ejemplo: cortesía autorizada por gerencia",
+
+          inputValue:
+            "Cortesía autorizada",
+
+          showCancelButton:
+            true,
+
+          confirmButtonText:
+            "Confirmar cortesía",
+
+          cancelButtonText:
+            "Cancelar",
+
+          confirmButtonColor:
+            "#d97706",
+
+          inputValidator:
+            (
+              value
+            ) => {
+
+              if (
+                !value?.trim()
+              ) {
+
+                return "Debe indicar el motivo de la cortesía.";
+
+              }
+
+              return undefined;
+
+            },
+
+        });
+
+      if (
+        !resultado.isConfirmed
+      ) {
+        return;
+      }
+
+      marcarCortesia({
+
+        venta,
+
+        actualizadoPor:
+          nombreUsuario,
+
+        observacion:
+          String(
+            resultado.value ||
+            "Cortesía autorizada"
+          ).trim(),
+
+      });
+
+    };
+
+  /* =========================
+      ESTADO VISUAL
+  ========================= */
+
+  function obtenerEstadoVisual(
+    estado:
+      string
+  ) {
+
+    if (
+      estado ===
+      "pagado"
+    ) {
+
+      return {
+        texto:
+          "Pagado",
+
+        clases:
+          "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+
+        icono:
+          CheckCircle2,
+      };
+
+    }
+
+    if (
+      estado ===
+      "cortesia"
+    ) {
+
+      return {
+        texto:
+          "Cortesía",
+
+        clases:
+          "border-amber-500/30 bg-amber-500/10 text-amber-400",
+
+        icono:
+          Gift,
+      };
+
+    }
+
+    if (
+      estado ===
+      "anulado"
+    ) {
+
+      return {
+        texto:
+          "Anulado",
+
+        clases:
+          "border-red-500/30 bg-red-500/10 text-red-400",
+
+        icono:
+          XCircle,
+      };
+
+    }
+
+    return {
+      texto:
+        estado,
+
+      clases:
+        "border-slate-500/30 bg-slate-500/10 text-slate-400",
+
+      icono:
+        ReceiptText,
+    };
+
+  }
 
   /* =========================
       LOADING
   ========================= */
 
   if (
-    loadingAuth ||
-    isLoading
+    loadingPerfil ||
+    loadingVentas
   ) {
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <p className="text-lg font-bold">
-          Cargando ventas...
-        </p>
+
+      <div className="flex min-h-[60vh] items-center justify-center">
+
+        <div className="text-center">
+
+          <RefreshCcw className="mx-auto h-12 w-12 animate-spin text-fuchsia-400" />
+
+          <p className="mt-4 font-bold text-slate-300">
+
+            Cargando ventas...
+
+          </p>
+
+        </div>
+
       </div>
+
     );
 
   }
@@ -470,508 +1309,701 @@ export default function VentaDetailView() {
   if (isError) {
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <p className="text-lg font-bold text-red-400">
-          Error al cargar ventas
-        </p>
+
+      <div className="flex min-h-[60vh] items-center justify-center p-5">
+
+        <div className="max-w-lg rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-center">
+
+          <XCircle className="mx-auto h-12 w-12 text-red-400" />
+
+          <h2 className="mt-4 text-2xl font-black text-red-400">
+
+            Error al cargar ventas
+
+          </h2>
+
+          <p className="mt-3 text-slate-300">
+
+            {error instanceof Error
+              ? error.message
+              : "No se pudieron cargar las ventas"}
+
+          </p>
+
+        </div>
+
       </div>
+
     );
 
   }
 
   return (
 
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-[#070B14] p-3 text-white sm:p-5 lg:p-7">
 
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-emerald-500/20 bg-slate-950/95 backdrop-blur">
+      {/* =========================
+          HEADER
+      ========================= */}
 
-        <div className="flex h-20 items-center justify-between px-6">
+      <div className="mb-7">
 
-          <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
 
-            <button
-              type="button"
-              className="rounded-xl border border-emerald-500/30 p-3 text-emerald-400 hover:bg-emerald-500/10"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-fuchsia-500/30 bg-fuchsia-500/10">
 
-            <div className="flex items-center gap-3">
-
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600/20 shadow-[0_0_25px_#10b981]">
-
-                <DollarSign className="h-7 w-7 text-emerald-400" />
-
-              </div>
-
-              <div>
-
-                <h1 className="text-2xl font-black text-emerald-400">
-                  {perfil?.nombres}
-                </h1>
-
-                <p className="text-xs tracking-[3px] text-slate-400">
-                  LISTA DE VENTAS
-                </p>
-
-              </div>
-
-            </div>
+            <ReceiptText className="h-7 w-7 text-fuchsia-400" />
 
           </div>
 
-          <button
-            type="button"
-            onClick={cerrarSesion}
-            className="flex items-center gap-2 rounded-2xl bg-red-500/10 px-5 py-3 font-bold text-red-400 hover:bg-red-500/20"
-          >
-            <LogOut className="h-5 w-5" />
-            Salir
-          </button>
+          <div>
+
+            <h1 className="text-3xl font-black text-white">
+
+              Mis ventas
+
+            </h1>
+
+            <p className="mt-1 text-sm text-slate-400">
+
+              Consulta, anula o convierte tus ventas en cortesía
+
+            </p>
+
+          </div>
 
         </div>
 
-      </header>
+      </div>
 
-      {/* CONTENIDO */}
-      <main className="p-6">
+      {/* =========================
+          RESUMEN
+      ========================= */}
 
-        <section className="rounded-3xl border border-emerald-500/20 bg-slate-900 p-6 shadow-2xl">
+      <div className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-          {/* CABECERA */}
-          <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="rounded-3xl border border-emerald-500/20 bg-[#0B1120] p-5">
+
+          <div className="flex items-center justify-between">
 
             <div>
 
-              <h2 className="text-3xl font-black text-white">
-                Ventas Registradas
-              </h2>
+              <p className="text-sm text-slate-400">
 
-              <p className="mt-1 text-sm text-slate-400">
-                Perfil:{" "}
-                <span className="font-bold text-emerald-400">
-                  {perfil?.nombres ||
-                    data?.perfil?.nombres ||
-                    "Sin perfil"}
-                </span>
+                Ventas pagadas
+
               </p>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Sucursal:{" "}
-                <span className="font-bold text-slate-300">
-                  {data?.sucursal?.nombreSucursal ||
-                    "Sin sucursal"}
-                </span>
+              <p className="mt-2 text-3xl font-black text-emerald-400">
+
+                {resumen.pagadas}
+
               </p>
 
             </div>
 
-            <div className="relative w-full md:w-96">
-
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-
-              <input
-                type="text"
-                value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
-                placeholder="Buscar venta..."
-                className="w-full rounded-2xl border border-slate-700 bg-slate-950 py-3 pl-12 pr-4 text-white outline-none transition focus:border-emerald-500"
-              />
-
-            </div>
+            <CircleDollarSign className="h-9 w-9 text-emerald-400" />
 
           </div>
 
-          {/* RESUMEN */}
-          <div className="mb-6 grid gap-4 md:grid-cols-3">
+          <p className="mt-4 font-bold text-white">
 
-            <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
+            {formatearDinero(
+              resumen.totalPagado
+            )}
 
-              <div className="flex items-center justify-between">
+          </p>
 
-                <div>
+        </div>
 
-                  <p className="text-sm text-slate-400">
-                    Ventas
-                  </p>
+        <div className="rounded-3xl border border-amber-500/20 bg-[#0B1120] p-5">
 
-                  <p className="mt-1 text-3xl font-black text-white">
-                    {resumen.cantidad}
-                  </p>
+          <div className="flex items-center justify-between">
 
-                </div>
+            <div>
 
-                <ReceiptText className="h-8 w-8 text-emerald-400" />
+              <p className="text-sm text-slate-400">
 
-              </div>
+                Cortesías
 
-            </div>
+              </p>
 
-            <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
+              <p className="mt-2 text-3xl font-black text-amber-400">
 
-              <div className="flex items-center justify-between">
+                {resumen.cortesias}
 
-                <div>
-
-                  <p className="text-sm text-slate-400">
-                    Ventas válidas
-                  </p>
-
-                  <p className="mt-1 text-3xl font-black text-emerald-400">
-                    {resumen.cantidadValidas}
-                  </p>
-
-                </div>
-
-                <CheckCircle className="h-8 w-8 text-emerald-400" />
-
-              </div>
+              </p>
 
             </div>
 
-            <div className="rounded-3xl border border-slate-700 bg-slate-950 p-5">
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-sm text-slate-400">
-                    Total vendido
-                  </p>
-
-                  <p className="mt-1 text-3xl font-black text-emerald-400">
-                    Bs. {resumen.totalVentas.toFixed(2)}
-                  </p>
-
-                </div>
-
-                <DollarSign className="h-8 w-8 text-emerald-400" />
-
-              </div>
-
-            </div>
+            <Gift className="h-9 w-9 text-amber-400" />
 
           </div>
 
-          {/* LISTA */}
-          {ventasFiltradas.length === 0 ? (
+          <p className="mt-4 font-bold text-white">
 
-            <div className="flex h-72 items-center justify-center rounded-3xl border border-dashed border-slate-700 text-slate-400">
-              No hay ventas registradas
+            {formatearDinero(
+              resumen.totalCortesia
+            )}
+
+          </p>
+
+        </div>
+
+        <div className="rounded-3xl border border-red-500/20 bg-[#0B1120] p-5">
+
+          <div className="flex items-center justify-between">
+
+            <div>
+
+              <p className="text-sm text-slate-400">
+
+                Ventas anuladas
+
+              </p>
+
+              <p className="mt-2 text-3xl font-black text-red-400">
+
+                {resumen.anuladas}
+
+              </p>
+
             </div>
 
-          ) : (
+            <Ban className="h-9 w-9 text-red-400" />
 
-            <div className="space-y-6">
+          </div>
 
-              {ventasFiltradas.map((venta) => {
+          <p className="mt-4 font-bold text-white">
 
-                const estadoInfo =
-                  getEstadoStyle(
-                    venta.estado
-                  );
+            {formatearDinero(
+              resumen.totalAnulado
+            )}
 
-                const EstadoIcon =
-                  estadoInfo.icon;
+          </p>
 
-                return (
+        </div>
 
-                  <article
-                    key={venta._id}
-                    className="overflow-hidden rounded-3xl border border-slate-700 bg-slate-950"
-                  >
+        <div className="rounded-3xl border border-cyan-500/20 bg-[#0B1120] p-5">
 
-                    {/* CABECERA VENTA */}
-                    <div className="flex flex-col gap-4 border-b border-slate-700 p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center justify-between">
 
-                      <div className="flex items-start gap-4">
+            <div>
 
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600/20">
+              <p className="text-sm text-slate-400">
 
-                          <CreditCard className="h-7 w-7 text-emerald-400" />
+                Sucursal
 
-                        </div>
+              </p>
 
-                        <div>
+              <p className="mt-2 text-lg font-black text-cyan-400">
 
-                          <h3 className="text-xl font-black text-white">
-                            Venta{" "}
-                            {venta.numeroVenta ||
-                              "Sin número"}
-                          </h3>
+                {data?.sucursal
+                  ?.nombreSucursal ||
+                  "Sin sucursal"}
 
-                          <p className="text-sm text-slate-400">
-                            Comanda:{" "}
-                            <span className="font-bold text-slate-300">
-                              {venta.comanda?.numeroComanda ||
-                                "Sin comanda"}
-                            </span>
-                          </p>
+              </p>
 
-                          <p className="text-sm text-slate-500">
+            </div>
+
+            <Store className="h-9 w-9 text-cyan-400" />
+
+          </div>
+
+          <p className="mt-4 text-sm text-slate-400">
+
+            {data?.perfil
+              ?.nombres ||
+              perfil?.nombres ||
+              "Usuario"}
+
+          </p>
+
+        </div>
+
+      </div>
+
+      {/* =========================
+          BUSCADOR
+      ========================= */}
+
+      <div className="mb-6 rounded-3xl border border-slate-800 bg-[#0B1120] p-4">
+
+        <div className="relative">
+
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+
+          <input
+            type="text"
+            value={search}
+            onChange={(
+              event
+            ) =>
+              setSearch(
+                event.target.value
+              )
+            }
+            placeholder="Buscar venta, producto, comanda o método de pago..."
+            className="w-full rounded-2xl border border-slate-700 bg-slate-950 py-3 pl-12 pr-4 text-white outline-none transition focus:border-fuchsia-500"
+          />
+
+        </div>
+
+      </div>
+
+      {/* =========================
+          LISTA
+      ========================= */}
+
+      {ventasFiltradas.length ===
+      0 ? (
+
+        <div className="rounded-3xl border border-dashed border-slate-700 bg-[#0B1120] p-12 text-center">
+
+          <ReceiptText className="mx-auto h-14 w-14 text-slate-600" />
+
+          <h2 className="mt-4 text-xl font-black text-white">
+
+            No existen ventas
+
+          </h2>
+
+          <p className="mt-2 text-slate-400">
+
+            No se encontraron ventas para mostrar.
+
+          </p>
+
+        </div>
+
+      ) : (
+
+        <div className="space-y-6">
+
+          {ventasFiltradas.map(
+            (
+              venta
+            ) => {
+
+              const estadoVisual =
+                obtenerEstadoVisual(
+                  venta.estado
+                );
+
+              const EstadoIcon =
+                estadoVisual.icono;
+
+              return (
+
+                <article
+                  key={
+                    venta._id ||
+                    venta.numeroVenta
+                  }
+                  className="overflow-hidden rounded-3xl border border-slate-800 bg-[#0B1120] shadow-xl"
+                >
+
+                  {/* CABECERA */}
+
+                  <div className="flex flex-col gap-5 border-b border-slate-800 p-5 lg:flex-row lg:items-center lg:justify-between">
+
+                    <div className="flex items-start gap-4">
+
+                      <div className="flex h-14 w-14 min-w-14 items-center justify-center rounded-2xl bg-fuchsia-500/10">
+
+                        <ReceiptText className="h-7 w-7 text-fuchsia-400" />
+
+                      </div>
+
+                      <div>
+
+                        <h2 className="text-xl font-black text-white">
+
+                          {venta.numeroVenta ||
+                            "Venta sin número"}
+
+                        </h2>
+
+                        <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-400">
+
+                          <span className="inline-flex items-center gap-2">
+
+                            <CalendarDays className="h-4 w-4" />
+
                             {formatearFecha(
-                              venta.fechaCreacion ||
-                              venta.fechaVenta
+                              venta.fechaVenta ||
+                              venta.fechaCreacion
                             )}
-                          </p>
+
+                          </span>
+
+                          <span className="inline-flex items-center gap-2">
+
+                            <UserRound className="h-4 w-4" />
+
+                            {venta.creadoPor ||
+                              nombreUsuario}
+
+                          </span>
+
+                          <span className="inline-flex items-center gap-2">
+
+                            <Banknote className="h-4 w-4" />
+
+                            {venta.metodoPago}
+
+                          </span>
 
                         </div>
-
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-3">
-
-                        <span
-                          className={`
-                            inline-flex
-                            items-center
-                            gap-2
-                            rounded-2xl
-                            border
-                            px-4
-                            py-2
-                            text-sm
-                            font-black
-                            ${estadoInfo.className}
-                          `}
-                        >
-                          <EstadoIcon className="h-4 w-4" />
-                          {estadoInfo.texto}
-                        </span>
-
-                        {venta.estado !== "anulado" &&
-                          venta.estado !== "eliminado" &&
-                          venta.estado !== "cortesia" && (
-
-                            <>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleCortesiaVenta(
-                                    venta._id
-                                  )
-                                }
-                                disabled={
-                                  marcandoCortesia
-                                }
-                                className="inline-flex items-center gap-2 rounded-2xl bg-yellow-500 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-white"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                                Cortesía
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleAnularVenta(
-                                    venta._id
-                                  )
-                                }
-                                disabled={
-                                  anulandoVenta
-                                }
-                                className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Anular
-                              </button>
-
-                            </>
-
-                          )}
 
                       </div>
 
                     </div>
 
-                    {/* INFO */}
-                    <div className="grid gap-4 border-b border-slate-800 p-5 md:grid-cols-3">
+                    <div className="flex flex-wrap items-center gap-3">
 
-                      <div className="rounded-2xl bg-slate-900 p-4">
+                      <span
+                        className={`
+                          inline-flex
+                          items-center
+                          gap-2
+                          rounded-2xl
+                          border
+                          px-4
+                          py-2
+                          text-sm
+                          font-black
+                          ${estadoVisual.clases}
+                        `}
+                      >
 
-                        <p className="text-xs text-slate-500">
-                          Caja
-                        </p>
+                        <EstadoIcon className="h-4 w-4" />
 
-                        <p className="mt-1 font-black text-white">
-                          {venta.caja?.nombre ||
-                            venta.caja?.descripcion ||
-                            "Sin caja"}
-                        </p>
+                        {estadoVisual.texto}
 
-                      </div>
+                      </span>
 
-                      <div className="rounded-2xl bg-slate-900 p-4">
+                      {venta.estado ===
+                        "pagado" && (
 
-                        <p className="text-xs text-slate-500">
-                          Método de pago
-                        </p>
+                        <>
 
-                        <p className="mt-1 font-black text-white">
-                          {formatearMetodoPago(
-                            venta.metodoPago
-                          )}
-                        </p>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleCortesiaVenta(
+                                venta
+                              )
+                            }
+                            disabled={
+                              marcandoCortesia ||
+                              anulandoVenta
+                            }
+                            className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2 font-black text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
 
-                      </div>
+                            <Gift className="h-4 w-4" />
 
-                      <div className="rounded-2xl bg-slate-900 p-4">
+                            Cortesía
 
-                        <p className="text-xs text-slate-500">
-                          Observación
-                        </p>
+                          </button>
 
-                        <p className="mt-1 font-black text-white">
-                          {venta.observacion ||
-                            "Sin observación"}
-                        </p>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleAnularVenta(
+                                venta
+                              )
+                            }
+                            disabled={
+                              anulandoVenta ||
+                              marcandoCortesia
+                            }
+                            className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2 font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
 
-                      </div>
+                            <Ban className="h-4 w-4" />
 
-                    </div>
+                            Anular
 
-                    {/* DETALLES */}
-                    <div className="p-5">
+                          </button>
 
-                      {venta.detalles.length === 0 ? (
-
-                        <div className="rounded-2xl border border-dashed border-slate-700 p-5 text-center text-slate-400">
-                          Esta venta no tiene detalles registrados
-                        </div>
-
-                      ) : (
-
-                        <div className="overflow-x-auto">
-
-                          <table className="w-full border-collapse">
-
-                            <thead>
-
-                              <tr className="border-b border-slate-700 text-left text-sm text-slate-400">
-
-                                <th className="pb-3">
-                                  Producto
-                                </th>
-
-                                <th className="pb-3">
-                                  Cantidad
-                                </th>
-
-                                <th className="pb-3">
-                                  Precio
-                                </th>
-
-                                <th className="pb-3 text-right">
-                                  Subtotal
-                                </th>
-
-                              </tr>
-
-                            </thead>
-
-                            <tbody>
-
-                              {venta.detalles.map((detalle) => (
-
-                                <tr
-                                  key={detalle._id}
-                                  className="border-b border-slate-800 text-sm"
-                                >
-
-                                  <td className="py-4">
-
-                                    <p className="font-black text-white">
-                                      {detalle.producto?.nombre ||
-                                        "Producto sin nombre"}
-                                    </p>
-
-                                    <p className="text-xs text-slate-500">
-                                      {detalle.producto?.marca ||
-                                        "Sin marca"}
-                                    </p>
-
-                                  </td>
-
-                                  <td className="py-4 font-bold text-slate-300">
-                                    {detalle.cantidad}
-                                  </td>
-
-                                  <td className="py-4 font-bold text-slate-300">
-                                    Bs.{" "}
-                                    {Number(
-                                      detalle.precioUnitario
-                                    ).toFixed(2)}
-                                  </td>
-
-                                  <td className="py-4 text-right font-black text-emerald-400">
-                                    Bs.{" "}
-                                    {Number(
-                                      detalle.subtotal
-                                    ).toFixed(2)}
-                                  </td>
-
-                                </tr>
-
-                              ))}
-
-                            </tbody>
-
-                          </table>
-
-                        </div>
+                        </>
 
                       )}
 
                     </div>
 
-                    {/* TOTAL */}
-                    <div className="grid gap-4 border-t border-slate-700 bg-slate-900 px-5 py-4 md:grid-cols-3">
+                  </div>
 
-                      <div>
+                  {/* DATOS */}
 
-                        <p className="text-sm text-slate-400">
-                          Subtotal
-                        </p>
+                  <div className="grid gap-4 border-b border-slate-800 p-5 sm:grid-cols-2 lg:grid-cols-4">
 
-                        <p className="text-xl font-black text-white">
-                          Bs. {Number(venta.subtotal).toFixed(2)}
-                        </p>
+                    <div className="rounded-2xl bg-slate-950 p-4">
 
-                      </div>
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
 
+                        Comanda
 
+                      </p>
 
-                      <div className="text-left md:text-right">
+                      <p className="mt-1 font-black text-white">
 
-                        <p className="text-sm text-slate-400">
-                          Total Venta
-                        </p>
+                        {venta.comanda
+                          ?.numeroComanda ||
+                          "Sin comanda"}
 
-                        <p className="text-3xl font-black text-emerald-400">
-                          Bs. {Number(venta.total).toFixed(2)}
-                        </p>
-
-                      </div>
+                      </p>
 
                     </div>
 
-                  </article>
+                    <div className="rounded-2xl bg-slate-950 p-4">
 
-                );
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
 
-              })}
+                        Caja
 
-            </div>
+                      </p>
 
+                      <p className="mt-1 font-black text-white">
+
+                        {venta.caja
+                          ?.nombre ||
+                          "Sin caja"}
+
+                      </p>
+
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-950 p-4">
+
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
+
+                        Subtotal
+
+                      </p>
+
+                      <p className="mt-1 font-black text-cyan-400">
+
+                        {formatearDinero(
+                          venta.subtotal
+                        )}
+
+                      </p>
+
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-950 p-4">
+
+                      <p className="text-xs uppercase tracking-wider text-slate-500">
+
+                        Total
+
+                      </p>
+
+                      <p className="mt-1 text-xl font-black text-fuchsia-400">
+
+                        {formatearDinero(
+                          venta.total
+                        )}
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  {/* OBSERVACIÓN */}
+
+                  <div className="border-b border-slate-800 px-5 py-4">
+
+                    <p className="text-xs uppercase tracking-wider text-slate-500">
+
+                      Observación
+
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-300">
+
+                      {venta.observacion ||
+                        "Sin observación"}
+
+                    </p>
+
+                  </div>
+
+                  {/* PRODUCTOS */}
+
+                  <div className="p-5">
+
+                    <div className="mb-4 flex items-center gap-2">
+
+                      <Package className="h-5 w-5 text-fuchsia-400" />
+
+                      <h3 className="font-black text-white">
+
+                        Productos vendidos
+
+                      </h3>
+
+                    </div>
+
+                    {venta.detalles.length ===
+                    0 ? (
+
+                      <div className="rounded-2xl border border-dashed border-slate-700 p-5 text-center text-slate-400">
+
+                        La venta no tiene detalles registrados.
+
+                      </div>
+
+                    ) : (
+
+                      <div className="overflow-x-auto">
+
+                        <table className="min-w-[800px] w-full">
+
+                          <thead>
+
+                            <tr className="border-b border-slate-700 text-left text-xs uppercase tracking-wider text-slate-500">
+
+                              <th className="pb-3 pr-4">
+                                Producto
+                              </th>
+
+                              <th className="pb-3 pr-4 text-center">
+                                Cantidad
+                              </th>
+
+                              <th className="pb-3 pr-4 text-right">
+                                Precio
+                              </th>
+
+                              <th className="pb-3 pr-4 text-right">
+                                Costo
+                              </th>
+
+                              <th className="pb-3 text-right">
+                                Subtotal
+                              </th>
+
+                            </tr>
+
+                          </thead>
+
+                          <tbody>
+
+                            {venta.detalles.map(
+                              (
+                                detalle,
+                                index
+                              ) => (
+
+                                <tr
+                                  key={
+                                    detalle._id ||
+                                    `${venta._id}-${index}`
+                                  }
+                                  className="border-b border-slate-800"
+                                >
+
+                                  <td className="py-4 pr-4">
+
+                                    <div className="flex items-center gap-3">
+
+                                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10">
+
+                                        <Box className="h-5 w-5 text-cyan-400" />
+
+                                      </div>
+
+                                      <div>
+
+                                        <p className="font-black text-white">
+
+                                          {detalle
+                                            .producto
+                                            ?.nombre ||
+                                            "Producto"}
+
+                                        </p>
+
+                                        <p className="text-xs text-slate-500">
+
+                                          {detalle
+                                            .producto
+                                            ?.marca ||
+                                            "Sin marca"}
+
+                                        </p>
+
+                                      </div>
+
+                                    </div>
+
+                                  </td>
+
+                                  <td className="py-4 pr-4 text-center font-black text-white">
+
+                                    {Number(
+                                      detalle.cantidad ||
+                                      0
+                                    )}
+
+                                  </td>
+
+                                  <td className="py-4 pr-4 text-right text-slate-300">
+
+                                    {formatearDinero(
+                                      detalle
+                                        .precioUnitario
+                                    )}
+
+                                  </td>
+
+                                  <td className="py-4 pr-4 text-right text-slate-400">
+
+                                    {formatearDinero(
+                                      detalle
+                                        .costoUnitario
+                                    )}
+
+                                  </td>
+
+                                  <td className="py-4 text-right font-black text-fuchsia-400">
+
+                                    {formatearDinero(
+                                      detalle.subtotal
+                                    )}
+
+                                  </td>
+
+                                </tr>
+
+                              )
+                            )}
+
+                          </tbody>
+
+                        </table>
+
+                      </div>
+
+                    )}
+
+                  </div>
+
+                </article>
+
+              );
+
+            }
           )}
 
-        </section>
+        </div>
 
-      </main>
+      )}
 
     </div>
 

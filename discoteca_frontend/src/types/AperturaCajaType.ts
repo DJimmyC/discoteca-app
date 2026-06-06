@@ -1,283 +1,131 @@
+// src/types/AperturaCajaType.ts
+
 import { z } from "zod";
 
-/* =========================
-    PERFIL POPULATE
-========================= */
-
-export const PerfilPopulateSchema =
+export const PerfilAperturaSchema =
   z.object({
+    _id: z.string(),
+    nombres: z.string().nullable().optional(),
+    apellidos: z.string().nullable().optional(),
+    email: z.string().nullable().optional(),
+  }).passthrough();
 
-    _id:
-      z.string(),
-
-
-    idRol:
-      z.string().optional(),
-
-    idSucursal:
-      z.string().optional(),
-
-    nombres:
-      z.string().optional(),
-
-    apellidos:
-      z.string().optional(),
-
-    edad:
-      z.number().optional(),
-
-    sexo:
-      z.string().optional(),
-
-    ci:
-      z.string().optional(),
-
-    telefono:
-      z.string().optional(),
-
-    email:
-      z.string().optional(),
-
-    estado:
-      z.boolean().optional(),
-
-    creadoPor:
-      z.string().optional(),
-
-    actualizadoPor:
-      z.string().optional(),
-
-    eliminadoPor:
-      z.string().optional(),
-
-    fechaCreacion:
-      z.string()
-        .nullable()
-        .optional(),
-
-    fechaActualizacion:
-      z.string()
-        .nullable()
-        .optional(),
-
-    fechaEliminado:
-      z.string()
-        .nullable()
-        .optional(),
-
-  });
-
-/* =========================
-    CAJA POPULATE
-========================= */
-
-export const CajaPopulateSchema =
+export const SucursalAperturaSchema =
   z.object({
+    _id: z.string(),
+    nombreSucursal: z.string().nullable().optional(),
+    ubicacionSucursal: z.string().nullable().optional(),
+  }).passthrough();
 
-    _id:
+export const CajaAperturaSchema =
+  z.object({
+    _id: z.string(),
+    idSucursal: z.union([
       z.string(),
+      SucursalAperturaSchema,
+      z.null(),
+    ]).optional(),
+    nombre: z.string().nullable().optional(),
+    descripcion: z.string().nullable().optional(),
+    estado: z.boolean().optional(),
+  }).passthrough();
 
-    idSucursal:
-      z.string().optional(),
-
-    nombre:
-      z.string(),
-
-    descripcion:
-      z.union([
-
-        z.string(),
-
-        z.literal(""),
-
-        z.null(),
-
-        z.undefined(),
-
-      ]),
-
-    estado:
-      z.boolean().optional(),
-
-    creadoPor:
-      z.string().optional(),
-
-    actualizadoPor:
-      z.string().optional(),
-
-    eliminadoPor:
-      z.string().optional(),
-
-    fechaCreacion:
-      z.string()
-        .nullable()
-        .optional(),
-
-    fechaActualizacion:
-      z.string()
-        .nullable()
-        .optional(),
-
-    fechaEliminado:
-      z.string()
-        .nullable()
-        .optional(),
-
-  });
-
-/* =========================
-    APERTURA CAJA
-========================= */
+export const EstadoAperturaCajaSchema =
+  z.enum([
+    "abierta",
+    "cerrada",
+    "anulada",
+  ]);
 
 export const AperturaCajaSchema =
   z.object({
+    _id: z.string().optional(),
 
-    _id:
-      z.string().optional(),
+    idPerfil: z.union([
+      z.string(),
+      PerfilAperturaSchema,
+      z.null(),
+    ]),
 
-    /* =========================
-        RELACIONES
-    ========================= */
+    idSucursal: z.union([
+      z.string(),
+      SucursalAperturaSchema,
+      z.null(),
+    ]),
 
-    idPerfil:
-      z.union([
+    idCaja: z.union([
+      z.string(),
+      CajaAperturaSchema,
+      z.null(),
+    ]),
 
-        z.string(),
-
-        PerfilPopulateSchema,
-
-        z.null(),
-
-      ]),
-
-    idCaja:
-      z.union([
-
-        z.string(),
-
-        CajaPopulateSchema,
-
-        z.null(),
-
-      ]),
-
-    /* =========================
-        DATOS
-    ========================= */
-
-    fecha:
-      z.string({
-
-        required_error:
-          "Fecha obligatoria",
-
-      }),
-
-    horaApertura:
-      z.string({
-
-        required_error:
-          "Hora obligatoria",
-
-      }).regex(
-
-        /^([0-1]\d|2[0-3]):([0-5]\d)$/,
-
-        "Formato inválido HH:mm"
-
-      ),
+    fechaApertura:
+      z.string(),
 
     montoInicial:
-      z.number({
-
-        required_error:
-          "Monto inicial obligatorio",
-
-      }).min(
-
-        0,
-
-        "El monto no puede ser negativo"
-
-      ),
-
-    observacion:
-      z.union([
-
-        z.string(),
-
-        z.literal(""),
-
-        z.null(),
-
-        z.undefined(),
-
-      ]),
+      z.coerce.number().min(0),
 
     estado:
-      z.boolean().optional(),
+      EstadoAperturaCajaSchema,
 
-    /* =========================
-        AUDITORIA
-    ========================= */
+    observacion:
+      z.string().nullable().optional(),
 
     creadoPor:
-      z.string().optional(),
+      z.string().nullable().optional(),
 
     actualizadoPor:
-      z.string().optional(),
+      z.string().nullable().optional(),
 
     eliminadoPor:
-      z.string().optional(),
+      z.string().nullable().optional(),
 
     fechaCreacion:
-      z.string()
-        .nullable()
-        .optional(),
+      z.string().nullable().optional(),
 
     fechaActualizacion:
-      z.string()
-        .nullable()
-        .optional(),
+      z.string().nullable().optional(),
 
     fechaEliminado:
-      z.string()
-        .nullable()
-        .optional(),
-
-  });
-
-/* =========================
-    ARRAY
-========================= */
+      z.string().nullable().optional(),
+  }).passthrough();
 
 export const AperturaCajaArraySchema =
-  z.array(
-    AperturaCajaSchema
-  );
+  z.array(AperturaCajaSchema);
 
-/* =========================
-    TYPES
-========================= */
+export const CreateAperturaCajaResponseSchema =
+  z.object({
+    message: z.string(),
+    apertura: AperturaCajaSchema,
+  }).passthrough();
+
+export type EstadoAperturaCaja =
+  z.infer<typeof EstadoAperturaCajaSchema>;
 
 export type AperturaCajaType =
-  z.infer<
-    typeof AperturaCajaSchema
-  >;
+  z.infer<typeof AperturaCajaSchema>;
 
-export type AperturaCajaForm =
-  Pick<
+export type AperturaCajaForm = {
+  idPerfil: string;
+  idCaja: string;
+  fechaApertura: string;
+  montoInicial: number;
+  observacion?: string;
+  creadoPor?: string;
+};
 
-    AperturaCajaType,
+export type UpdateAperturaCajaForm = {
+  montoInicial?: number;
+  observacion?: string;
+  actualizadoPor?: string;
+};
 
-    | "idPerfil"
-    | "idCaja"
-    | "fecha"
-    | "horaApertura"
-    | "montoInicial"
-    | "observacion"
-    | "estado"
-    | "creadoPor"
-    | "actualizadoPor"
+export type UpdateAperturaCajaType = {
+  aperturaCajaId: string;
+  formData: UpdateAperturaCajaForm;
+};
 
-  >;
+export type DeleteAperturaCajaType = {
+  id: string;
+  eliminadoPor?: string;
+};

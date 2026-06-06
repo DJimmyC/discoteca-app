@@ -1,26 +1,71 @@
-import { z } from "zod";
+// src/types/VentaType.ts
+
+import {
+  z,
+} from "zod";
 
 /* =========================
     OBJECT ID SAFE
 ========================= */
 
-const ObjectIdStringSchema =
+export const ObjectIdStringSchema =
   z.preprocess(
-    (val) => {
+
+    (value) => {
 
       if (
-        typeof val === "object" &&
-        val !== null &&
-        "_id" in val
+        typeof value === "object" &&
+        value !== null &&
+        "_id" in value
       ) {
-        return (val as { _id: unknown })._id;
+
+        return (
+          value as {
+            _id: unknown;
+          }
+        )._id;
+
       }
 
-      return val;
+      return value;
 
     },
+
     z.string()
+
   );
+
+/* =========================
+    MÉTODO DE PAGO
+========================= */
+
+export const MetodoPagoVentaSchema =
+  z.enum([
+
+    "efectivo",
+
+    "qr",
+
+    "transferencia",
+
+    "mixto",
+
+  ]);
+
+/* =========================
+    ESTADO DE VENTA
+========================= */
+
+export const EstadoVentaSchema =
+  z.enum([
+
+    "pagado",
+
+    "anulado",
+
+    "cortesia",
+
+  ]);
 
 /* =========================
     COMANDA POPULATE
@@ -52,6 +97,11 @@ export const ComandaVentaPopulateSchema =
         .nullable()
         .optional(),
 
+    fechaCierre:
+      z.string()
+        .nullable()
+        .optional(),
+
   }).passthrough();
 
 /* =========================
@@ -66,7 +116,6 @@ export const CajaVentaPopulateSchema =
 
     nombre:
       z.string()
-        .nullable()
         .optional(),
 
     descripcion:
@@ -139,29 +188,138 @@ export const SucursalVentaPopulateSchema =
         .nullable()
         .optional(),
 
+    estado:
+      z.boolean()
+        .optional(),
+
   }).passthrough();
 
 /* =========================
-    METODO PAGO
+    PRODUCTO POPULATE
 ========================= */
 
-export const MetodoPagoSchema =
-  z.enum([
+export const ProductoVentaDetalleSchema =
+  z.object({
 
-    "efectivo",
+    _id:
+      ObjectIdStringSchema,
 
-    "qr",
+    nombre:
+      z.string()
+        .optional(),
 
-    "tarjeta",
+    descripcion:
+      z.string()
+        .nullable()
+        .optional(),
 
-    "transferencia",
+    marca:
+      z.string()
+        .nullable()
+        .optional(),
 
-    "mixto",
+    estado:
+      z.boolean()
+        .optional(),
 
-  ]);
+  }).passthrough();
 
 /* =========================
-    VENTA SCHEMA NORMAL
+    ALMACÉN POPULATE
+========================= */
+
+export const AlmacenVentaDetalleSchema =
+  z.object({
+
+    _id:
+      ObjectIdStringSchema,
+
+    nombre:
+      z.string()
+        .optional(),
+
+    descripcion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    tipo:
+      z.string()
+        .optional(),
+
+    ubicacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    estado:
+      z.boolean()
+        .optional(),
+
+  }).passthrough();
+
+/* =========================
+    INVENTARIO POPULATE
+========================= */
+
+export const InventarioVentaDetalleSchema =
+  z.object({
+
+    _id:
+      ObjectIdStringSchema,
+
+    idProducto:
+      z.union([
+
+        ObjectIdStringSchema,
+
+        ProductoVentaDetalleSchema,
+
+        z.null(),
+
+      ])
+        .optional(),
+
+    idAlmacen:
+      z.union([
+
+        ObjectIdStringSchema,
+
+        AlmacenVentaDetalleSchema,
+
+        z.null(),
+
+      ])
+        .optional(),
+
+    cantidad:
+      z.coerce
+        .number()
+        .optional(),
+
+    costoUnitario:
+      z.coerce
+        .number()
+        .optional(),
+
+    precioVenta:
+      z.coerce
+        .number()
+        .optional(),
+
+    stockMinimo:
+      z.coerce
+        .number()
+        .optional(),
+
+    estado:
+      z.boolean()
+        .optional(),
+
+  }).passthrough();
+
+/* =========================
+    VENTA SCHEMA
 ========================= */
 
 export const VentaSchema =
@@ -170,6 +328,10 @@ export const VentaSchema =
     _id:
       ObjectIdStringSchema
         .optional(),
+
+    /* =========================
+        RELACIONES
+    ========================= */
 
     idComanda:
       z.union([
@@ -180,7 +342,8 @@ export const VentaSchema =
 
         z.null(),
 
-      ]),
+      ])
+        .optional(),
 
     idCaja:
       z.union([
@@ -215,6 +378,10 @@ export const VentaSchema =
 
       ]),
 
+    /* =========================
+        DATOS DE VENTA
+    ========================= */
+
     numeroVenta:
       z.string()
         .nullable()
@@ -226,25 +393,165 @@ export const VentaSchema =
         .optional(),
 
     subtotal:
-      z.number(),
+      z.coerce
+        .number(),
 
+    descuento:
+      z.coerce
+        .number()
+        .default(0),
 
     total:
-      z.number(),
+      z.coerce
+        .number(),
 
     metodoPago:
-      MetodoPagoSchema,
+      MetodoPagoVentaSchema,
 
-    /*
-      Lo dejamos string porque tu backend no acepta "activo".
-      Así evitamos errores hasta confirmar el enum real del modelo Venta.
-    */
     estado:
-      z.string(),
+      EstadoVentaSchema,
 
     observacion:
       z.string()
         .nullable()
+        .optional(),
+
+    /* =========================
+        AUDITORÍA
+    ========================= */
+
+    fechaCreacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    creadoPor:
+      z.string()
+        .nullable()
+        .optional(),
+
+    fechaActualizacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    actualizadoPor:
+      z.string()
+        .nullable()
+        .optional(),
+
+    fechaEliminado:
+      z.string()
+        .nullable()
+        .optional(),
+
+    eliminadoPor:
+      z.string()
+        .nullable()
+        .optional(),
+
+  }).passthrough();
+
+/* =========================
+    ARRAY DE VENTAS
+========================= */
+
+export const VentaArraySchema =
+  z.array(
+    VentaSchema
+  );
+
+/* =========================
+    RESPUESTA CREAR VENTA
+========================= */
+
+export const CreateVentaResponseSchema =
+  z.object({
+
+    message:
+      z.string(),
+
+    venta:
+      VentaSchema,
+
+  }).passthrough();
+
+/* =========================
+    DETALLE DE VENTA EN REPORTE
+========================= */
+
+export const DetalleVentaDentroVentaSchema =
+  z.object({
+
+    _id:
+      ObjectIdStringSchema
+        .optional(),
+
+    idProducto:
+      z.union([
+
+        ObjectIdStringSchema,
+
+        ProductoVentaDetalleSchema,
+
+        z.null(),
+
+      ])
+        .optional(),
+
+    producto:
+      z.union([
+
+        ProductoVentaDetalleSchema,
+
+        z.null(),
+
+      ])
+        .optional(),
+
+    idInventario:
+      z.union([
+
+        ObjectIdStringSchema,
+
+        InventarioVentaDetalleSchema,
+
+        z.null(),
+
+      ])
+        .optional(),
+
+    idAlmacen:
+      z.union([
+
+        ObjectIdStringSchema,
+
+        AlmacenVentaDetalleSchema,
+
+        z.null(),
+
+      ])
+        .optional(),
+
+    cantidad:
+      z.coerce
+        .number(),
+
+    precioUnitario:
+      z.coerce
+        .number(),
+
+    costoUnitario:
+      z.coerce
+        .number()
+        .default(0),
+
+    subtotal:
+      z.coerce
+        .number(),
+
+    estado:
+      z.string()
         .optional(),
 
     creadoPor:
@@ -277,61 +584,47 @@ export const VentaSchema =
         .nullable()
         .optional(),
 
-  });
+  }).passthrough();
 
 /* =========================
-    LIST SCHEMA NORMAL
+    COMANDA RESUMEN EN VENTA
 ========================= */
 
-export const VentaListSchema =
-  VentaSchema.pick({
+export const ComandaResumenVentaSchema =
+  z.object({
 
-    _id: true,
+    _id:
+      ObjectIdStringSchema,
 
-    idComanda: true,
+    numeroComanda:
+      z.string()
+        .nullable()
+        .optional(),
 
-    idCaja: true,
+    estado:
+      z.string()
+        .nullable()
+        .optional(),
 
-    idPerfil: true,
+    observacion:
+      z.string()
+        .nullable()
+        .optional(),
 
-    idSucursal: true,
+    fechaApertura:
+      z.string()
+        .nullable()
+        .optional(),
 
-    numeroVenta: true,
-
-    fechaVenta: true,
-
-    subtotal: true,
-
-    
-
-    total: true,
-
-    metodoPago: true,
-
-    estado: true,
-
-    observacion: true,
-
-    creadoPor: true,
-
-    fechaCreacion: true,
-
-  });
+  })
+    .passthrough()
+    .nullable();
 
 /* =========================
-    ARRAY NORMAL
+    CAJA RESUMEN EN VENTA
 ========================= */
 
-export const VentaArraySchema =
-  z.array(
-    VentaListSchema
-  );
-
-/* =========================
-    PRODUCTO DETALLE VENTA
-========================= */
-
-export const ProductoDetalleVentaSchema =
+export const CajaResumenVentaSchema =
   z.object({
 
     _id:
@@ -346,83 +639,80 @@ export const ProductoDetalleVentaSchema =
         .nullable()
         .optional(),
 
-    marca:
-      z.string()
-        .nullable()
-        .optional(),
-
     estado:
       z.boolean()
         .optional(),
 
-  }).passthrough();
+  })
+    .passthrough()
+    .nullable();
 
 /* =========================
-    DETALLE DENTRO DE VENTA
+    PERFIL RESUMEN
 ========================= */
 
-export const DetalleDentroVentaSchema =
+export const PerfilResumenVentaSchema =
   z.object({
 
     _id:
-      ObjectIdStringSchema
+      ObjectIdStringSchema,
+
+    nombres:
+      z.string()
         .optional(),
 
-    producto:
-      z.union([
-
-        ProductoDetalleVentaSchema,
-
-        z.null(),
-
-      ]),
-
-    cantidad:
-      z.number(),
-
-    precioUnitario:
-      z.number(),
-
-    subtotal:
-      z.number(),
-
-    creadoPor:
+    apellidos:
       z.string()
         .nullable()
         .optional(),
 
-    fechaCreacion:
+    email:
       z.string()
         .nullable()
         .optional(),
 
-    actualizadoPor:
+    telefono:
       z.string()
         .nullable()
         .optional(),
 
-    fechaActualizacion:
+    ci:
       z.string()
         .nullable()
         .optional(),
 
-    eliminadoPor:
+  })
+    .passthrough()
+    .nullable();
+
+/* =========================
+    SUCURSAL RESUMEN
+========================= */
+
+export const SucursalResumenVentaSchema =
+  z.object({
+
+    _id:
+      ObjectIdStringSchema,
+
+    nombreSucursal:
+      z.string()
+        .optional(),
+
+    ubicacionSucursal:
       z.string()
         .nullable()
         .optional(),
 
-    fechaEliminado:
-      z.string()
-        .nullable()
-        .optional(),
-
-  });
+  })
+    .passthrough()
+    .nullable();
 
 /* =========================
     VENTA CON DETALLES
 ========================= */
 
-export const VentaConDetalleSchema =
+export const VentaConDetallesSchema =
   z.object({
 
     _id:
@@ -435,22 +725,10 @@ export const VentaConDetalleSchema =
         .optional(),
 
     comanda:
-      z.union([
-
-        ComandaVentaPopulateSchema,
-
-        z.null(),
-
-      ]),
+      ComandaResumenVentaSchema,
 
     caja:
-      z.union([
-
-        CajaVentaPopulateSchema,
-
-        z.null(),
-
-      ]),
+      CajaResumenVentaSchema,
 
     fechaVenta:
       z.string()
@@ -458,22 +736,28 @@ export const VentaConDetalleSchema =
         .optional(),
 
     subtotal:
-      z.number(),
+      z.coerce
+        .number(),
 
- 
+    descuento:
+      z.coerce
+        .number()
+        .default(0),
 
     total:
-      z.number(),
+      z.coerce
+        .number(),
 
     totalDetalles:
-      z.number()
-        .optional(),
+      z.coerce
+        .number()
+        .default(0),
 
     metodoPago:
-      MetodoPagoSchema,
+      MetodoPagoVentaSchema,
 
     estado:
-      z.string(),
+      EstadoVentaSchema,
 
     observacion:
       z.string()
@@ -512,70 +796,13 @@ export const VentaConDetalleSchema =
 
     detalles:
       z.array(
-        DetalleDentroVentaSchema
+        DetalleVentaDentroVentaSchema
       ),
 
-  });
+  }).passthrough();
 
 /* =========================
-    PERFIL RESUMEN
-========================= */
-
-export const PerfilResumenVentaSchema =
-  z.object({
-
-    _id:
-      ObjectIdStringSchema,
-
-    nombres:
-      z.string()
-        .optional(),
-
-    apellidos:
-      z.string()
-        .nullable()
-        .optional(),
-
-    email:
-      z.string()
-        .nullable()
-        .optional(),
-
-    telefono:
-      z.string()
-        .nullable()
-        .optional(),
-
-    ci:
-      z.string()
-        .nullable()
-        .optional(),
-
-  }).nullable();
-
-/* =========================
-    SUCURSAL RESUMEN
-========================= */
-
-export const SucursalResumenVentaSchema =
-  z.object({
-
-    _id:
-      ObjectIdStringSchema,
-
-    nombreSucursal:
-      z.string()
-        .optional(),
-
-    ubicacionSucursal:
-      z.string()
-        .nullable()
-        .optional(),
-
-  }).nullable();
-
-/* =========================
-    RESPUESTA VENTAS CON DETALLES POR PERFIL
+    RESPUESTA VENTAS POR PERFIL
 ========================= */
 
 export const VentasConDetallesPorPerfilSchema =
@@ -589,56 +816,38 @@ export const VentasConDetallesPorPerfilSchema =
 
     ventas:
       z.array(
-        VentaConDetalleSchema
+        VentaConDetallesSchema
       ),
 
-  });
-
-/* =========================
-    SAFE SCHEMA
-========================= */
-
-export const VentaSafeSchema =
-  VentaSchema.omit({
-
-    eliminadoPor: true,
-
-    fechaEliminado: true,
-
-  });
+  }).passthrough();
 
 /* =========================
     TYPES
 ========================= */
+
+export type MetodoPagoVenta =
+  z.infer<
+    typeof MetodoPagoVentaSchema
+  >;
+
+export type EstadoVenta =
+  z.infer<
+    typeof EstadoVentaSchema
+  >;
 
 export type VentaType =
   z.infer<
     typeof VentaSchema
   >;
 
-export type VentaListType =
+export type DetalleVentaDentroVentaType =
   z.infer<
-    typeof VentaListSchema
+    typeof DetalleVentaDentroVentaSchema
   >;
 
-export type MetodoPago =
+export type VentaConDetallesType =
   z.infer<
-    typeof MetodoPagoSchema
-  >;
-
-export type ProductoDetalleVentaType =
-  z.infer<
-    typeof ProductoDetalleVentaSchema
-  >;
-
-export type DetalleDentroVentaType =
-  z.infer<
-    typeof DetalleDentroVentaSchema
-  >;
-
-export type VentaConDetalleType =
-  z.infer<
-    typeof VentaConDetalleSchema
+    typeof VentaConDetallesSchema
   >;
 
 export type VentasConDetallesPorPerfilType =
@@ -647,51 +856,103 @@ export type VentasConDetallesPorPerfilType =
   >;
 
 /* =========================
-    FORM DATA
+    FORM PARA CREAR VENTA
 ========================= */
 
-export type VentaForm =
-  Pick<
+export type VentaForm = {
 
-    VentaType,
+  idComanda?:
+    string;
 
-    | "idComanda"
-    | "idCaja"
-    | "idPerfil"
-    | "idSucursal"
-    | "subtotal"
-    
-    | "metodoPago"
-    | "observacion"
-    | "creadoPor"
+  idCaja:
+    string;
 
-  > & {
+  idPerfil:
+    string;
 
-    /*
-      Opcional porque el backend puede manejar su default.
-      Mejor no mandarlo desde el modal si no sabemos el enum real.
-    */
-    estado?:
-      string;
+  idSucursal:
+    string;
 
-    numeroVenta?:
-      string;
+  numeroVenta?:
+    string;
 
-    fechaVenta?:
-      string;
+  fechaVenta?:
+    string;
 
-  };
+  subtotal:
+    number;
+
+  descuento?:
+    number;
+
+  /*
+    No necesitas enviar total porque
+    el backend lo calcula.
+  */
+  total?:
+    number;
+
+  metodoPago:
+    MetodoPagoVenta;
+
+  estado?:
+    EstadoVenta;
+
+  observacion?:
+    string | null;
+
+  creadoPor?:
+    string | null;
+
+};
 
 /* =========================
-    FORM DATA ALIAS
+    ALIAS FORM
 ========================= */
 
 export type VentaFormData =
   VentaForm;
 
 /* =========================
-    UPDATE TYPE
+    ACTUALIZAR VENTA
 ========================= */
+
+export type UpdateVentaForm = {
+
+  idCaja?:
+    string;
+
+  idPerfil?:
+    string;
+
+  idSucursal?:
+    string;
+
+  numeroVenta?:
+    string;
+
+  fechaVenta?:
+    string;
+
+  subtotal?:
+    number;
+
+  descuento?:
+    number;
+
+  metodoPago?:
+    MetodoPagoVenta;
+
+  estado?:
+    EstadoVenta;
+
+  observacion?:
+    string | null;
+
+  actualizadoPor?:
+    string | null;
+
+};
 
 export type UpdateVentaType = {
 
@@ -699,12 +960,12 @@ export type UpdateVentaType = {
     string;
 
   formData:
-    Partial<VentaForm>;
+    UpdateVentaForm;
 
 };
 
 /* =========================
-    DELETE TYPE
+    ELIMINAR / ANULAR
 ========================= */
 
 export type DeleteVentaType = {
@@ -713,6 +974,23 @@ export type DeleteVentaType = {
     string;
 
   eliminadoPor?:
+    string;
+
+};
+
+/* =========================
+    MARCAR COMO CORTESÍA
+========================= */
+
+export type CortesiaVentaType = {
+
+  id:
+    string;
+
+  actualizadoPor?:
+    string;
+
+  observacion?:
     string;
 
 };

@@ -7,25 +7,105 @@ import {
 } from "axios";
 
 import {
-
+  CreateDetalleSolicitudResponseSchema,
   DetalleSolicitudArraySchema,
-
   DetalleSolicitudSchema,
 
-  CreateDetalleSolicitudResponseSchema,
-
   type DetalleSolicitudForm,
-
-  type DetalleSolicitudType,
-
   type UpdateDetalleSolicitudType,
-
   type DeleteDetalleSolicitudType,
-
 } from "@/types/DetalleSolicitudType";
 
 /* =========================
-    CREAR DETALLE SOLICITUD
+    MENSAJE ERROR
+========================= */
+
+function obtenerMensajeError(
+  error: unknown,
+  mensajePredeterminado: string
+): string {
+
+  if (
+    isAxiosError(error) &&
+    error.response
+  ) {
+
+    const errorBackend =
+      error.response.data?.error;
+
+    const mensajeBackend =
+      error.response.data?.message;
+
+    if (
+      typeof errorBackend ===
+      "string"
+    ) {
+      return errorBackend;
+    }
+
+    if (
+      typeof mensajeBackend ===
+      "string"
+    ) {
+      return mensajeBackend;
+    }
+
+  }
+
+  if (
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return mensajePredeterminado;
+
+}
+
+/* =========================
+    VALIDAR DETALLE
+========================= */
+
+function validarDetalle(
+  formData: DetalleSolicitudForm
+) {
+
+  if (!formData.idSolicitud) {
+
+    throw new Error(
+      "El ID de la solicitud es obligatorio"
+    );
+
+  }
+
+  if (!formData.idProducto) {
+
+    throw new Error(
+      "El producto es obligatorio"
+    );
+
+  }
+
+  const cantidad =
+    Number(
+      formData.cantidadSolicitada
+    );
+
+  if (
+    !Number.isFinite(cantidad) ||
+    cantidad <= 0
+  ) {
+
+    throw new Error(
+      "La cantidad solicitada debe ser mayor a cero"
+    );
+
+  }
+
+}
+
+/* =========================
+    CREAR DETALLE
 ========================= */
 
 export async function createDetalleSolicitud(
@@ -34,47 +114,50 @@ export async function createDetalleSolicitud(
 
   try {
 
-    const { data } =
-      await api.post(
+    validarDetalle(
+      formData
+    );
 
-        "/detallesolicitud",
+    const {
+      data,
+    } = await api.post(
 
-        formData
+      "/detallesolicitud",
 
-      );
+      formData
+
+    );
 
     const response =
-      CreateDetalleSolicitudResponseSchema.safeParse(
-        data
-      );
+      CreateDetalleSolicitudResponseSchema
+        .safeParse(data);
 
     if (!response.success) {
+
+      console.log(
+        "RESPUESTA DETALLE:",
+        data
+      );
 
       console.log(
         response.error.format()
       );
 
-      return data;
+      throw new Error(
+        "La respuesta del detalle no coincide con el type"
+      );
 
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error creando detalle de solicitud"
+      obtenerMensajeError(
+        error,
+        "Error creando detalle de solicitud"
+      )
     );
 
   }
@@ -82,7 +165,7 @@ export async function createDetalleSolicitud(
 }
 
 /* =========================
-    CREAR MUCHOS DETALLES
+    CREAR MUCHOS
 ========================= */
 
 export async function createManyDetalleSolicitud(
@@ -91,37 +174,48 @@ export async function createManyDetalleSolicitud(
 
   try {
 
-    const responses =
-      await Promise.all(
-        detalles.map(
-          (detalle) =>
-            api.post(
-              "/detallesolicitud",
-              detalle
-            )
-        )
-      );
-
-    return responses.map(
-      (response) =>
-        response.data
-    );
-
-  } catch (error) {
-
     if (
-      isAxiosError(error) &&
-      error.response
+      !Array.isArray(detalles) ||
+      detalles.length === 0
     ) {
 
       throw new Error(
-        error.response.data.error
+        "No existen detalles para registrar"
       );
 
     }
 
+    const respuestas = [];
+
+    /*
+      Se crean uno por uno para identificar
+      claramente cuál producto provoca un error.
+    */
+    for (
+      const detalle
+      of detalles
+    ) {
+
+      const respuesta =
+        await createDetalleSolicitud(
+          detalle
+        );
+
+      respuestas.push(
+        respuesta
+      );
+
+    }
+
+    return respuestas;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error creando detalles de solicitud"
+      obtenerMensajeError(
+        error,
+        "Error creando detalles de solicitud"
+      )
     );
 
   }
@@ -136,17 +230,21 @@ export async function getDetalleSolicitudes() {
 
   try {
 
-    const { data } =
-      await api(
-        "/detallesolicitud"
-      );
+    const {
+      data,
+    } = await api.get(
+      "/detallesolicitud"
+    );
 
     const response =
-      DetalleSolicitudArraySchema.safeParse(
-        data
-      );
+      DetalleSolicitudArraySchema
+        .safeParse(data);
 
     if (!response.success) {
+
+      console.log(
+        data
+      );
 
       console.log(
         response.error.format()
@@ -160,21 +258,13 @@ export async function getDetalleSolicitudes() {
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo detalles de solicitud"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo detalles de solicitud"
+      )
     );
 
   }
@@ -182,65 +272,7 @@ export async function getDetalleSolicitudes() {
 }
 
 /* =========================
-    OBTENER POR ID
-========================= */
-
-export async function getDetalleSolicitudById(
-  id: DetalleSolicitudType["_id"]
-) {
-
-  try {
-
-    const { data } =
-      await api(
-        `/detallesolicitud/${id}`
-      );
-
-    const response =
-      DetalleSolicitudSchema.safeParse(
-        data
-      );
-
-    if (!response.success) {
-
-      console.log(
-        response.error.format()
-      );
-
-      throw new Error(
-        "Error validando detalle de solicitud"
-      );
-
-    }
-
-    return response.data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
-    throw new Error(
-      "Error obteniendo detalle de solicitud"
-    );
-
-  }
-
-}
-
-/* =========================
-    OBTENER DETALLES POR SOLICITUD
-    Esta función requiere que luego agregues
-    una ruta en backend:
-    GET /api/detallesolicitud/solicitud/:idSolicitud
+    DETALLES POR SOLICITUD
 ========================= */
 
 export async function getDetallesBySolicitud(
@@ -249,17 +281,31 @@ export async function getDetallesBySolicitud(
 
   try {
 
-    const { data } =
-      await api(
-        `/detallesolicitud/solicitud/${idSolicitud}`
+    if (!idSolicitud) {
+
+      throw new Error(
+        "El ID de la solicitud es obligatorio"
       );
+
+    }
+
+    const {
+      data,
+    } = await api.get(
+
+      `/detallesolicitud/solicitud/${idSolicitud}`
+
+    );
 
     const response =
-      DetalleSolicitudArraySchema.safeParse(
-        data
-      );
+      DetalleSolicitudArraySchema
+        .safeParse(data);
 
     if (!response.success) {
+
+      console.log(
+        data
+      );
 
       console.log(
         response.error.format()
@@ -273,21 +319,13 @@ export async function getDetallesBySolicitud(
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo detalles por solicitud"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo detalles de solicitud"
+      )
     );
 
   }
@@ -295,7 +333,66 @@ export async function getDetallesBySolicitud(
 }
 
 /* =========================
-    ACTUALIZAR DETALLE
+    OBTENER POR ID
+========================= */
+
+export async function getDetalleSolicitudById(
+  id: string
+) {
+
+  try {
+
+    if (!id) {
+
+      throw new Error(
+        "El ID del detalle es obligatorio"
+      );
+
+    }
+
+    const {
+      data,
+    } = await api.get(
+      `/detallesolicitud/${id}`
+    );
+
+    const response =
+      DetalleSolicitudSchema
+        .safeParse(data);
+
+    if (!response.success) {
+
+      console.log(
+        data
+      );
+
+      console.log(
+        response.error.format()
+      );
+
+      throw new Error(
+        "Error validando detalle"
+      );
+
+    }
+
+    return response.data;
+
+  } catch (error: unknown) {
+
+    throw new Error(
+      obtenerMensajeError(
+        error,
+        "Error obteniendo detalle de solicitud"
+      )
+    );
+
+  }
+
+}
+
+/* =========================
+    ACTUALIZAR
 ========================= */
 
 export async function updateDetalleSolicitud({
@@ -308,32 +405,33 @@ export async function updateDetalleSolicitud({
 
   try {
 
-    const { data } =
-      await api.put(
-
-        `/detallesolicitud/${detalleSolicitudId}`,
-
-        formData
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    if (!detalleSolicitudId) {
 
       throw new Error(
-        error.response.data.error
+        "El ID del detalle es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.put(
+
+      `/detallesolicitud/${detalleSolicitudId}`,
+
+      formData
+
+    );
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error actualizando detalle de solicitud"
+      obtenerMensajeError(
+        error,
+        "Error actualizando detalle de solicitud"
+      )
     );
 
   }
@@ -341,7 +439,7 @@ export async function updateDetalleSolicitud({
 }
 
 /* =========================
-    ELIMINAR DETALLE
+    ELIMINAR
 ========================= */
 
 export async function deleteDetalleSolicitudById({
@@ -354,36 +452,41 @@ export async function deleteDetalleSolicitudById({
 
   try {
 
-    const { data } =
-      await api.delete(
-
-        `/detallesolicitud/${id}`,
-
-        {
-          data: {
-            eliminadoPor,
-          },
-        }
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    if (!id) {
 
       throw new Error(
-        error.response.data.error
+        "El ID del detalle es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.delete(
+
+      `/detallesolicitud/${id}`,
+
+      {
+        data: {
+
+          eliminadoPor:
+            eliminadoPor ||
+            "admin",
+
+        },
+      }
+
+    );
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error eliminando detalle de solicitud"
+      obtenerMensajeError(
+        error,
+        "Error eliminando detalle de solicitud"
+      )
     );
 
   }

@@ -7,6 +7,7 @@ import {
 
 import {
   Boxes,
+  Calculator,
   DollarSign,
   Package,
   Search,
@@ -17,32 +18,68 @@ import type {
   InventarioFormData,
 } from "@/types/InventarioType";
 
+type AlmacenOption = {
+
+  _id:
+    string;
+
+  nombre?:
+    string | null;
+
+  tipo?:
+    string | null;
+
+  estado?:
+    boolean;
+
+};
+
+type ProductoOption = {
+
+  _id:
+    string;
+
+  nombre?:
+    string | null;
+
+  descripcion?:
+    string | null;
+
+  marca?:
+    string | null;
+
+  estado?:
+    boolean;
+
+};
+
 type Props = {
 
   formData:
-  InventarioFormData;
+    InventarioFormData;
 
   setFormData:
-  React.Dispatch<
-    React.SetStateAction<InventarioFormData>
-  >;
+    React.Dispatch<
+      React.SetStateAction<InventarioFormData>
+    >;
 
   onSubmit:
-  (
-    e: React.FormEvent
-  ) => void;
+    (
+      event:
+        React.FormEvent<HTMLFormElement>
+    ) => void;
 
   almacenes:
-  any[];
+    AlmacenOption[];
 
   productos:
-  any[];
+    ProductoOption[];
 
   loading?:
-  boolean;
+    boolean;
 
   submitText?:
-  string;
+    string;
 
 };
 
@@ -58,55 +95,99 @@ export default function InventarioForm({
 
   productos,
 
-  loading,
+  loading = false,
 
-  submitText = "Guardar Inventario",
+  submitText =
+    "Registrar entrada",
 
 }: Props) {
 
-  /* =========================
-      SEARCH PRODUCTO
-  ========================= */
-
   const [
     productoSearch,
-
     setProductoSearch,
-
   ] = useState("");
+
+  /* =========================
+      PRODUCTOS FILTRADOS
+  ========================= */
 
   const filteredProductos =
     useMemo(() => {
 
-      if (
-        !productoSearch
-      )
-        return productos;
+      const search =
+        productoSearch
+          .trim()
+          .toLowerCase();
 
       return productos.filter(
-        (producto) =>
+        (
+          producto
+        ) => {
 
-          producto.nombre
-            ?.toLowerCase()
-            .includes(
-              productoSearch.toLowerCase()
-            ) ||
+          if (
+            producto.estado ===
+            false
+          ) {
+            return false;
+          }
 
-          producto.marca
-            ?.toLowerCase()
-            .includes(
-              productoSearch.toLowerCase()
+          if (!search) {
+            return true;
+          }
+
+          const texto = [
+
+            producto.nombre,
+
+            producto.marca,
+
+            producto.descripcion,
+
+          ]
+            .filter(
+              Boolean
             )
+            .join(" ")
+            .toLowerCase();
 
+          return texto.includes(
+            search
+          );
+
+        }
       );
 
     }, [
-
       productos,
-
       productoSearch,
-
     ]);
+
+  /* =========================
+      PRODUCTO SELECCIONADO
+  ========================= */
+
+  const productoSeleccionado =
+    productos.find(
+      (
+        producto
+      ) =>
+        producto._id ===
+        formData.idProducto
+    );
+
+  /* =========================
+      VALOR DE LA ENTRADA
+  ========================= */
+
+  const valorEntrada =
+    Number(
+      formData.cantidad ||
+      0
+    ) *
+    Number(
+      formData.costoUnitario ||
+      0
+    );
 
   return (
 
@@ -115,18 +196,20 @@ export default function InventarioForm({
       className="space-y-8"
     >
 
-      {/* GRID */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* =========================
+          ALMACÉN Y BUSCADOR
+      ========================= */}
 
-        {/* =========================
-            ALMACEN
-        ========================= */}
+      <div className="grid gap-6 lg:grid-cols-2">
 
         <div>
 
-          <label className="mb-2 block text-sm font-bold text-slate-700">
+          <label
+            htmlFor="idAlmacen"
+            className="mb-2 block text-sm font-bold text-slate-700"
+          >
 
-            Almacén
+            Almacén de ingreso
 
           </label>
 
@@ -135,21 +218,28 @@ export default function InventarioForm({
             <Warehouse className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
 
             <select
-
+              id="idAlmacen"
               value={
-                typeof formData.idAlmacen === "string"
-                  ? formData.idAlmacen
-                  : formData.idAlmacen?._id || ""
+                formData.idAlmacen
               }
+              onChange={(
+                event
+              ) =>
+                setFormData(
+                  (
+                    current
+                  ) => ({
 
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  idAlmacen:
-                    e.target.value,
-                })
+                    ...current,
+
+                    idAlmacen:
+                      event.target.value,
+
+                  })
+                )
               }
-
+              disabled={loading}
+              required
               className="
                 w-full
                 rounded-2xl
@@ -160,38 +250,54 @@ export default function InventarioForm({
                 pl-11
                 pr-4
                 text-sm
+                outline-none
+                transition
                 focus:border-fuchsia-500
-                focus:outline-none
+                disabled:cursor-not-allowed
+                disabled:opacity-60
               "
-              required
             >
 
               <option value="">
-                -- Seleccione --
+
+                Seleccione un almacén
+
               </option>
 
-              {almacenes.map(
-                (almacen) => (
-
-                  <option
-                    key={
-                      almacen._id
-                    }
-                    value={
-                      almacen._id
-                    }
-                  >
-
-                    {almacen.nombre}
-
-                    {" - "}
-
-                    {almacen.tipo}
-
-                  </option>
-
+              {almacenes
+                .filter(
+                  (
+                    almacen
+                  ) =>
+                    almacen.estado !==
+                    false
                 )
-              )}
+                .map(
+                  (
+                    almacen
+                  ) => (
+
+                    <option
+                      key={
+                        almacen._id
+                      }
+                      value={
+                        almacen._id
+                      }
+                    >
+
+                      {almacen.nombre ||
+                        "Almacén"}
+
+                      {" - "}
+
+                      {almacen.tipo ||
+                        "sin tipo"}
+
+                    </option>
+
+                  )
+                )}
 
             </select>
 
@@ -199,15 +305,14 @@ export default function InventarioForm({
 
         </div>
 
-        {/* =========================
-            PRODUCTO SEARCH
-        ========================= */}
-
         <div>
 
-          <label className="mb-2 block text-sm font-bold text-slate-700">
+          <label
+            htmlFor="buscarProducto"
+            className="mb-2 block text-sm font-bold text-slate-700"
+          >
 
-            Buscar Producto
+            Buscar producto
 
           </label>
 
@@ -216,21 +321,20 @@ export default function InventarioForm({
             <Search className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
 
             <input
-
+              id="buscarProducto"
               type="text"
-
-              placeholder="Buscar producto..."
-
               value={
                 productoSearch
               }
-
-              onChange={(e) =>
+              onChange={(
+                event
+              ) =>
                 setProductoSearch(
-                  e.target.value
+                  event.target.value
                 )
               }
-
+              disabled={loading}
+              placeholder="Nombre, marca o descripción..."
               className="
                 w-full
                 rounded-2xl
@@ -241,8 +345,10 @@ export default function InventarioForm({
                 pl-11
                 pr-4
                 text-sm
+                outline-none
+                transition
                 focus:border-fuchsia-500
-                focus:outline-none
+                disabled:opacity-60
               "
             />
 
@@ -260,7 +366,7 @@ export default function InventarioForm({
 
         <label className="mb-3 block text-sm font-bold text-slate-700">
 
-          Productos
+          Seleccione el producto
 
         </label>
 
@@ -276,120 +382,419 @@ export default function InventarioForm({
           "
         >
 
-          <div className="grid gap-3">
+          {filteredProductos.length ===
+          0 ? (
 
-            {filteredProductos.map(
-              (producto) => {
+            <div className="py-10 text-center text-slate-500">
 
-                const selected =
-                  formData.idProducto ===
-                  producto._id;
+              No se encontraron productos.
 
-                return (
+            </div>
 
-                  <button
+          ) : (
 
-                    key={
-                      producto._id
-                    }
+            <div className="grid gap-3 sm:grid-cols-2">
 
-                    type="button"
+              {filteredProductos.map(
+                (
+                  producto
+                ) => {
 
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        idProducto:
-                          producto._id,
-                      })
-                    }
+                  const selected =
+                    formData.idProducto ===
+                    producto._id;
 
-                    className={`
-                      flex
-                      items-center
-                      justify-between
-                      rounded-2xl
-                      border
-                      p-4
-                      text-left
-                      transition
-                      hover:scale-[1.01]
+                  return (
 
-                      ${selected
-
-                        ? "border-fuchsia-500 bg-fuchsia-50"
-
-                        : "border-slate-200 bg-white"
-
+                    <button
+                      key={
+                        producto._id
                       }
-                    `}
-                  >
+                      type="button"
+                      disabled={loading}
+                      onClick={() =>
+                        setFormData(
+                          (
+                            current
+                          ) => ({
 
-                    <div className="flex items-center gap-4">
+                            ...current,
 
-                      <div
-                        className="
-                          flex
-                          h-12
-                          w-12
-                          items-center
-                          justify-center
-                          rounded-2xl
-                          bg-fuchsia-100
-                          text-fuchsia-600
-                        "
-                      >
+                            idProducto:
+                              producto._id,
 
-                        <Package className="h-6 w-6" />
+                          })
+                        )
+                      }
+                      className={`
+                        flex
+                        items-center
+                        justify-between
+                        rounded-2xl
+                        border
+                        p-4
+                        text-left
+                        transition
+                        hover:scale-[1.01]
+                        disabled:cursor-not-allowed
+                        disabled:opacity-60
+
+                        ${
+                          selected
+                            ? "border-fuchsia-500 bg-fuchsia-50 shadow-sm"
+                            : "border-slate-200 bg-white hover:border-fuchsia-300"
+                        }
+                      `}
+                    >
+
+                      <div className="flex items-center gap-3">
+
+                        <div
+                          className={`
+                            flex
+                            h-11
+                            w-11
+                            items-center
+                            justify-center
+                            rounded-xl
+
+                            ${
+                              selected
+                                ? "bg-fuchsia-600 text-white"
+                                : "bg-slate-100 text-slate-500"
+                            }
+                          `}
+                        >
+
+                          <Package className="h-5 w-5" />
+
+                        </div>
+
+                        <div>
+
+                          <p className="font-black text-slate-800">
+
+                            {producto.nombre ||
+                              "Producto"}
+
+                          </p>
+
+                          <p className="text-xs text-slate-500">
+
+                            {producto.marca ||
+                              "Sin marca"}
+
+                          </p>
+
+                        </div>
 
                       </div>
 
-                      <div>
+                      {selected && (
 
-                        <p className="font-bold text-slate-800">
+                        <span className="rounded-full bg-fuchsia-600 px-3 py-1 text-xs font-bold text-white">
 
-                          {
-                            producto.nombre
-                          }
+                          Seleccionado
 
-                        </p>
+                        </span>
 
-                        <p className="text-sm text-slate-500">
+                      )}
 
-                          {
-                            producto.marca ||
-                            "Sin marca"
-                          }
+                    </button>
 
-                        </p>
+                  );
 
-                      </div>
+                }
+              )}
 
-                    </div>
+            </div>
 
-                    {selected && (
+          )}
 
-                      <span
-                        className="
-                          rounded-full
-                          bg-fuchsia-600
-                          px-3
-                          py-1
-                          text-xs
-                          font-bold
-                          text-white
-                        "
-                      >
-                        Seleccionado
-                      </span>
+        </div>
 
-                    )}
+      </div>
 
-                  </button>
+      {/* =========================
+          PRODUCTO ELEGIDO
+      ========================= */}
 
-                );
+      {productoSeleccionado && (
 
+        <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50 p-4">
+
+          <p className="text-xs font-bold uppercase tracking-wide text-fuchsia-600">
+
+            Producto seleccionado
+
+          </p>
+
+          <p className="mt-1 text-lg font-black text-slate-800">
+
+            {productoSeleccionado.nombre}
+
+          </p>
+
+          <p className="text-sm text-slate-500">
+
+            {productoSeleccionado.descripcion ||
+              "Sin descripción"}
+
+          </p>
+
+        </div>
+
+      )}
+
+      {/* =========================
+          DATOS DE ENTRADA
+      ========================= */}
+
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+
+        <div>
+
+          <label
+            htmlFor="cantidad"
+            className="mb-2 block text-sm font-bold text-slate-700"
+          >
+
+            Cantidad que ingresa
+
+          </label>
+
+          <div className="relative">
+
+            <Boxes className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+
+            <input
+              id="cantidad"
+              type="number"
+              min={1}
+              step={1}
+              value={
+                formData.cantidad
               }
-            )}
+              onChange={(
+                event
+              ) =>
+                setFormData(
+                  (
+                    current
+                  ) => ({
+
+                    ...current,
+
+                    cantidad:
+                      Number(
+                        event.target.value
+                      ),
+
+                  })
+                )
+              }
+              disabled={loading}
+              required
+              className="
+                w-full
+                rounded-2xl
+                border
+                border-slate-300
+                py-3
+                pl-11
+                pr-4
+                outline-none
+                transition
+                focus:border-fuchsia-500
+              "
+            />
+
+          </div>
+
+        </div>
+
+        <div>
+
+          <label
+            htmlFor="costoUnitario"
+            className="mb-2 block text-sm font-bold text-slate-700"
+          >
+
+            Costo de esta entrada
+
+          </label>
+
+          <div className="relative">
+
+            <DollarSign className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+
+            <input
+              id="costoUnitario"
+              type="number"
+              min={0}
+              step="0.01"
+              value={
+                formData.costoUnitario
+              }
+              onChange={(
+                event
+              ) =>
+                setFormData(
+                  (
+                    current
+                  ) => ({
+
+                    ...current,
+
+                    costoUnitario:
+                      Number(
+                        event.target.value
+                      ),
+
+                  })
+                )
+              }
+              disabled={loading}
+              required
+              className="
+                w-full
+                rounded-2xl
+                border
+                border-slate-300
+                py-3
+                pl-11
+                pr-4
+                outline-none
+                transition
+                focus:border-fuchsia-500
+              "
+            />
+
+          </div>
+
+          <p className="mt-1 text-xs text-slate-500">
+
+            El backend calculará el nuevo costo promedio.
+
+          </p>
+
+        </div>
+
+        <div>
+
+          <label
+            htmlFor="precioVenta"
+            className="mb-2 block text-sm font-bold text-slate-700"
+          >
+
+            Precio de venta
+
+          </label>
+
+          <div className="relative">
+
+            <DollarSign className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+
+            <input
+              id="precioVenta"
+              type="number"
+              min={0}
+              step="0.01"
+              value={
+                formData.precioVenta
+              }
+              onChange={(
+                event
+              ) =>
+                setFormData(
+                  (
+                    current
+                  ) => ({
+
+                    ...current,
+
+                    precioVenta:
+                      Number(
+                        event.target.value
+                      ),
+
+                  })
+                )
+              }
+              disabled={loading}
+              className="
+                w-full
+                rounded-2xl
+                border
+                border-slate-300
+                py-3
+                pl-11
+                pr-4
+                outline-none
+                transition
+                focus:border-fuchsia-500
+              "
+            />
+
+          </div>
+
+        </div>
+
+        <div>
+
+          <label
+            htmlFor="stockMinimo"
+            className="mb-2 block text-sm font-bold text-slate-700"
+          >
+
+            Stock mínimo
+
+          </label>
+
+          <div className="relative">
+
+            <Package className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+
+            <input
+              id="stockMinimo"
+              type="number"
+              min={0}
+              step={1}
+              value={
+                formData.stockMinimo
+              }
+              onChange={(
+                event
+              ) =>
+                setFormData(
+                  (
+                    current
+                  ) => ({
+
+                    ...current,
+
+                    stockMinimo:
+                      Number(
+                        event.target.value
+                      ),
+
+                  })
+                )
+              }
+              disabled={loading}
+              className="
+                w-full
+                rounded-2xl
+                border
+                border-slate-300
+                py-3
+                pl-11
+                pr-4
+                outline-none
+                transition
+                focus:border-fuchsia-500
+              "
+            />
 
           </div>
 
@@ -398,220 +803,32 @@ export default function InventarioForm({
       </div>
 
       {/* =========================
-          DATOS
+          RESUMEN ENTRADA
       ========================= */}
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="rounded-3xl border border-cyan-200 bg-cyan-50 p-5">
 
-        {/* CANTIDAD */}
-        <div>
+        <div className="flex items-center gap-3">
 
-          <label className="mb-2 block text-sm font-bold text-slate-700">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-600 text-white">
 
-            Cantidad
-
-          </label>
-
-          <div className="relative">
-
-            <Boxes className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
-
-            <input
-
-              type="number"
-
-              min={0}
-
-              value={
-                formData.cantidad
-              }
-
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  cantidad:
-                    Number(
-                      e.target.value
-                    ),
-                })
-              }
-
-              className="
-                w-full
-                rounded-2xl
-                border
-                border-slate-300
-                py-3
-                pl-11
-                pr-4
-                text-sm
-                focus:border-fuchsia-500
-                focus:outline-none
-              "
-
-              required
-            />
+            <Calculator className="h-6 w-6" />
 
           </div>
 
-        </div>
+          <div>
 
-        {/* COSTO */}
-        <div>
+            <p className="text-sm font-bold text-cyan-700">
 
-          <label className="mb-2 block text-sm font-bold text-slate-700">
+              Valor de la nueva entrada
 
-            Costo Unitario
+            </p>
 
-          </label>
+            <p className="text-2xl font-black text-slate-800">
 
-          <div className="relative">
+              Bs. {valorEntrada.toFixed(2)}
 
-            <DollarSign className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
-
-            <input
-
-              type="number"
-
-              step="0.01"
-
-              min={0}
-
-              value={
-                formData.costoUnitario
-              }
-
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  costoUnitario:
-                    Number(
-                      e.target.value
-                    ),
-                })
-              }
-
-              className="
-                w-full
-                rounded-2xl
-                border
-                border-slate-300
-                py-3
-                pl-11
-                pr-4
-                text-sm
-                focus:border-fuchsia-500
-                focus:outline-none
-              "
-
-              required
-            />
-
-          </div>
-
-        </div>
-
-        {/* PRECIO */}
-        <div>
-
-          <label className="mb-2 block text-sm font-bold text-slate-700">
-
-            Precio Venta
-
-          </label>
-
-          <div className="relative">
-
-            <DollarSign className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
-
-            <input
-
-              type="number"
-
-              step="0.01"
-
-              min={0}
-
-              value={
-                formData.precioVenta
-              }
-
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  precioVenta:
-                    Number(
-                      e.target.value
-                    ),
-                })
-              }
-
-              className="
-                w-full
-                rounded-2xl
-                border
-                border-slate-300
-                py-3
-                pl-11
-                pr-4
-                text-sm
-                focus:border-fuchsia-500
-                focus:outline-none
-              "
-
-              required
-            />
-
-          </div>
-
-        </div>
-
-        {/* STOCK */}
-        <div>
-
-          <label className="mb-2 block text-sm font-bold text-slate-700">
-
-            Stock Mínimo
-
-          </label>
-
-          <div className="relative">
-
-            <Boxes className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
-
-            <input
-
-              type="number"
-
-              min={0}
-
-              value={
-                formData.stockMinimo
-              }
-
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  stockMinimo:
-                    Number(
-                      e.target.value
-                    ),
-                })
-              }
-
-              className="
-                w-full
-                rounded-2xl
-                border
-                border-slate-300
-                py-3
-                pl-11
-                pr-4
-                text-sm
-                focus:border-fuchsia-500
-                focus:outline-none
-              "
-            />
+            </p>
 
           </div>
 
@@ -619,76 +836,93 @@ export default function InventarioForm({
 
       </div>
 
-      {/* ESTADO */}
-      <div className="flex items-center gap-3">
+      {/* =========================
+          ESTADO
+      ========================= */}
+
+      <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
 
         <input
-
           type="checkbox"
-
           checked={
             formData.estado
           }
+          onChange={(
+            event
+          ) =>
+            setFormData(
+              (
+                current
+              ) => ({
 
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              estado:
-                e.target.checked,
-            })
+                ...current,
+
+                estado:
+                  event.target.checked,
+
+              })
+            )
           }
-
-          className="h-5 w-5 rounded border-slate-300 text-fuchsia-600"
+          disabled={loading}
+          className="h-5 w-5"
         />
 
-        <span className="text-sm font-medium text-slate-700">
+        <div>
 
-          Inventario Activo
+          <p className="font-bold text-slate-800">
 
-        </span>
+            Inventario activo
 
-      </div>
+          </p>
 
-      {/* BUTTON */}
-      <div className="flex justify-end">
+          <p className="text-sm text-slate-500">
 
-        <button
+            El producto estará disponible para operaciones.
 
-          type="submit"
+          </p>
 
-          disabled={loading}
+        </div>
 
-          className="
-            rounded-2xl
-            bg-gradient-to-r
-            from-fuchsia-600
-            to-purple-600
-            px-8
-            py-3
-            text-sm
-            font-bold
-            text-white
-            shadow-lg
-            transition
-            hover:scale-105
-            disabled:cursor-not-allowed
-            disabled:opacity-50
-          "
-        >
+      </label>
 
-          {
+      {/* =========================
+          SUBMIT
+      ========================= */}
 
-            loading
+      <button
+        type="submit"
+        disabled={
+          loading ||
+          !formData.idAlmacen ||
+          !formData.idProducto ||
+          formData.cantidad <= 0
+        }
+        className="
+          inline-flex
+          w-full
+          items-center
+          justify-center
+          gap-2
+          rounded-2xl
+          bg-fuchsia-600
+          px-6
+          py-4
+          font-black
+          text-white
+          transition
+          hover:bg-fuchsia-700
+          disabled:cursor-not-allowed
+          disabled:bg-slate-300
+        "
+      >
 
-              ? "Guardando..."
+        <Boxes className="h-5 w-5" />
 
-              : submitText
+        {loading
+          ? "Registrando entrada..."
+          : submitText}
 
-          }
-
-        </button>
-
-      </div>
+      </button>
 
     </form>
 

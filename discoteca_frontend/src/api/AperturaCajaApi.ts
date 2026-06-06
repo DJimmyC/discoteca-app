@@ -1,26 +1,39 @@
 // src/api/AperturaCajaApi.ts
 
 import api from "@/lib/axios";
+import { isAxiosError } from "axios";
 
 import {
-  isAxiosError,
-} from "axios";
-
-import {
-
   AperturaCajaArraySchema,
-
   AperturaCajaSchema,
-
+  CreateAperturaCajaResponseSchema,
   type AperturaCajaForm,
-
-  type AperturaCajaType,
-
+  type UpdateAperturaCajaType,
+  type DeleteAperturaCajaType,
 } from "@/types/AperturaCajaType";
 
-/* =========================
-    CREAR
-========================= */
+function mensajeError(
+  error: unknown,
+  predeterminado: string
+): string {
+
+  if (
+    isAxiosError(error) &&
+    error.response
+  ) {
+    return (
+      error.response.data?.error ||
+      error.response.data?.message ||
+      predeterminado
+    );
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return predeterminado;
+}
 
 export async function createAperturaCaja(
   formData: AperturaCajaForm
@@ -30,48 +43,46 @@ export async function createAperturaCaja(
 
     const { data } =
       await api.post(
-
         "/aperturacaja",
-
         formData
-
       );
 
-    return data;
+    const response =
+      CreateAperturaCajaResponseSchema.safeParse(
+        data
+      );
 
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-
-      error.response
-
-    ) {
+    if (!response.success) {
+      console.error(
+        "Error Zod apertura:",
+        response.error.format(),
+        data
+      );
 
       throw new Error(
-        error.response.data.error
+        "La respuesta de apertura no coincide con el type"
       );
-
     }
 
+    return response.data;
+
+  } catch (error: unknown) {
+    throw new Error(
+      mensajeError(
+        error,
+        "Error creando apertura"
+      )
+    );
   }
-
 }
-
-/* =========================
-    OBTENER TODAS
-========================= */
 
 export async function getAperturasCaja() {
 
   try {
 
     const { data } =
-      await api(
-
+      await api.get(
         "/aperturacaja"
-
       );
 
     const response =
@@ -80,58 +91,37 @@ export async function getAperturasCaja() {
       );
 
     if (!response.success) {
-
-      console.log(
-        response.error.format()
+      console.error(
+        response.error.format(),
+        data
       );
 
       throw new Error(
         "Error validando aperturas"
       );
-
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-
-      error.response
-
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
+  } catch (error: unknown) {
     throw new Error(
-      "Error obteniendo aperturas"
+      mensajeError(
+        error,
+        "Error obteniendo aperturas"
+      )
     );
-
   }
-
 }
 
-/* =========================
-    OBTENER POR ID
-========================= */
-
 export async function getAperturaCajaById(
-  id: AperturaCajaType["_id"]
+  id: string
 ) {
 
   try {
 
     const { data } =
-      await api(
-
+      await api.get(
         `/aperturacaja/${id}`
-
       );
 
     const response =
@@ -140,211 +130,81 @@ export async function getAperturaCajaById(
       );
 
     if (!response.success) {
-
-      console.log(
-        response.error.format()
+      console.error(
+        response.error.format(),
+        data
       );
 
       throw new Error(
         "Error validando apertura"
       );
-
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-
-      error.response
-
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
+  } catch (error: unknown) {
     throw new Error(
-      "Error obteniendo apertura"
+      mensajeError(
+        error,
+        "Error obteniendo apertura"
+      )
     );
-
   }
-
 }
 
-/* =========================
-    ACTUALIZAR
-========================= */
-
-type UpdateAperturaCajaType = {
-
-  formData:
-  AperturaCajaForm;
-
-  aperturaCajaId:
-  AperturaCajaType["_id"];
-
-};
-
-export async function updateAperturaCaja({
-
-  formData,
-
-  aperturaCajaId,
-
-}: UpdateAperturaCajaType) {
-
-  try {
-
-    const { data } =
-      await api.put(
-
-        `/aperturacaja/${aperturaCajaId}`,
-
-        formData
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-
-      error.response
-
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
-  }
-
-}
-
-/* =========================
-    ELIMINAR
-========================= */
-
-type DeleteAperturaCajaType = {
-
-  id: string;
-
-  eliminadoPor: string;
-
-};
-
-export async function deleteAperturaCajaById({
-
-  id,
-
-  eliminadoPor,
-
-}: DeleteAperturaCajaType) {
-
-  try {
-
-    const { data } =
-      await api.delete(
-
-        `/aperturacaja/${id}`,
-
-        {
-
-          data: {
-
-            eliminadoPor,
-
-          },
-
-        }
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-
-      error.response
-
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
-    throw new Error(
-      "Error eliminando apertura"
-    );
-
-  }
-
-
-
-
-}
-
-/* =========================
-    OBTENER POR CAJA ID
-========================= */
-
- 
-export async function
-getAperturasCajaByCajaId(
+export async function getAperturaActivaByCaja(
   cajaId: string
 ) {
 
   try {
 
-    /* =========================
-        VALIDAR PARAM
-    ========================= */
-
-    if (!cajaId) {
-
-      throw new Error(
-        "cajaId es requerido"
+    const { data } =
+      await api.get(
+        `/aperturacaja/caja/${cajaId}/activa`
       );
 
+    if (data === null) {
+      return null;
     }
 
-  
+    const response =
+      AperturaCajaSchema.safeParse(
+        data
+      );
 
-    /* =========================
-        REQUEST
-    ========================= */
+    if (!response.success) {
+      console.error(
+        response.error.format(),
+        data
+      );
+
+      throw new Error(
+        "Error validando apertura activa"
+      );
+    }
+
+    return response.data;
+
+  } catch (error: unknown) {
+    throw new Error(
+      mensajeError(
+        error,
+        "Error obteniendo apertura activa"
+      )
+    );
+  }
+}
+
+export async function getAperturasCajaByCajaId(
+  cajaId: string
+) {
+
+  try {
 
     const { data } =
       await api.get(
-
         `/aperturacaja/caja/${cajaId}`
-
       );
-
-    console.log(
-      "respuesta backend =>",
-      data
-    );
-
-    /* =========================
-        VALIDACION
-    ========================= */
 
     const response =
       AperturaCajaArraySchema.safeParse(
@@ -352,56 +212,80 @@ getAperturasCajaByCajaId(
       );
 
     if (!response.success) {
-
-      console.log(
-
-        "zod error =>",
-
-        response.error.format()
-
+      console.error(
+        response.error.format(),
+        data
       );
 
       throw new Error(
-        "Error validando aperturas"
+        "Error validando aperturas por caja"
       );
-
     }
-
-    /* =========================
-        RETURN
-    ========================= */
 
     return response.data;
 
-  } catch (error) {
-
-    console.log(
-      "api error =>",
-      error
+  } catch (error: unknown) {
+    throw new Error(
+      mensajeError(
+        error,
+        "Error obteniendo aperturas por caja"
+      )
     );
+  }
+}
 
-    if (
+export async function updateAperturaCaja({
+  aperturaCajaId,
+  formData,
+}: UpdateAperturaCajaType) {
 
-      isAxiosError(error) &&
+  try {
 
-      error.response
-
-    ) {
-
-      throw new Error(
-
-        error.response.data.error ||
-
-        "Error backend"
-
+    const { data } =
+      await api.put(
+        `/aperturacaja/${aperturaCajaId}`,
+        formData
       );
 
-    }
+    return data;
 
+  } catch (error: unknown) {
     throw new Error(
-      "Error obteniendo aperturas"
+      mensajeError(
+        error,
+        "Error actualizando apertura"
+      )
     );
-
   }
+}
 
+export async function deleteAperturaCajaById({
+  id,
+  eliminadoPor,
+}: DeleteAperturaCajaType) {
+
+  try {
+
+    const { data } =
+      await api.delete(
+        `/aperturacaja/${id}`,
+        {
+          data: {
+            eliminadoPor:
+              eliminadoPor ||
+              "sistema",
+          },
+        }
+      );
+
+    return data;
+
+  } catch (error: unknown) {
+    throw new Error(
+      mensajeError(
+        error,
+        "Error anulando apertura"
+      )
+    );
+  }
 }

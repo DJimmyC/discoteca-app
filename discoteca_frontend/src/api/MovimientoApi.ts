@@ -7,66 +7,112 @@ import {
 } from "axios";
 
 import {
-
   MovimientoArraySchema,
-
   MovimientoSchema,
-
   ProductosMasVendidosArraySchema,
-
   ReporteCajaDiariaSchema,
-
   EstadoResultadosSchema,
-
   FlujoEfectivoSchema,
 
   type MovimientoForm,
-
   type MovimientoType,
-
   type MovimientoFiltros,
-
 } from "@/types/MovimientoType";
 
-/* =========================
+/* =====================================================
+    OBTENER MENSAJE DE ERROR
+===================================================== */
+
+function obtenerMensajeError(
+  error: unknown,
+  mensajePredeterminado: string
+): string {
+
+  if (
+    isAxiosError(error) &&
+    error.response
+  ) {
+
+    const errorBackend =
+      error.response.data?.error;
+
+    const mensajeBackend =
+      error.response.data?.message;
+
+    if (
+      typeof errorBackend ===
+      "string"
+    ) {
+      return errorBackend;
+    }
+
+    if (
+      typeof mensajeBackend ===
+      "string"
+    ) {
+      return mensajeBackend;
+    }
+  }
+
+  if (
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return mensajePredeterminado;
+}
+
+/* =====================================================
     ARMAR QUERY STRING
-========================= */
+===================================================== */
 
 function buildQueryParams(
   filtros?: MovimientoFiltros
-) {
+): string {
 
   const params =
     new URLSearchParams();
 
   if (!filtros) {
-    return params.toString();
+    return "";
   }
 
-  Object.entries(filtros).forEach(
-    ([key, value]) => {
+  Object.entries(
+    filtros
+  ).forEach(
+    ([
+      key,
+      value,
+    ]) => {
 
       if (
         value !== undefined &&
         value !== null &&
         value !== ""
       ) {
+
         params.append(
           key,
           String(value)
         );
       }
-
     }
   );
 
   return params.toString();
-
 }
 
-/* =========================
+/* =====================================================
     CREAR MOVIMIENTO
-========================= */
+
+    IMPORTANTE:
+    Esta función se conserva temporalmente.
+
+    Cuando todos los módulos registren sus movimientos
+    desde el backend, debes dejar de llamarla desde las
+    vistas y modales.
+===================================================== */
 
 export async function createMovimiento(
   formData: MovimientoForm
@@ -74,50 +120,39 @@ export async function createMovimiento(
 
   try {
 
-    const { data } =
-      await api.post(
-
-        "/movimiento",
-
-        formData
-
-      );
+    const {
+      data,
+    } = await api.post(
+      "/movimiento",
+      formData
+    );
 
     return data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error registrando movimiento"
+      obtenerMensajeError(
+        error,
+        "Error registrando movimiento"
+      )
     );
-
   }
-
 }
 
-/* =========================
+/* =====================================================
     OBTENER TODOS LOS MOVIMIENTOS
-========================= */
+===================================================== */
 
 export async function getMovimientos() {
 
   try {
 
-    const { data } =
-      await api(
-        "/movimiento"
-      );
+    const {
+      data,
+    } = await api.get(
+      "/movimiento"
+    );
 
     const response =
       MovimientoArraySchema.safeParse(
@@ -127,41 +162,41 @@ export async function getMovimientos() {
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DE MOVIMIENTOS:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DE MOVIMIENTOS:",
         response.error.format()
       );
 
-      throw new Error(
-        "Error validando movimientos"
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
       );
 
+      throw new Error(
+        "La respuesta de movimientos no coincide con el type"
+      );
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo movimientos"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo movimientos"
+      )
     );
-
   }
-
 }
 
-/* =========================
+/* =====================================================
     OBTENER MOVIMIENTO POR ID
-========================= */
+===================================================== */
 
 export async function getMovimientoById(
   id: MovimientoType["_id"]
@@ -169,10 +204,18 @@ export async function getMovimientoById(
 
   try {
 
-    const { data } =
-      await api(
-        `/movimiento/${id}`
+    if (!id) {
+
+      throw new Error(
+        "El ID del movimiento es obligatorio"
       );
+    }
+
+    const {
+      data,
+    } = await api.get(
+      `/movimiento/${id}`
+    );
 
     const response =
       MovimientoSchema.safeParse(
@@ -182,41 +225,41 @@ export async function getMovimientoById(
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DEL MOVIMIENTO:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DEL MOVIMIENTO:",
         response.error.format()
       );
 
-      throw new Error(
-        "Error validando movimiento"
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
       );
 
+      throw new Error(
+        "La respuesta del movimiento no coincide con el type"
+      );
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo movimiento"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo movimiento"
+      )
     );
-
   }
-
 }
 
-/* =========================
+/* =====================================================
     FILTRAR MOVIMIENTOS
-========================= */
+===================================================== */
 
 export async function getMovimientosFiltrados(
   filtros: MovimientoFiltros
@@ -229,10 +272,16 @@ export async function getMovimientosFiltrados(
         filtros
       );
 
-    const { data } =
-      await api(
-        `/movimiento/filtrar?${query}`
-      );
+    const ruta =
+      query
+        ? `/movimiento/filtrar?${query}`
+        : "/movimiento/filtrar";
+
+    const {
+      data,
+    } = await api.get(
+      ruta
+    );
 
     const response =
       MovimientoArraySchema.safeParse(
@@ -242,44 +291,44 @@ export async function getMovimientosFiltrados(
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DE MOVIMIENTOS FILTRADOS:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DE MOVIMIENTOS FILTRADOS:",
         response.error.format()
       );
 
-      throw new Error(
-        "Error validando movimientos filtrados"
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
       );
 
+      throw new Error(
+        "La respuesta de movimientos filtrados no coincide con el type"
+      );
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo movimientos filtrados"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo movimientos filtrados"
+      )
     );
-
   }
-
 }
 
-/* =========================
-    PRODUCTOS MAS VENDIDOS
-========================= */
+/* =====================================================
+    PRODUCTOS MÁS VENDIDOS
+===================================================== */
 
 export async function getProductosMasVendidos(
-  filtros: MovimientoFiltros
+  filtros: MovimientoFiltros = {}
 ) {
 
   try {
@@ -289,10 +338,16 @@ export async function getProductosMasVendidos(
         filtros
       );
 
-    const { data } =
-      await api(
-        `/movimiento/productos-mas-vendidos?${query}`
-      );
+    const ruta =
+      query
+        ? `/movimiento/productos-mas-vendidos?${query}`
+        : "/movimiento/productos-mas-vendidos";
+
+    const {
+      data,
+    } = await api.get(
+      ruta
+    );
 
     const response =
       ProductosMasVendidosArraySchema.safeParse(
@@ -302,44 +357,44 @@ export async function getProductosMasVendidos(
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DE PRODUCTOS MÁS VENDIDOS:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DE PRODUCTOS MÁS VENDIDOS:",
         response.error.format()
       );
 
-      throw new Error(
-        "Error validando productos más vendidos"
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
       );
 
+      throw new Error(
+        "La respuesta de productos más vendidos no coincide con el type"
+      );
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo productos más vendidos"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo productos más vendidos"
+      )
     );
-
   }
-
 }
 
-/* =========================
-    REPORTE CAJA DIARIA
-========================= */
+/* =====================================================
+    REPORTE DE CAJA DIARIA
+===================================================== */
 
 export async function getReporteCajaDiaria(
-  filtros: MovimientoFiltros
+  filtros: MovimientoFiltros = {}
 ) {
 
   try {
@@ -349,10 +404,16 @@ export async function getReporteCajaDiaria(
         filtros
       );
 
-    const { data } =
-      await api(
-        `/movimiento/reporte-caja-diaria?${query}`
-      );
+    const ruta =
+      query
+        ? `/movimiento/reporte-caja-diaria?${query}`
+        : "/movimiento/reporte-caja-diaria";
+
+    const {
+      data,
+    } = await api.get(
+      ruta
+    );
 
     const response =
       ReporteCajaDiariaSchema.safeParse(
@@ -362,44 +423,44 @@ export async function getReporteCajaDiaria(
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DEL REPORTE DE CAJA:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DEL REPORTE DE CAJA:",
         response.error.format()
       );
 
-      throw new Error(
-        "Error validando reporte de caja diaria"
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
       );
 
+      throw new Error(
+        "La respuesta del reporte de caja no coincide con el type"
+      );
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo reporte de caja diaria"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo reporte de caja diaria"
+      )
     );
-
   }
-
 }
 
-/* =========================
+/* =====================================================
     ESTADO DE RESULTADOS
-========================= */
+===================================================== */
 
 export async function getEstadoResultados(
-  filtros: MovimientoFiltros
+  filtros: MovimientoFiltros = {}
 ) {
 
   try {
@@ -409,10 +470,16 @@ export async function getEstadoResultados(
         filtros
       );
 
-    const { data } =
-      await api(
-        `/movimiento/estado-resultados?${query}`
-      );
+    const ruta =
+      query
+        ? `/movimiento/estado-resultados?${query}`
+        : "/movimiento/estado-resultados";
+
+    const {
+      data,
+    } = await api.get(
+      ruta
+    );
 
     const response =
       EstadoResultadosSchema.safeParse(
@@ -422,44 +489,44 @@ export async function getEstadoResultados(
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DEL ESTADO DE RESULTADOS:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DEL ESTADO DE RESULTADOS:",
         response.error.format()
       );
 
-      throw new Error(
-        "Error validando estado de resultados"
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
       );
 
+      throw new Error(
+        "La respuesta del estado de resultados no coincide con el type"
+      );
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo estado de resultados"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo estado de resultados"
+      )
     );
-
   }
-
 }
 
-/* =========================
+/* =====================================================
     FLUJO DE EFECTIVO
-========================= */
+===================================================== */
 
 export async function getFlujoEfectivo(
-  filtros: MovimientoFiltros
+  filtros: MovimientoFiltros = {}
 ) {
 
   try {
@@ -469,10 +536,16 @@ export async function getFlujoEfectivo(
         filtros
       );
 
-    const { data } =
-      await api(
-        `/movimiento/flujo-efectivo?${query}`
-      );
+    const ruta =
+      query
+        ? `/movimiento/flujo-efectivo?${query}`
+        : "/movimiento/flujo-efectivo";
+
+    const {
+      data,
+    } = await api.get(
+      ruta
+    );
 
     const response =
       FlujoEfectivoSchema.safeParse(
@@ -482,34 +555,34 @@ export async function getFlujoEfectivo(
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DEL FLUJO DE EFECTIVO:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DEL FLUJO DE EFECTIVO:",
         response.error.format()
       );
 
-      throw new Error(
-        "Error validando flujo de efectivo"
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
       );
 
+      throw new Error(
+        "La respuesta del flujo de efectivo no coincide con el type"
+      );
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo flujo de efectivo"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo flujo de efectivo"
+      )
     );
-
   }
-
 }

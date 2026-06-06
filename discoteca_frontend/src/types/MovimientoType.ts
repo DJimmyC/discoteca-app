@@ -3,17 +3,43 @@
 import { z } from "zod";
 
 /* =========================
+    OBJECT ID SAFE
+========================= */
+
+export const MovimientoObjectIdSchema =
+  z.preprocess(
+    (value) => {
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "_id" in value
+      ) {
+        return (
+          value as {
+            _id: unknown;
+          }
+        )._id;
+      }
+
+      return value;
+    },
+    z.string()
+  );
+
+/* =========================
     SUCURSAL POPULATE
 ========================= */
 
 export const MovimientoSucursalSchema =
   z.object({
-
     _id:
+      MovimientoObjectIdSchema,
+
+    nombreSucursal:
       z.string()
         .optional(),
 
-    nombreSucursal:
+    nombre:
       z.string()
         .optional(),
 
@@ -22,7 +48,11 @@ export const MovimientoSucursalSchema =
         .nullable()
         .optional(),
 
-  }).passthrough();
+    estado:
+      z.boolean()
+        .optional(),
+  })
+    .passthrough();
 
 /* =========================
     CAJA POPULATE
@@ -30,10 +60,8 @@ export const MovimientoSucursalSchema =
 
 export const MovimientoCajaSchema =
   z.object({
-
     _id:
-      z.string()
-        .optional(),
+      MovimientoObjectIdSchema,
 
     nombre:
       z.string()
@@ -44,7 +72,11 @@ export const MovimientoCajaSchema =
         .nullable()
         .optional(),
 
-  }).passthrough();
+    estado:
+      z.boolean()
+        .optional(),
+  })
+    .passthrough();
 
 /* =========================
     PERFIL POPULATE
@@ -52,10 +84,8 @@ export const MovimientoCajaSchema =
 
 export const MovimientoPerfilSchema =
   z.object({
-
     _id:
-      z.string()
-        .optional(),
+      MovimientoObjectIdSchema,
 
     nombres:
       z.string()
@@ -63,6 +93,7 @@ export const MovimientoPerfilSchema =
 
     apellidos:
       z.string()
+        .nullable()
         .optional(),
 
     email:
@@ -70,18 +101,26 @@ export const MovimientoPerfilSchema =
         .nullable()
         .optional(),
 
-  }).passthrough();
+    telefono:
+      z.string()
+        .nullable()
+        .optional(),
+
+    ci:
+      z.string()
+        .nullable()
+        .optional(),
+  })
+    .passthrough();
 
 /* =========================
-    ALMACEN POPULATE
+    ALMACÉN POPULATE
 ========================= */
 
 export const MovimientoAlmacenSchema =
   z.object({
-
     _id:
-      z.string()
-        .optional(),
+      MovimientoObjectIdSchema,
 
     nombre:
       z.string()
@@ -96,7 +135,16 @@ export const MovimientoAlmacenSchema =
         .nullable()
         .optional(),
 
-  }).passthrough();
+    ubicacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    estado:
+      z.boolean()
+        .optional(),
+  })
+    .passthrough();
 
 /* =========================
     PRODUCTO POPULATE
@@ -104,10 +152,8 @@ export const MovimientoAlmacenSchema =
 
 export const MovimientoProductoSchema =
   z.object({
-
     _id:
-      z.string()
-        .optional(),
+      MovimientoObjectIdSchema,
 
     nombre:
       z.string()
@@ -123,7 +169,11 @@ export const MovimientoProductoSchema =
         .nullable()
         .optional(),
 
-  }).passthrough();
+    estado:
+      z.boolean()
+        .optional(),
+  })
+    .passthrough();
 
 /* =========================
     INVENTARIO POPULATE
@@ -131,75 +181,200 @@ export const MovimientoProductoSchema =
 
 export const MovimientoInventarioSchema =
   z.object({
-
     _id:
-      z.string()
+      MovimientoObjectIdSchema,
+
+    idAlmacen:
+      z.union([
+        MovimientoObjectIdSchema,
+        MovimientoAlmacenSchema,
+        z.null(),
+      ])
+        .optional(),
+
+    idProducto:
+      z.union([
+        MovimientoObjectIdSchema,
+        MovimientoProductoSchema,
+        z.null(),
+      ])
         .optional(),
 
     cantidad:
-      z.number()
+      z.coerce
+        .number()
         .optional(),
 
     costoUnitario:
-      z.number()
+      z.coerce
+        .number()
         .optional(),
 
     precioVenta:
-      z.number()
+      z.coerce
+        .number()
         .optional(),
 
     stockMinimo:
-      z.number()
+      z.coerce
+        .number()
         .optional(),
 
-  }).passthrough();
+    estado:
+      z.boolean()
+        .optional(),
+  })
+    .passthrough();
 
 /* =========================
-    ID FLEXIBLE
-    Acepta string, objeto populate o null
+    RELACIONES FLEXIBLES
 ========================= */
 
 const IdSucursalSchema =
   z.union([
-    z.string(),
+    MovimientoObjectIdSchema,
     MovimientoSucursalSchema,
     z.null(),
-  ]).optional();
+  ])
+    .optional();
 
 const IdCajaSchema =
   z.union([
-    z.string(),
+    MovimientoObjectIdSchema,
     MovimientoCajaSchema,
     z.null(),
-  ]).optional();
+  ])
+    .optional();
 
 const IdPerfilSchema =
   z.union([
-    z.string(),
+    MovimientoObjectIdSchema,
     MovimientoPerfilSchema,
     z.null(),
-  ]).optional();
+  ])
+    .optional();
 
 const IdAlmacenSchema =
   z.union([
-    z.string(),
+    MovimientoObjectIdSchema,
     MovimientoAlmacenSchema,
     z.null(),
-  ]).optional();
+  ])
+    .optional();
 
 const IdProductoSchema =
   z.union([
-    z.string(),
+    MovimientoObjectIdSchema,
     MovimientoProductoSchema,
     z.null(),
-  ]).optional();
+  ])
+    .optional();
 
 const IdInventarioSchema =
   z.union([
-    z.string(),
+    MovimientoObjectIdSchema,
     MovimientoInventarioSchema,
     z.null(),
-  ]).optional();
+  ])
+    .optional();
+
+const IdReferenciaSchema =
+  z.union([
+    MovimientoObjectIdSchema,
+    z.null(),
+  ])
+    .optional();
+
+/* =========================
+    TIPO DE MOVIMIENTO
+========================= */
+
+export const TipoMovimientoSchema =
+  z.enum([
+    "apertura_caja",
+    "cierre_caja",
+    "venta",
+    "venta_anulada",
+    "cortesia",
+    "egreso",
+    "solicitud",
+    "solicitud_aprobada",
+    "solicitud_rechazada",
+    "solicitud_anulada",
+    "entrada_inventario",
+    "salida_inventario",
+    "transferencia_inventario",
+    "ajuste_inventario",
+    "conteo_fisico",
+    "diferencia_caja",
+    "diferencia_inventario",
+  ]);
+
+/* =========================
+    ORIGEN DE MOVIMIENTO
+========================= */
+
+export const OrigenMovimientoSchema =
+  z.enum([
+    "venta",
+    "cortesia",
+    "egreso",
+    "apertura_caja",
+    "cierre_caja",
+    "inventario",
+    "solicitud",
+    "transferencia",
+    "ajuste",
+    "conteo_fisico",
+    "sistema",
+  ]);
+
+/* =========================
+    MÓDULO
+========================= */
+
+export const ModuloMovimientoSchema =
+  z.enum([
+    "venta",
+    "ventas",
+    "caja",
+    "inventario",
+    "egreso",
+    "solicitud",
+    "transferencia",
+    "cierre",
+    "sistema",
+  ]);
+
+/* =========================
+    MÉTODO DE PAGO
+========================= */
+
+export const MetodoPagoMovimientoSchema =
+  z.enum([
+    "efectivo",
+    "qr",
+    "transferencia",
+    "mixto",
+    "otro",
+  ]);
+
+/* =========================
+    ESTADO DEL MOVIMIENTO
+========================= */
+
+export const EstadoMovimientoSchema =
+  z.enum([
+    "activo",
+    "anulado",
+    "pagado",
+    "cortesia",
+    "pendiente",
+    "aprobada",
+    "atendida",
+    "rechazada",
+    "cerrado",
+  ]);
 
 /* =========================
     MOVIMIENTO SCHEMA
@@ -207,9 +382,8 @@ const IdInventarioSchema =
 
 export const MovimientoSchema =
   z.object({
-
     _id:
-      z.string()
+      MovimientoObjectIdSchema
         .optional(),
 
     fecha:
@@ -218,79 +392,19 @@ export const MovimientoSchema =
         .optional(),
 
     tipoMovimiento:
-      z.union([
-
-        z.literal("apertura_caja"),
-
-        z.literal("cierre_caja"),
-
-        z.literal("venta"),
-
-        z.literal("venta_anulada"),
-
-        z.literal("cortesia"),
-
-        z.literal("egreso"),
-
-        z.literal("entrada_inventario"),
-
-        z.literal("salida_inventario"),
-
-        z.literal("transferencia_inventario"),
-
-        z.literal("ajuste_inventario"),
-
-        z.literal("conteo_fisico"),
-
-        z.literal("diferencia_caja"),
-
-        z.literal("diferencia_inventario"),
-
-        z.string(),
-
-      ]),
+      TipoMovimientoSchema,
 
     origenMovimiento:
-      z.union([
-
-        z.literal("venta"),
-
-        z.literal("cortesia"),
-
-        z.literal("egreso"),
-
-        z.literal("ajuste"),
-
-        z.literal("transferencia"),
-
-        z.literal("conteo"),
-
-        z.literal("manual"),
-
-        z.string(),
-
-        z.null(),
-
-      ]).optional(),
+      OrigenMovimientoSchema
+        .optional(),
 
     modulo:
-      z.union([
+      ModuloMovimientoSchema
+        .optional(),
 
-        z.literal("caja"),
-
-        z.literal("venta"),
-
-        z.literal("egreso"),
-
-        z.literal("inventario"),
-
-        z.literal("transferencia"),
-
-        z.literal("cierre"),
-
-        z.string(),
-
-      ]),
+    /* =========================
+        RELACIONES
+    ========================= */
 
     idSucursal:
       IdSucursalSchema,
@@ -304,11 +418,175 @@ export const MovimientoSchema =
     idAlmacen:
       IdAlmacenSchema,
 
+    idAlmacenOrigen:
+      IdAlmacenSchema,
+
+    idAlmacenDestino:
+      IdAlmacenSchema,
+
     idProducto:
       IdProductoSchema,
 
     idInventario:
       IdInventarioSchema,
+
+    idVenta:
+      IdReferenciaSchema,
+
+    idComanda:
+      IdReferenciaSchema,
+
+    idEgreso:
+      IdReferenciaSchema,
+
+    idSolicitud:
+      IdReferenciaSchema,
+
+    idAperturaCaja:
+      IdReferenciaSchema,
+
+    idCierreCaja:
+      IdReferenciaSchema,
+
+    /* =========================
+        CANTIDADES
+    ========================= */
+
+    cantidad:
+      z.coerce
+        .number()
+        .default(0),
+
+    cantidadEntrada:
+      z.coerce
+        .number()
+        .default(0),
+
+    cantidadSalida:
+      z.coerce
+        .number()
+        .default(0),
+
+    cantidadAnterior:
+      z.coerce
+        .number()
+        .optional(),
+
+    cantidadNueva:
+      z.coerce
+        .number()
+        .optional(),
+
+    cantidadFisica:
+      z.coerce
+        .number()
+        .optional(),
+
+    cantidadEsperada:
+      z.coerce
+        .number()
+        .optional(),
+
+    diferenciaCantidad:
+      z.coerce
+        .number()
+        .optional(),
+
+    /* =========================
+        IMPORTES
+    ========================= */
+
+    montoEntrada:
+      z.coerce
+        .number()
+        .default(0),
+
+    montoSalida:
+      z.coerce
+        .number()
+        .default(0),
+
+    montoInicial:
+      z.coerce
+        .number()
+        .default(0),
+
+    montoEsperado:
+      z.coerce
+        .number()
+        .optional(),
+
+    montoReal:
+      z.coerce
+        .number()
+        .optional(),
+
+    diferenciaMonto:
+      z.coerce
+        .number()
+        .optional(),
+
+    costoUnitario:
+      z.coerce
+        .number()
+        .default(0),
+
+    costoAnterior:
+      z.coerce
+        .number()
+        .default(0),
+
+    costoEntrada:
+      z.coerce
+        .number()
+        .default(0),
+
+    costoPromedio:
+      z.coerce
+        .number()
+        .default(0),
+
+    ultimoCostoEntrada:
+      z.coerce
+        .number()
+        .default(0),
+
+    precioUnitario:
+      z.coerce
+        .number()
+        .default(0),
+
+    subtotal:
+      z.coerce
+        .number()
+        .default(0),
+
+    descuento:
+      z.coerce
+        .number()
+        .default(0),
+
+    total:
+      z.coerce
+        .number()
+        .default(0),
+
+    valorDiferencia:
+      z.coerce
+        .number()
+        .default(0),
+
+    /* =========================
+        OTROS DATOS
+    ========================= */
+
+    metodoPago:
+      MetodoPagoMovimientoSchema
+        .optional(),
+
+    estado:
+      EstadoMovimientoSchema
+        .default("activo"),
 
     referenciaId:
       z.string()
@@ -320,95 +598,14 @@ export const MovimientoSchema =
         .nullable()
         .optional(),
 
-    metodoPago:
-      z.union([
-
-        z.literal("efectivo"),
-
-        z.literal("qr"),
-
-        z.literal("transferencia"),
-
-        z.literal("otro"),
-
-        z.string(),
-
-        z.null(),
-
-      ]).optional(),
-
-    cantidadEntrada:
-      z.number()
-        .optional(),
-
-    cantidadSalida:
-      z.number()
-        .optional(),
-
-    cantidadInicial:
-      z.number()
-        .optional(),
-
-    cantidadEsperada:
-      z.number()
-        .optional(),
-
-    cantidadFisica:
-      z.number()
-        .optional(),
-
-    diferenciaCantidad:
-      z.number()
-        .optional(),
-
-    montoEntrada:
-      z.number()
-        .optional(),
-
-    montoSalida:
-      z.number()
-        .optional(),
-
-    montoInicial:
-      z.number()
-        .optional(),
-
-    montoEsperado:
-      z.number()
-        .optional(),
-
-    montoFisico:
-      z.number()
-        .optional(),
-
-    diferenciaMonto:
-      z.number()
-        .optional(),
-
-    costoUnitario:
-      z.number()
-        .optional(),
-
-    precioUnitario:
-      z.number()
-        .optional(),
-
-    subtotal:
-      z.number()
-        .optional(),
-
-    total:
-      z.number()
-        .optional(),
-
-    estado:
-      z.string()
-        .optional(),
-
     observacion:
       z.string()
         .nullable()
         .optional(),
+
+    /* =========================
+        AUDITORÍA
+    ========================= */
 
     creadoPor:
       z.string()
@@ -420,10 +617,30 @@ export const MovimientoSchema =
         .nullable()
         .optional(),
 
-  }).passthrough();
+    actualizadoPor:
+      z.string()
+        .nullable()
+        .optional(),
+
+    fechaActualizacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    eliminadoPor:
+      z.string()
+        .nullable()
+        .optional(),
+
+    fechaEliminado:
+      z.string()
+        .nullable()
+        .optional(),
+  })
+    .passthrough();
 
 /* =========================
-    ARRAY MOVIMIENTOS
+    ARRAY DE MOVIMIENTOS
 ========================= */
 
 export const MovimientoArraySchema =
@@ -432,322 +649,173 @@ export const MovimientoArraySchema =
   );
 
 /* =========================
-    MOVIMIENTO FORM
+    FORMULARIO PARA CREAR
 ========================= */
 
-export const MovimientoFormSchema =
-  z.object({
+export type MovimientoForm = {
+  fecha?:
+    string;
 
-    fecha:
-      z.string()
-        .optional(),
+  tipoMovimiento:
+    z.infer<
+      typeof TipoMovimientoSchema
+    >;
 
-    tipoMovimiento:
-      z.string(),
+  origenMovimiento?:
+    z.infer<
+      typeof OrigenMovimientoSchema
+    >;
 
-    origenMovimiento:
-      z.string()
-        .optional(),
+  modulo?:
+    z.infer<
+      typeof ModuloMovimientoSchema
+    >;
 
-    modulo:
-      z.string(),
+  idSucursal?:
+    string;
 
-    idSucursal:
-      z.string()
-        .optional(),
+  idCaja?:
+    string;
 
-    idCaja:
-      z.string()
-        .optional(),
+  idPerfil?:
+    string;
 
-    idPerfil:
-      z.string()
-        .optional(),
+  idAlmacen?:
+    string;
 
-    idAlmacen:
-      z.string()
-        .optional(),
+  idAlmacenOrigen?:
+    string;
 
-    idProducto:
-      z.string()
-        .optional(),
+  idAlmacenDestino?:
+    string;
 
-    idInventario:
-      z.string()
-        .optional(),
+  idProducto?:
+    string;
 
-    referenciaId:
-      z.string()
-        .optional(),
+  idInventario?:
+    string;
 
-    referenciaModelo:
-      z.string()
-        .optional(),
+  idVenta?:
+    string;
 
-    metodoPago:
-      z.string()
-        .optional(),
+  idComanda?:
+    string;
 
-    cantidadEntrada:
-      z.number()
-        .optional(),
+  idEgreso?:
+    string;
 
-    cantidadSalida:
-      z.number()
-        .optional(),
+  idSolicitud?:
+    string;
 
-    cantidadInicial:
-      z.number()
-        .optional(),
+  idAperturaCaja?:
+    string;
 
-    cantidadEsperada:
-      z.number()
-        .optional(),
+  idCierreCaja?:
+    string;
 
-    cantidadFisica:
-      z.number()
-        .optional(),
+  cantidad?:
+    number;
 
-    diferenciaCantidad:
-      z.number()
-        .optional(),
+  cantidadEntrada?:
+    number;
 
-    montoEntrada:
-      z.number()
-        .optional(),
+  cantidadSalida?:
+    number;
 
-    montoSalida:
-      z.number()
-        .optional(),
+  cantidadAnterior?:
+    number;
 
-    montoInicial:
-      z.number()
-        .optional(),
+  cantidadNueva?:
+    number;
 
-    montoEsperado:
-      z.number()
-        .optional(),
+  cantidadFisica?:
+    number;
 
-    montoFisico:
-      z.number()
-        .optional(),
+  cantidadEsperada?:
+    number;
 
-    diferenciaMonto:
-      z.number()
-        .optional(),
+  diferenciaCantidad?:
+    number;
 
-    costoUnitario:
-      z.number()
-        .optional(),
+  montoEntrada?:
+    number;
 
-    precioUnitario:
-      z.number()
-        .optional(),
+  montoSalida?:
+    number;
 
-    subtotal:
-      z.number()
-        .optional(),
+  montoInicial?:
+    number;
 
-    total:
-      z.number()
-        .optional(),
+  montoEsperado?:
+    number;
 
-    estado:
-      z.string()
-        .optional(),
+  montoReal?:
+    number;
 
-    observacion:
-      z.string()
-        .optional(),
+  diferenciaMonto?:
+    number;
 
-    creadoPor:
-      z.string()
-        .optional(),
+  costoUnitario?:
+    number;
 
-  });
+  costoAnterior?:
+    number;
 
-/* =========================
-    REPORTE PRODUCTOS MAS VENDIDOS
-========================= */
+  costoEntrada?:
+    number;
 
-export const ProductoMasVendidoSchema =
-  z.object({
+  costoPromedio?:
+    number;
 
-    idProducto:
-      z.string()
-        .or(
-          z.object({}).passthrough()
-        )
-        .optional(),
+  ultimoCostoEntrada?:
+    number;
 
-    producto:
-      MovimientoProductoSchema
-        .optional(),
+  precioUnitario?:
+    number;
 
-    cantidadVendida:
-      z.number(),
+  subtotal?:
+    number;
 
-    totalVendido:
-      z.number(),
+  descuento?:
+    number;
 
-    costoTotal:
-      z.number()
-        .optional(),
+  total?:
+    number;
 
-    utilidad:
-      z.number()
-        .optional(),
+  valorDiferencia?:
+    number;
 
-  }).passthrough();
+  metodoPago?:
+    z.infer<
+      typeof MetodoPagoMovimientoSchema
+    >;
 
-export const ProductosMasVendidosArraySchema =
-  z.array(
-    ProductoMasVendidoSchema
-  );
+  estado?:
+    z.infer<
+      typeof EstadoMovimientoSchema
+    >;
 
-/* =========================
-    REPORTE CAJA DIARIA
-========================= */
+  referenciaId?:
+    string;
 
-export const ReporteCajaDiariaSchema =
-  z.object({
+  referenciaModelo?:
+    string;
 
-    montoInicial:
-      z.number(),
+  observacion?:
+    string | null;
 
-    ventas:
-      z.object({
+  creadoPor?:
+    string | null;
 
-        efectivo:
-          z.number(),
-
-        qr:
-          z.number(),
-
-        transferencia:
-          z.number(),
-
-        total:
-          z.number(),
-
-      }),
-
-    egresos:
-      z.object({
-
-        efectivo:
-          z.number(),
-
-        qr:
-          z.number(),
-
-        transferencia:
-          z.number(),
-
-        total:
-          z.number(),
-
-      }),
-
-    cortesias:
-      z.number(),
-
-    ventasAnuladas:
-      z.number(),
-
-    montoEsperadoCajaFisica:
-      z.number(),
-
-  }).passthrough();
-
-/* =========================
-    ESTADO DE RESULTADOS
-========================= */
-
-export const EstadoResultadosSchema =
-  z.object({
-
-    ingresosVentas:
-      z.number(),
-
-    cortesias:
-      z.number(),
-
-    anuladas:
-      z.number(),
-
-    costoVentas:
-      z.number(),
-
-    egresos:
-      z.number(),
-
-    utilidadBruta:
-      z.number(),
-
-    utilidadNeta:
-      z.number(),
-
-  }).passthrough();
-
-/* =========================
-    FLUJO DE EFECTIVO
-========================= */
-
-export const FlujoEfectivoSchema =
-  z.object({
-
-    saldoInicial:
-      z.number(),
-
-    entradas:
-      z.object({
-
-        efectivo:
-          z.number(),
-
-        qr:
-          z.number(),
-
-        transferencia:
-          z.number(),
-
-        total:
-          z.number(),
-
-      }),
-
-    salidas:
-      z.object({
-
-        efectivo:
-          z.number(),
-
-        qr:
-          z.number(),
-
-        transferencia:
-          z.number(),
-
-        total:
-          z.number(),
-
-      }),
-
-    flujoNeto:
-      z.number(),
-
-    saldoFinalEsperado:
-      z.number(),
-
-  }).passthrough();
+  actualizadoPor?:
+    string | null;
+};
 
 /* =========================
     FILTROS
 ========================= */
 
 export type MovimientoFiltros = {
-
   fechaInicio?:
     string;
 
@@ -772,19 +840,305 @@ export type MovimientoFiltros = {
   tipoMovimiento?:
     string;
 
+  origenMovimiento?:
+    string;
+
   modulo?:
     string;
 
   metodoPago?:
     string;
 
-  origenMovimiento?:
+  estado?:
     string;
-
-  limite?:
-    number;
-
 };
+
+/* =========================
+    PRODUCTOS MÁS VENDIDOS
+========================= */
+
+export const ProductoMasVendidoSchema =
+  z.object({
+    idProducto:
+      z.union([
+        MovimientoObjectIdSchema,
+        MovimientoProductoSchema,
+        z.null(),
+      ])
+        .optional(),
+
+    producto:
+      MovimientoProductoSchema
+        .nullable()
+        .optional(),
+
+    nombre:
+      z.string()
+        .optional(),
+
+    cantidadVendida:
+      z.coerce
+        .number()
+        .default(0),
+
+    totalVendido:
+      z.coerce
+        .number()
+        .default(0),
+
+    costoTotal:
+      z.coerce
+        .number()
+        .default(0),
+
+    utilidad:
+      z.coerce
+        .number()
+        .default(0),
+  })
+    .passthrough();
+
+export const ProductosMasVendidosArraySchema =
+  z.array(
+    ProductoMasVendidoSchema
+  );
+
+/* =========================
+    REPORTE DE CAJA DIARIA
+========================= */
+
+export const ReporteCajaDiariaSchema =
+  z.object({
+    fecha:
+      z.string()
+        .nullable()
+        .optional(),
+
+    caja:
+      MovimientoCajaSchema
+        .nullable()
+        .optional(),
+
+    sucursal:
+      MovimientoSucursalSchema
+        .nullable()
+        .optional(),
+
+    responsable:
+      MovimientoPerfilSchema
+        .nullable()
+        .optional(),
+
+    montoInicial:
+      z.coerce
+        .number()
+        .default(0),
+
+    ventasEfectivo:
+      z.coerce
+        .number()
+        .default(0),
+
+    ventasQr:
+      z.coerce
+        .number()
+        .default(0),
+
+    ventasTransferencia:
+      z.coerce
+        .number()
+        .default(0),
+
+    ventasMixtas:
+      z.coerce
+        .number()
+        .default(0),
+
+    totalVentas:
+      z.coerce
+        .number()
+        .default(0),
+
+    egresosEfectivo:
+      z.coerce
+        .number()
+        .default(0),
+
+    egresosQr:
+      z.coerce
+        .number()
+        .default(0),
+
+    egresosTransferencia:
+      z.coerce
+        .number()
+        .default(0),
+
+    totalEgresos:
+      z.coerce
+        .number()
+        .default(0),
+
+    cortesias:
+      z.coerce
+        .number()
+        .default(0),
+
+    ventasAnuladas:
+      z.coerce
+        .number()
+        .default(0),
+
+    montoEsperado:
+      z.coerce
+        .number()
+        .default(0),
+
+    montoReal:
+      z.coerce
+        .number()
+        .default(0),
+
+    diferencia:
+      z.coerce
+        .number()
+        .default(0),
+
+    estado:
+      z.string()
+        .optional(),
+
+    movimientos:
+      MovimientoArraySchema
+        .optional(),
+  })
+    .passthrough();
+
+/* =========================
+    ESTADO DE RESULTADOS
+========================= */
+
+export const EstadoResultadosSchema =
+  z.object({
+    fechaInicio:
+      z.string()
+        .nullable()
+        .optional(),
+
+    fechaFin:
+      z.string()
+        .nullable()
+        .optional(),
+
+    ingresosVentas:
+      z.coerce
+        .number()
+        .default(0),
+
+    cortesias:
+      z.coerce
+        .number()
+        .default(0),
+
+    ventasAnuladas:
+      z.coerce
+        .number()
+        .default(0),
+
+    costoVentas:
+      z.coerce
+        .number()
+        .default(0),
+
+    utilidadBruta:
+      z.coerce
+        .number()
+        .default(0),
+
+    egresos:
+      z.coerce
+        .number()
+        .default(0),
+
+    utilidadNeta:
+      z.coerce
+        .number()
+        .default(0),
+  })
+    .passthrough();
+
+/* =========================
+    FLUJO DE EFECTIVO
+========================= */
+
+export const FlujoEfectivoSchema =
+  z.object({
+    fechaInicio:
+      z.string()
+        .nullable()
+        .optional(),
+
+    fechaFin:
+      z.string()
+        .nullable()
+        .optional(),
+
+    entradasEfectivo:
+      z.coerce
+        .number()
+        .default(0),
+
+    entradasQr:
+      z.coerce
+        .number()
+        .default(0),
+
+    entradasTransferencia:
+      z.coerce
+        .number()
+        .default(0),
+
+    totalEntradas:
+      z.coerce
+        .number()
+        .default(0),
+
+    salidasEfectivo:
+      z.coerce
+        .number()
+        .default(0),
+
+    salidasQr:
+      z.coerce
+        .number()
+        .default(0),
+
+    salidasTransferencia:
+      z.coerce
+        .number()
+        .default(0),
+
+    totalSalidas:
+      z.coerce
+        .number()
+        .default(0),
+
+    flujoNeto:
+      z.coerce
+        .number()
+        .default(0),
+
+    saldoInicial:
+      z.coerce
+        .number()
+        .default(0),
+
+    saldoFinal:
+      z.coerce
+        .number()
+        .default(0),
+  })
+    .passthrough();
 
 /* =========================
     TYPES
@@ -795,9 +1149,29 @@ export type MovimientoType =
     typeof MovimientoSchema
   >;
 
-export type MovimientoForm =
+export type TipoMovimiento =
   z.infer<
-    typeof MovimientoFormSchema
+    typeof TipoMovimientoSchema
+  >;
+
+export type OrigenMovimiento =
+  z.infer<
+    typeof OrigenMovimientoSchema
+  >;
+
+export type ModuloMovimiento =
+  z.infer<
+    typeof ModuloMovimientoSchema
+  >;
+
+export type MetodoPagoMovimiento =
+  z.infer<
+    typeof MetodoPagoMovimientoSchema
+  >;
+
+export type EstadoMovimiento =
+  z.infer<
+    typeof EstadoMovimientoSchema
   >;
 
 export type ProductoMasVendidoType =

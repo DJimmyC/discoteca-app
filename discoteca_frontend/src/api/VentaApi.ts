@@ -1,3 +1,5 @@
+// src/api/VentaApi.ts
+
 import api from "@/lib/axios";
 
 import {
@@ -5,22 +7,159 @@ import {
 } from "axios";
 
 import {
-
+  CreateVentaResponseSchema,
   VentaArraySchema,
-
   VentaSchema,
-
   VentasConDetallesPorPerfilSchema,
 
   type VentaForm,
-
   type VentaType,
-
   type UpdateVentaType,
-
   type DeleteVentaType,
-
+  type CortesiaVentaType,
 } from "@/types/VentaType";
+
+/* =========================
+    OBTENER MENSAJE DE ERROR
+========================= */
+
+function obtenerMensajeError(
+  error: unknown,
+  mensajePredeterminado: string
+): string {
+
+  if (
+    isAxiosError(error) &&
+    error.response
+  ) {
+
+    const errorBackend =
+      error.response.data?.error;
+
+    const mensajeBackend =
+      error.response.data?.message;
+
+    if (
+      typeof errorBackend ===
+      "string"
+    ) {
+      return errorBackend;
+    }
+
+    if (
+      typeof mensajeBackend ===
+      "string"
+    ) {
+      return mensajeBackend;
+    }
+
+  }
+
+  if (
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return mensajePredeterminado;
+
+}
+
+/* =========================
+    VALIDAR DATOS DE VENTA
+========================= */
+
+function validarVenta(
+  formData: VentaForm
+): void {
+
+  if (!formData.idCaja) {
+
+    throw new Error(
+      "El ID de la caja es obligatorio"
+    );
+
+  }
+
+  if (!formData.idPerfil) {
+
+    throw new Error(
+      "El ID del perfil es obligatorio"
+    );
+
+  }
+
+  if (!formData.idSucursal) {
+
+    throw new Error(
+      "El ID de la sucursal es obligatorio"
+    );
+
+  }
+
+  const subtotal =
+    Number(
+      formData.subtotal
+    );
+
+  const descuento =
+    Number(
+      formData.descuento || 0
+    );
+
+  if (
+    !Number.isFinite(subtotal) ||
+    subtotal < 0
+  ) {
+
+    throw new Error(
+      "El subtotal de la venta no es válido"
+    );
+
+  }
+
+  if (
+    !Number.isFinite(descuento) ||
+    descuento < 0
+  ) {
+
+    throw new Error(
+      "El descuento de la venta no es válido"
+    );
+
+  }
+
+  if (
+    descuento >
+    subtotal
+  ) {
+
+    throw new Error(
+      "El descuento no puede ser mayor al subtotal"
+    );
+
+  }
+
+  const metodosValidos = [
+    "efectivo",
+    "qr",
+    "transferencia",
+    "mixto",
+  ];
+
+  if (
+    !metodosValidos.includes(
+      formData.metodoPago
+    )
+  ) {
+
+    throw new Error(
+      "El método de pago no es válido"
+    );
+
+  }
+
+}
 
 /* =========================
     CREAR VENTA
@@ -32,32 +171,57 @@ export async function createVenta(
 
   try {
 
-    const { data } =
-      await api.post(
+    validarVenta(
+      formData
+    );
 
-        "/venta",
+    const {
+      data,
+    } = await api.post(
 
-        formData
+      "/venta",
 
+      formData
+
+    );
+
+    const response =
+      CreateVentaResponseSchema.safeParse(
+        data
       );
 
-    return data;
+    if (!response.success) {
 
-  } catch (error) {
+      console.log(
+        "RESPUESTA REAL AL CREAR VENTA:",
+        data
+      );
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+      console.log(
+        "ERROR ZOD AL CREAR VENTA:",
+        response.error.format()
+      );
+
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
+      );
 
       throw new Error(
-        error.response.data.error
+        "La respuesta de la venta no coincide con el type"
       );
 
     }
 
+    return response.data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error creando venta"
+      obtenerMensajeError(
+        error,
+        "Error creando venta"
+      )
     );
 
   }
@@ -72,10 +236,11 @@ export async function getVentas() {
 
   try {
 
-    const { data } =
-      await api(
-        "/venta"
-      );
+    const {
+      data,
+    } = await api.get(
+      "/venta"
+    );
 
     const response =
       VentaArraySchema.safeParse(
@@ -85,32 +250,35 @@ export async function getVentas() {
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DE VENTAS:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DE VENTAS:",
         response.error.format()
       );
 
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
+      );
+
       throw new Error(
-        "Error validando ventas"
+        "La estructura de las ventas no coincide con el type"
       );
 
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo ventas"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo ventas"
+      )
     );
 
   }
@@ -127,10 +295,19 @@ export async function getVentaById(
 
   try {
 
-    const { data } =
-      await api(
-        `/venta/${id}`
+    if (!id) {
+
+      throw new Error(
+        "El ID de la venta es obligatorio"
       );
+
+    }
+
+    const {
+      data,
+    } = await api.get(
+      `/venta/${id}`
+    );
 
     const response =
       VentaSchema.safeParse(
@@ -140,32 +317,35 @@ export async function getVentaById(
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DE LA VENTA:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DE LA VENTA:",
         response.error.format()
       );
 
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
+      );
+
       throw new Error(
-        "Error validando venta"
+        "La estructura de la venta no coincide con el type"
       );
 
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo venta"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo venta"
+      )
     );
 
   }
@@ -173,54 +353,69 @@ export async function getVentaById(
 }
 
 /* =========================
-    OBTENER VENTAS CON DETALLES POR PERFIL
+    OBTENER VENTAS CON
+    DETALLES POR PERFIL
 ========================= */
 
-export async function getVentasConDetallesPorPerfil(
+export async function
+getVentasConDetallesPorPerfil(
   idPerfil: string
 ) {
 
   try {
 
-    const { data } =
-      await api(
-        `/venta/perfil/${idPerfil}/detalles`
+    if (!idPerfil) {
+
+      throw new Error(
+        "El ID del perfil es obligatorio"
       );
 
+    }
+
+    const {
+      data,
+    } = await api.get(
+
+      `/venta/perfil/${idPerfil}/detalles`
+
+    );
+
     const response =
-      VentasConDetallesPorPerfilSchema.safeParse(
-        data
-      );
+      VentasConDetallesPorPerfilSchema
+        .safeParse(data);
 
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL DE VENTAS CON DETALLES:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DE VENTAS CON DETALLES:",
         response.error.format()
       );
 
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
+      );
+
       throw new Error(
-        "Error validando ventas con detalles"
+        "La estructura de las ventas con detalles no coincide con el type"
       );
 
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo ventas con detalles"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo ventas con detalles"
+      )
     );
 
   }
@@ -241,32 +436,101 @@ export async function updateVenta({
 
   try {
 
-    const { data } =
-      await api.put(
-
-        `/venta/${ventaId}`,
-
-        formData
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    if (!ventaId) {
 
       throw new Error(
-        error.response.data.error
+        "El ID de la venta es obligatorio"
       );
 
     }
 
+    if (
+      formData.subtotal !==
+      undefined
+    ) {
+
+      const subtotal =
+        Number(
+          formData.subtotal
+        );
+
+      if (
+        !Number.isFinite(subtotal) ||
+        subtotal < 0
+      ) {
+
+        throw new Error(
+          "El subtotal no es válido"
+        );
+
+      }
+
+    }
+
+    if (
+      formData.descuento !==
+      undefined
+    ) {
+
+      const descuento =
+        Number(
+          formData.descuento
+        );
+
+      if (
+        !Number.isFinite(descuento) ||
+        descuento < 0
+      ) {
+
+        throw new Error(
+          "El descuento no es válido"
+        );
+
+      }
+
+      if (
+        formData.subtotal !==
+          undefined &&
+        descuento >
+          Number(formData.subtotal)
+      ) {
+
+        throw new Error(
+          "El descuento no puede ser mayor al subtotal"
+        );
+
+      }
+
+    }
+
+    const {
+      data,
+    } = await api.put(
+
+      `/venta/${ventaId}`,
+
+      formData
+
+    );
+
+    /*
+      El controller devuelve:
+
+      {
+        message: "Venta actualizada",
+        venta: {...}
+      }
+    */
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error actualizando venta"
+      obtenerMensajeError(
+        error,
+        "Error actualizando venta"
+      )
     );
 
   }
@@ -287,93 +551,114 @@ export async function deleteVentaById({
 
   try {
 
-    const { data } =
-      await api.delete(
-
-        `/venta/${id}`,
-
-        {
-          data: {
-            eliminadoPor,
-          },
-        }
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    if (!id) {
 
       throw new Error(
-        error.response.data.error
+        "El ID de la venta es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.delete(
+
+      `/venta/${id}`,
+
+      {
+        data: {
+
+          eliminadoPor:
+            eliminadoPor ||
+            "admin",
+
+        },
+      }
+
+    );
+
+    /*
+      El backend debe:
+      - marcar la venta como anulada
+      - eliminar lógicamente sus detalles
+      - devolver el stock
+    */
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error anulando venta"
+      obtenerMensajeError(
+        error,
+        "Error anulando venta"
+      )
     );
 
   }
 
 }
+
 /* =========================
-    MARCAR VENTA COMO CORTESIA
+    MARCAR VENTA COMO CORTESÍA
 ========================= */
-
-type CortesiaVentaType = {
-
-  id:
-    VentaType["_id"];
-
-  eliminadoPor?:
-    string;
-
-};
 
 export async function cortesiaVentaById({
 
   id,
 
-  eliminadoPor,
+  actualizadoPor,
+
+  observacion,
 
 }: CortesiaVentaType) {
 
   try {
 
-    const { data } =
-      await api.patch(
-
-        `/venta/${id}/cortesia`,
-
-        {
-          eliminadoPor,
-        }
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    if (!id) {
 
       throw new Error(
-        error.response.data.error
+        "El ID de la venta es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.patch(
+
+      `/venta/${id}/cortesia`,
+
+      {
+
+        actualizadoPor:
+          actualizadoPor ||
+          "admin",
+
+        observacion:
+          observacion ||
+          "Venta marcada como cortesía",
+
+      }
+
+    );
+
+    /*
+      Una cortesía:
+      - conserva la salida del inventario
+      - no devuelve el stock
+      - no debe sumar como ingreso
+    */
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error marcando venta como cortesía"
+      obtenerMensajeError(
+        error,
+        "Error marcando venta como cortesía"
+      )
     );
 
   }

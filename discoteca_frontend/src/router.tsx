@@ -58,6 +58,8 @@ import SolicitudDetailView from './views/solicitud/SolicitudDetailView'
 import CreateSolicitudView from './views/solicitud/CreateSolicitudView'
 import EditSolicitudView from './views/solicitud/EditSolicitudView'
 
+import MovimientoDetailView from './views/reporte/MovimientoDetailView'
+
 //login
 import AuthLayout from './layouts/AuthLayout'
 import LoginView from './views/auth/LoginView'
@@ -78,6 +80,23 @@ import EditPerfilMeseroView from './views/perfilUsuario/EditPerfilMeseroView'
 
 import VentaDetailView from './views/venta/VentaDetailView'
 import { AuthProvider } from "../src/Context/AuthContext"
+
+
+
+// reportes
+import ReporteDashboardView from './views/reporte/ReporteDashboardView'
+import ReporteEstadoResultadosView from './views/reporte/ReporteEstadoResultadosView'
+import ReporteVentasView from './views/reporte/ReporteVentasView'
+import ReporteProductosView from './views/reporte/ReporteProductosView'
+import ReporteVendedoresView from './views/reporte/ReporteVendedoresView'
+import ReporteMetodosPagoView from './views/reporte/ReporteMetodosPagoView'
+import ReporteInventarioView from './views/reporte/ReporteInventarioView'
+import ReporteStockBajoView from './views/reporte/ReporteStockBajoView'
+import ReporteValorInventarioView from './views/reporte/ReporteValorInventarioView'
+import ReporteKardexView from './views/reporte/ReporteKardexView'
+import ReporteFlujoEfectivoView from './views/reporte/ReporteFlujoEfectivoView'
+import ReporteCierresCajaView from './views/reporte/ReporteCierresCajaView'
+import ReporteSolicitudesResumenView from './views/reporte/ReporteSolicitudesResumenView'
 
 export default function Router() {
 
@@ -122,6 +141,21 @@ export default function Router() {
                         <Route path='/sucursal/:sucursalId/solicitud' element={<SolicitudDetailView />} />
                         <Route path='/sucursal/:sucursalId/solicitud/create' element={<CreateSolicitudView />} />
                         <Route path='/sucursal/:sucursalId/solicitud/:solicitudId/edit' element={<EditSolicitudView />} />
+
+                        <Route path='/sucursal/:sucursalId/reportes' element={<ReporteDashboardView />} />
+                        <Route path='/sucursal/:sucursalId/reportes/estado-resultados' element={<ReporteEstadoResultadosView />} />
+                        <Route path='/sucursal/:sucursalId/reportes/ventas' element={<ReporteVentasView />} />
+                        <Route path='/sucursal/:sucursalId/reportes/productos' element={<ReporteProductosView />} />
+                        <Route path='/sucursal/:sucursalId/reportes/vendedores' element={<ReporteVendedoresView />} />
+                        <Route path='/sucursal/:sucursalId/reportes/metodos-pago' element={<ReporteMetodosPagoView   />} />
+                        <Route path='/sucursal/:sucursalId/reportes/inventario' element={<ReporteInventarioView   />} />
+                        <Route path='/sucursal/:sucursalId/reportes/stock-bajo' element={<ReporteStockBajoView   />} />
+                        <Route path='/sucursal/:sucursalId/reportes/valor-inventario' element={<ReporteValorInventarioView   />} />
+                        <Route path='/sucursal/:sucursalId/reportes/kardex' element={<ReporteKardexView   />} />
+                        <Route path='/sucursal/:sucursalId/reportes/flujo-efectivo' element={<ReporteFlujoEfectivoView   />} />
+                        <Route path='/sucursal/:sucursalId/reportes/cierres-caja' element={<ReporteCierresCajaView   />} />
+                        <Route path='/sucursal/:sucursalId/reportes/solicitudes' element={<ReporteSolicitudesResumenView   />} />
+
 
                         <Route path='/categoriaProducto/' element={<CategoriaProductoDetailView />} />
                         <Route path='/categoriaProducto/create' element={<CreateCategoriaProductoView />} />

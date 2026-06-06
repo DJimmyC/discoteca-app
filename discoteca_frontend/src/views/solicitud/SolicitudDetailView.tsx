@@ -39,8 +39,11 @@ import MenuList from "@/components/MenuList";
 import {
   deleteSolicitudById,
   getSolicitudesBySucursal,
-  updateSolicitud,
 } from "@/api/SolicitudApi";
+
+import {
+  aprobarYTransferirSolicitud,
+} from "@/api/InventarioApi";
 
 import type {
   SolicitudPorSucursalType,
@@ -133,7 +136,7 @@ export default function SolicitudDetailView() {
   });
 
   /* =========================
-      APROBAR SOLICITUD
+      APROBAR Y TRANSFERIR
   ========================= */
 
   const {
@@ -141,31 +144,94 @@ export default function SolicitudDetailView() {
     isPending: aprobandoSolicitud,
   } = useMutation({
 
-    mutationFn: updateSolicitud,
+    mutationFn:
+      aprobarYTransferirSolicitud,
 
-    onSuccess: () => {
+    onSuccess:
+      async (
+        data
+      ) => {
 
-      queryClient.invalidateQueries({
-        queryKey: [
-          "solicitudes-sucursal",
-          idSucursal,
-        ],
-      });
+        await Swal.fire({
 
-    },
+          icon:
+            "success",
 
-    onError: (error) => {
+          title:
+            "Solicitud procesada",
 
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Error al aprobar la solicitud",
-      });
+          html: `
+            <p>${data.message}</p>
+            <p style="margin-top:8px">
+              <strong>Origen:</strong>
+              ${data.almacenOrigen.nombre || "Almacén principal"}
+            </p>
+            <p>
+              <strong>Destino:</strong>
+              ${data.almacenDestino.nombre || "Almacén destino"}
+            </p>
+            <p>
+              <strong>Total transferido:</strong>
+              ${data.cantidadTotal} unidades
+            </p>
+          `,
 
-    },
+        });
+
+        await Promise.all([
+
+          queryClient.invalidateQueries({
+            queryKey: [
+              "solicitudes-sucursal",
+              idSucursal,
+            ],
+          }),
+
+          queryClient.invalidateQueries({
+            queryKey: [
+              "inventarios-sucursal",
+              idSucursal,
+            ],
+          }),
+
+          queryClient.invalidateQueries({
+            queryKey: [
+              "inventario-principal",
+              idSucursal,
+            ],
+          }),
+
+          queryClient.invalidateQueries({
+            queryKey: [
+              "movimientos",
+            ],
+          }),
+
+        ]);
+
+      },
+
+    onError:
+      async (
+        error
+      ) => {
+
+        await Swal.fire({
+
+          icon:
+            "error",
+
+          title:
+            "No se pudo aprobar y transferir",
+
+          text:
+            error instanceof Error
+              ? error.message
+              : "Error al aprobar la solicitud",
+
+        });
+
+      },
 
   });
 
@@ -241,7 +307,7 @@ export default function SolicitudDetailView() {
     if (estado === "rechazada") return "Rechazada";
     if (estado === "en_proceso") return "En proceso";
     if (estado === "en_transito") return "En tránsito";
-    if (estado === "completada") return "Completada";
+    if (estado === "atendida") return "Atendida";
     if (estado === "anulada") return "Anulada";
 
     return estado;
@@ -266,7 +332,7 @@ export default function SolicitudDetailView() {
 
     if (
       estado === "aprobada" ||
-      estado === "completada"
+      estado === "atendida"
     ) {
       return "bg-emerald-100 text-emerald-700";
     }
@@ -317,8 +383,7 @@ export default function SolicitudDetailView() {
       solicitud.estado;
 
     if (
-      estado === "pendiente" ||
-      estado === "en_revision"
+      estado === "pendiente"
     ) {
       return "Media";
     }
@@ -374,32 +439,62 @@ export default function SolicitudDetailView() {
 
   };
 
-  const handleAprobarSolicitud = (
-    solicitud: SolicitudPorSucursalType
-  ) => {
+  const handleAprobarSolicitud =
+    async (
+      solicitud:
+        SolicitudPorSucursalType
+    ) => {
 
-    if (!solicitud._id) {
-      return;
-    }
+      if (!solicitud._id) {
+        return;
+      }
 
-    aprobarSolicitud({
+      const confirmacion =
+        await Swal.fire({
 
-      solicitudId:
-        solicitud._id,
+          icon:
+            "warning",
 
-      formData: {
+          title:
+            "¿Aprobar y transferir?",
 
-        estado:
-          "aprobada",
+          html: `
+            <p>Se descontará stock del almacén principal.</p>
+            <p>Se sumará al almacén destino y se registrarán los movimientos.</p>
+          `,
+
+          showCancelButton:
+            true,
+
+          confirmButtonText:
+            "Sí, aprobar y transferir",
+
+          cancelButtonText:
+            "Cancelar",
+
+          confirmButtonColor:
+            "#16a34a",
+
+        });
+
+      if (
+        !confirmacion.isConfirmed
+      ) {
+        return;
+      }
+
+      aprobarSolicitud({
+
+        idSolicitud:
+          solicitud._id,
 
         actualizadoPor:
-          perfil?.nombres || "sistema",
+          perfil?.nombres ||
+          "sistema",
 
-      },
+      });
 
-    });
-
-  };
+    };
 
   const handleAnularSolicitud = (
     id?: string
@@ -668,8 +763,8 @@ export default function SolicitudDetailView() {
                   <option value="rechazada">
                     Rechazada
                   </option>
-                  <option value="completada">
-                    Completada
+                  <option value="atendida">
+                    Atendida
                   </option>
                   <option value="anulada">
                     Anulada
@@ -891,17 +986,17 @@ export default function SolicitudDetailView() {
 
                       const puedeEditar =
                         solicitud.estado !== "anulada" &&
-                        solicitud.estado !== "completada";
+                        solicitud.estado !== "atendida";
 
                       const puedeAprobar =
                         solicitud.estado !== "aprobada" &&
                         solicitud.estado !== "anulada" &&
-                        solicitud.estado !== "completada" &&
+                        solicitud.estado !== "atendida" &&
                         solicitud.estado !== "rechazada";
 
                       const puedeAnular =
                         solicitud.estado !== "anulada" &&
-                        solicitud.estado !== "completada";
+                        solicitud.estado !== "atendida";
 
                       return (
 

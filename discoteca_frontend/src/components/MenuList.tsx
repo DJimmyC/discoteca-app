@@ -1,287 +1,1086 @@
-import { useState, useEffect } from "react"
-import { Link, useLocation } from "react-router-dom"
+// import { useState, useEffect } from "react"
+// import { Link, useLocation } from "react-router-dom"
+// import {
+//     ChevronDown,
+//     ChevronRight,
+//     Package,
+//     Boxes,
+//     ShoppingCart,
+//     Users,
+//     DollarSign,
+//     ArrowRightLeft,
+//     ClipboardList,
+//     Settings,
+//     Menu,
+//     X
+// } from "lucide-react"
+// import {
+//   ChartNoAxesCombined,
+// } from "lucide-react";
+// import {
+//   BanknoteArrowDown,
+// } from "lucide-react";
+// import {
+//   useParams,
+// } from "react-router-dom";
+
+// export default function MenuList() {
+
+//     const location = useLocation()
+//     const [openSidebar, setOpenSidebar] = useState(false)
+//     const [openSection, setOpenSection] = useState<string | null>("Inventario")
+
+//     const params = useParams()
+//     const sucursalId = params.sucursalId
+
+//     useEffect(() => {
+//         const saved = localStorage.getItem("sidebar")
+//         if (saved) setOpenSidebar(JSON.parse(saved))
+//     }, [])
+
+//     useEffect(() => {
+//         localStorage.setItem("sidebar", JSON.stringify(openSidebar))
+//     }, [openSidebar])
+
+//     const toggleSection = (section: string) => {
+//         setOpenSection(openSection === section ? null : section)
+//     }
+
+//     const isActive = (path: string) =>
+//         location.pathname.includes(path)
+
+//   const menu = [
+
+//     {
+//         title: "Inventario",
+//         icon: Package,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/almacen`,
+//                 text: "Almacenes"
+//             },
+
+//             {
+//                 to: `/sucursal/${sucursalId}/producto`,
+//                 text: "Productos"
+//             },
+
+//             {
+//                 to: `/sucursal/${sucursalId}/inventario`,
+//                 text: "Inventario"
+//             },
+
+//         ]
+//     },
+
+//     {
+//         title: "Ventas",
+//         icon: ShoppingCart,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/venta`,
+//                 text: "Ventas"
+//             },
+
+//         ]
+//     },
+
+//     {
+//         title: "Caja",
+//         icon: DollarSign,
+
+//         items: [
+//             {
+//                 to: `/sucursal/${sucursalId}/caja`,
+//                 text: "Caja"
+//             },
+
+//             // {
+//             //     to: `/sucursal/${sucursalId}/aperturacaja`,
+//             //     text: "Apertura"
+//             // },
+
+//             // {
+//             //     to: `/sucursal/${sucursalId}/cierre`,
+//             //     text: "Cierre"
+//             // },
+
+//         ]
+//     },
+
+//     {
+//         title: "Usuarios",
+//         icon: Users,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/usuarioDetalle`,
+//                 text: "Usuarios"
+//             },
+
+//         ]
+//     },
+
+//     {
+//         title: "Logística",
+//         icon: ArrowRightLeft,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/solicitud`,
+//                 text: "Solicitudes"
+//             },
+
+          
+//         ]
+//     },
+//      {
+//         title: "Reportes",
+//           icon: ChartNoAxesCombined,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/reporte`,
+//                 text: "Reporte ---"
+//             },
+
+          
+
+//         ]
+//     },
+//      {
+//         title: "Egresos",
+//         icon: BanknoteArrowDown,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/egreso`,
+//                 text: "Egresos"
+//             },
+
+           
+//         ]
+//     },
+
+//     {
+//         title: "Inicio",
+//         icon: Settings,
+
+//         items: [
+
+//             {
+//                 to: `/`,
+//                 text: "Sucursales"
+//             },
+
+//         ]
+//     }
+
+// ]
+
+//     return (
+//         <>
+//             {/* BOTÓN MOBILE */}
+//             <button
+//                 onClick={() => setOpenSidebar(true)}
+//                 className="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow"
+//             >
+//                 <Menu />
+//             </button>
+
+//             {/* OVERLAY */}
+//             {openSidebar && (
+//                 <div
+//                     className="fixed inset-0 bg-black/40 z-40 md:hidden"
+//                     onClick={() => setOpenSidebar(false)}
+//                 />
+//             )}
+
+//             {/* SIDEBAR */}
+//             <aside className={`
+//   fixed md:sticky top-0 left-0
+//   h-screen w-64
+//   bg-white border-r z-50
+
+//   transform transition-transform duration-300
+
+//   ${openSidebar ? "translate-x-0" : "-translate-x-full"}
+//   md:translate-x-0
+// `}>
+
+//                 {/* HEADER */}
+//                 <div className="flex justify-between items-center p-4 border-b">
+//                     <h2 className="font-bold">Discoteca</h2>
+//                     <button onClick={() => setOpenSidebar(false)} className="md:hidden">
+//                         <X />
+//                     </button>
+//                 </div>
+
+//                 {/* MENU */}
+//                 <nav className="p-4 space-y-2">
+//                     {menu.map((section) => {
+//                         const Icon = section.icon
+//                         const isOpen = openSection === section.title
+
+//                         return (
+//                             <div key={section.title}>
+
+//                                 {/* TITULO */}
+//                                 <button
+//                                     onClick={() => toggleSection(section.title)}
+//                                     className="w-full flex justify-between items-center px-3 py-2 hover:bg-gray-100 rounded-lg"
+//                                 >
+//                                     <div className="flex items-center gap-3">
+//                                         <Icon size={18} />
+//                                         <span className="text-sm font-medium">
+//                                             {section.title}
+//                                         </span>
+//                                     </div>
+
+//                                     {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+//                                 </button>
+
+//                                 {/* SUBMENU */}
+//                                 {isOpen && (
+//                                     <div className="ml-8 mt-1 space-y-1">
+//                                         {section.items.map((item) => (
+//                                             <Link
+//                                                 key={item.to}
+//                                                 to={item.to}
+//                                                 className={`
+//                           block px-2 py-1 text-sm rounded-md
+//                           ${isActive(item.to)
+//                                                         ? "bg-black text-white"
+//                                                         : "text-gray-600 hover:bg-gray-100"
+//                                                     }
+//                         `}
+//                                             >
+//                                                 {item.text}
+//                                             </Link>
+//                                         ))}
+//                                     </div>
+//                                 )}
+
+//                             </div>
+//                         )
+//                     })}
+//                 </nav>
+
+//             </aside>
+//         </>
+//     )
+// }
+
+
+// import { useState, useEffect } from "react"
+// import { Link, useLocation } from "react-router-dom"
+// import {
+//     ChevronDown,
+//     ChevronRight,
+//     Package,
+//     Boxes,
+//     ShoppingCart,
+//     Users,
+//     DollarSign,
+//     ArrowRightLeft,
+//     ClipboardList,
+//     Settings,
+//     Menu,
+//     X
+// } from "lucide-react"
+// import {
+//   ChartNoAxesCombined,
+// } from "lucide-react";
+// import {
+//   BanknoteArrowDown,
+// } from "lucide-react";
+// import {
+//   useParams,
+// } from "react-router-dom";
+
+// export default function MenuList() {
+
+//     const location = useLocation()
+//     const [openSidebar, setOpenSidebar] = useState(false)
+//     const [openSection, setOpenSection] = useState<string | null>("Inventario")
+
+//     const params = useParams()
+//     const sucursalId = params.sucursalId
+
+//     useEffect(() => {
+//         const saved = localStorage.getItem("sidebar")
+//         if (saved) setOpenSidebar(JSON.parse(saved))
+//     }, [])
+
+//     useEffect(() => {
+//         localStorage.setItem("sidebar", JSON.stringify(openSidebar))
+//     }, [openSidebar])
+
+//     const toggleSection = (section: string) => {
+//         setOpenSection(openSection === section ? null : section)
+//     }
+
+//     const isActive = (path: string) =>
+//         location.pathname.includes(path)
+
+//   const menu = [
+
+//     {
+//         title: "Inventario",
+//         icon: Package,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/almacen`,
+//                 text: "Almacenes"
+//             },
+
+//             {
+//                 to: `/sucursal/${sucursalId}/producto`,
+//                 text: "Productos"
+//             },
+
+//             {
+//                 to: `/sucursal/${sucursalId}/inventario`,
+//                 text: "Inventario"
+//             },
+
+//         ]
+//     },
+
+//     {
+//         title: "Ventas",
+//         icon: ShoppingCart,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/venta`,
+//                 text: "Ventas"
+//             },
+
+//         ]
+//     },
+
+//     {
+//         title: "Caja",
+//         icon: DollarSign,
+
+//         items: [
+//             {
+//                 to: `/sucursal/${sucursalId}/caja`,
+//                 text: "Caja"
+//             },
+
+//             // {
+//             //     to: `/sucursal/${sucursalId}/aperturacaja`,
+//             //     text: "Apertura"
+//             // },
+
+//             // {
+//             //     to: `/sucursal/${sucursalId}/cierre`,
+//             //     text: "Cierre"
+//             // },
+
+//         ]
+//     },
+
+//     {
+//         title: "Usuarios",
+//         icon: Users,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/usuarioDetalle`,
+//                 text: "Usuarios"
+//             },
+
+//         ]
+//     },
+
+//     {
+//         title: "Logística",
+//         icon: ArrowRightLeft,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/solicitud`,
+//                 text: "Solicitudes"
+//             },
+
+          
+//         ]
+//     },
+//      {
+//         title: "Reportes",
+//           icon: ChartNoAxesCombined,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/reporte`,
+//                 text: "Reporte ---"
+//             },
+
+          
+
+//         ]
+//     },
+//      {
+//         title: "Egresos",
+//         icon: BanknoteArrowDown,
+
+//         items: [
+
+//             {
+//                 to: `/sucursal/${sucursalId}/egreso`,
+//                 text: "Egresos"
+//             },
+
+           
+//         ]
+//     },
+
+//     {
+//         title: "Inicio",
+//         icon: Settings,
+
+//         items: [
+
+//             {
+//                 to: `/`,
+//                 text: "Sucursales"
+//             },
+
+//         ]
+//     }
+
+// ]
+
+//     return (
+//         <>
+//             {/* BOTÓN MOBILE */}
+//             <button
+//                 onClick={() => setOpenSidebar(true)}
+//                 className="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow"
+//             >
+//                 <Menu />
+//             </button>
+
+//             {/* OVERLAY */}
+//             {openSidebar && (
+//                 <div
+//                     className="fixed inset-0 bg-black/40 z-40 md:hidden"
+//                     onClick={() => setOpenSidebar(false)}
+//                 />
+//             )}
+
+//             {/* SIDEBAR */}
+//             <aside className={`
+//   fixed md:sticky top-0 left-0
+//   h-screen w-64
+//   bg-white border-r z-50
+
+//   transform transition-transform duration-300
+
+//   ${openSidebar ? "translate-x-0" : "-translate-x-full"}
+//   md:translate-x-0
+// `}>
+
+//                 {/* HEADER */}
+//                 <div className="flex justify-between items-center p-4 border-b">
+//                     <h2 className="font-bold">Discoteca</h2>
+//                     <button onClick={() => setOpenSidebar(false)} className="md:hidden">
+//                         <X />
+//                     </button>
+//                 </div>
+
+//                 {/* MENU */}
+//                 <nav className="p-4 space-y-2">
+//                     {menu.map((section) => {
+//                         const Icon = section.icon
+//                         const isOpen = openSection === section.title
+
+//                         return (
+//                             <div key={section.title}>
+
+//                                 {/* TITULO */}
+//                                 <button
+//                                     onClick={() => toggleSection(section.title)}
+//                                     className="w-full flex justify-between items-center px-3 py-2 hover:bg-gray-100 rounded-lg"
+//                                 >
+//                                     <div className="flex items-center gap-3">
+//                                         <Icon size={18} />
+//                                         <span className="text-sm font-medium">
+//                                             {section.title}
+//                                         </span>
+//                                     </div>
+
+//                                     {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+//                                 </button>
+
+//                                 {/* SUBMENU */}
+//                                 {isOpen && (
+//                                     <div className="ml-8 mt-1 space-y-1">
+//                                         {section.items.map((item) => (
+//                                             <Link
+//                                                 key={item.to}
+//                                                 to={item.to}
+//                                                 className={`
+//                           block px-2 py-1 text-sm rounded-md
+//                           ${isActive(item.to)
+//                                                         ? "bg-black text-white"
+//                                                         : "text-gray-600 hover:bg-gray-100"
+//                                                     }
+//                         `}
+//                                             >
+//                                                 {item.text}
+//                                             </Link>
+//                                         ))}
+//                                     </div>
+//                                 )}
+
+//                             </div>
+//                         )
+//                     })}
+//                 </nav>
+
+//             </aside>
+//         </>
+//     )
+// }
+import { useEffect, useMemo, useState } from "react";
 import {
-    ChevronDown,
-    ChevronRight,
-    Package,
-    Boxes,
-    ShoppingCart,
-    Users,
-    DollarSign,
-    ArrowRightLeft,
-    ClipboardList,
-    Settings,
-    Menu,
-    X
-} from "lucide-react"
-import {
-  ChartNoAxesCombined,
-} from "lucide-react";
-import {
-  BanknoteArrowDown,
-} from "lucide-react";
-import {
+  Link,
+  NavLink,
+  useLocation,
   useParams,
 } from "react-router-dom";
 
+import {
+  ArrowRightLeft,
+  BanknoteArrowDown,
+  BarChart3,
+  Boxes,
+  ChartNoAxesCombined,
+  ChevronDown,
+  ChevronRight,
+  CircleDollarSign,
+  ClipboardList,
+  DollarSign,
+  FileBarChart,
+  Landmark,
+  LayoutDashboard,
+  Menu,
+  Package,
+  PackageCheck,
+  PackageSearch,
+  ReceiptText,
+  Settings,
+  ShoppingCart,
+  TrendingUp,
+  UserRoundCheck,
+  Users,
+  WalletCards,
+  Warehouse,
+  X,
+} from "lucide-react";
+
+type MenuItem = {
+  to: string;
+  text: string;
+  icon?: React.ElementType;
+  end?: boolean;
+};
+
+type MenuSection = {
+  title: string;
+  icon: React.ElementType;
+  items: MenuItem[];
+};
+
 export default function MenuList() {
+  const location = useLocation();
+  const { sucursalId } = useParams<{
+    sucursalId: string;
+  }>();
 
-    const location = useLocation()
-    const [openSidebar, setOpenSidebar] = useState(false)
-    const [openSection, setOpenSection] = useState<string | null>("Inventario")
+  const [openSidebar, setOpenSidebar] =
+    useState(false);
 
-    const params = useParams()
-    const sucursalId = params.sucursalId
+  const [openSection, setOpenSection] =
+    useState<string | null>(null);
 
-    useEffect(() => {
-        const saved = localStorage.getItem("sidebar")
-        if (saved) setOpenSidebar(JSON.parse(saved))
-    }, [])
+  const baseSucursal = sucursalId
+    ? `/sucursal/${sucursalId}`
+    : "";
 
-    useEffect(() => {
-        localStorage.setItem("sidebar", JSON.stringify(openSidebar))
-    }, [openSidebar])
-
-    const toggleSection = (section: string) => {
-        setOpenSection(openSection === section ? null : section)
-    }
-
-    const isActive = (path: string) =>
-        location.pathname.includes(path)
-
-  const menu = [
-
-    {
+  const menu: MenuSection[] = useMemo(
+    () => [
+      {
         title: "Inventario",
         icon: Package,
-
         items: [
+          {
+            to: `${baseSucursal}/almacen`,
+            text: "Almacenes",
+            icon: Warehouse,
+          },
+          {
+            to: `${baseSucursal}/producto`,
+            text: "Productos",
+            icon: PackageSearch,
+          },
+          {
+            to: `${baseSucursal}/inventario`,
+            text: "Inventario",
+            icon: Boxes,
+          },
+        ],
+      },
 
-            {
-                to: `/sucursal/${sucursalId}/almacen`,
-                text: "Almacenes"
-            },
-
-            {
-                to: `/sucursal/${sucursalId}/producto`,
-                text: "Productos"
-            },
-
-            {
-                to: `/sucursal/${sucursalId}/inventario`,
-                text: "Inventario"
-            },
-
-        ]
-    },
-
-    {
+      {
         title: "Ventas",
         icon: ShoppingCart,
-
         items: [
+          {
+            to: `${baseSucursal}/venta`,
+            text: "Ventas",
+            icon: ReceiptText,
+          },
+        ],
+      },
 
-            {
-                to: `/sucursal/${sucursalId}/venta`,
-                text: "Ventas"
-            },
-
-        ]
-    },
-
-    {
+      {
         title: "Caja",
         icon: DollarSign,
-
         items: [
-            {
-                to: `/sucursal/${sucursalId}/caja`,
-                text: "Caja"
-            },
+          {
+            to: `${baseSucursal}/caja`,
+            text: "Cajas",
+            icon: CircleDollarSign,
+          },
+        ],
+      },
 
-            {
-                to: `/sucursal/${sucursalId}/aperturacaja`,
-                text: "Apertura"
-            },
-
-            {
-                to: `/sucursal/${sucursalId}/cierre`,
-                text: "Cierre"
-            },
-
-        ]
-    },
-
-    {
+      {
         title: "Usuarios",
         icon: Users,
-
         items: [
+          {
+            to: `${baseSucursal}/usuarioDetalle`,
+            text: "Usuarios",
+            icon: Users,
+          },
+        ],
+      },
 
-            {
-                to: `/sucursal/${sucursalId}/usuarioDetalle`,
-                text: "Usuarios"
-            },
-
-        ]
-    },
-
-    {
+      {
         title: "Logística",
         icon: ArrowRightLeft,
-
         items: [
+          {
+            to: `${baseSucursal}/solicitud`,
+            text: "Solicitudes",
+            icon: ClipboardList,
+          },
+        ],
+      },
 
-            {
-                to: `/sucursal/${sucursalId}/solicitud`,
-                text: "Solicitudes"
-            },
-
-            {
-                to: `/sucursal/${sucursalId}/transferencia`,
-                text: "Transferencias"
-            },
-
-        ]
-    },
-     {
+      {
         title: "Reportes",
-          icon: ChartNoAxesCombined,
-
+        icon: ChartNoAxesCombined,
         items: [
+          {
+            to: `${baseSucursal}/reportes`,
+            text: "Panel general",
+            icon: LayoutDashboard,
+            end: true,
+          },
+          {
+            to: `${baseSucursal}/reportes/estado-resultados`,
+            text: "Estado de resultados",
+            icon: FileBarChart,
+          },
+          {
+            to: `${baseSucursal}/reportes/ventas`,
+            text: "Resumen de ventas",
+            icon: TrendingUp,
+          },
+          {
+            to: `${baseSucursal}/reportes/productos`,
+            text: "Productos más vendidos",
+            icon: PackageCheck,
+          },
+          {
+            to: `${baseSucursal}/reportes/vendedores`,
+            text: "Ventas por mesero",
+            icon: UserRoundCheck,
+          },
+          {
+            to: `${baseSucursal}/reportes/metodos-pago`,
+            text: "Métodos de pago",
+            icon: WalletCards,
+          },
+          {
+            to: `${baseSucursal}/reportes/inventario`,
+            text: "Inventario general",
+            icon: Boxes,
+          },
+          {
+            to: `${baseSucursal}/reportes/stock-bajo`,
+            text: "Stock bajo y agotados",
+            icon: PackageSearch,
+          },
+          {
+            to: `${baseSucursal}/reportes/valor-inventario`,
+            text: "Valor del inventario",
+            icon: Landmark,
+          },
+          {
+            to: `${baseSucursal}/reportes/kardex`,
+            text: "Kardex de productos",
+            icon: ClipboardList,
+          },
+          {
+            to: `${baseSucursal}/reportes/flujo-efectivo`,
+            text: "Flujo de efectivo",
+            icon: DollarSign,
+          },
+          {
+            to: `${baseSucursal}/reportes/cierres-caja`,
+            text: "Cierres de caja",
+            icon: CircleDollarSign,
+          },
+          {
+            to: `${baseSucursal}/reportes/solicitudes`,
+            text: "Resumen de solicitudes",
+            icon: BarChart3,
+          },
+        ],
+      },
 
-            {
-                to: `/sucursal/${sucursalId}/solicitud`,
-                text: "Reporte ---"
-            },
-
-            {
-                to: `/sucursal/${sucursalId}/transferencia`,
-                text: "Reporte ---"
-            },
-
-        ]
-    },
-     {
+      {
         title: "Egresos",
         icon: BanknoteArrowDown,
-
         items: [
+          {
+            to: `${baseSucursal}/egreso`,
+            text: "Egresos",
+            icon: BanknoteArrowDown,
+          },
+        ],
+      },
 
-            {
-                to: `/sucursal/${sucursalId}/egreso`,
-                text: "Egresos"
-            },
-
-           
-        ]
-    },
-
-    {
+      {
         title: "Inicio",
         icon: Settings,
-
         items: [
+          {
+            to: "/",
+            text: "Sucursales",
+            icon: Settings,
+          },
+        ],
+      },
+    ],
+    [baseSucursal]
+  );
 
-            {
-                to: `/`,
-                text: "Sucursales"
-            },
+  /*
+   * Recuperar estado del menú móvil.
+   */
+  useEffect(() => {
+    const savedSidebar =
+      localStorage.getItem("sidebar");
 
-        ]
+    if (savedSidebar !== null) {
+      try {
+        setOpenSidebar(
+          JSON.parse(savedSidebar)
+        );
+      } catch {
+        localStorage.removeItem("sidebar");
+      }
     }
+  }, []);
 
-]
+  /*
+   * Guardar estado del menú móvil.
+   */
+  useEffect(() => {
+    localStorage.setItem(
+      "sidebar",
+      JSON.stringify(openSidebar)
+    );
+  }, [openSidebar]);
 
+  /*
+   * Abrir automáticamente la sección que contiene
+   * la ruta actual.
+   */
+  useEffect(() => {
+    const currentSection = menu.find(
+      (section) =>
+        section.items.some((item) => {
+          if (item.end) {
+            return (
+              location.pathname === item.to
+            );
+          }
+
+          return location.pathname.startsWith(
+            item.to
+          );
+        })
+    );
+
+    if (currentSection) {
+      setOpenSection(currentSection.title);
+    }
+  }, [location.pathname, menu]);
+
+  const toggleSection = (
+    sectionTitle: string
+  ) => {
+    setOpenSection((currentSection) =>
+      currentSection === sectionTitle
+        ? null
+        : sectionTitle
+    );
+  };
+
+  const closeMobileSidebar = () => {
+    setOpenSidebar(false);
+  };
+
+  if (!sucursalId) {
     return (
-        <>
-            {/* BOTÓN MOBILE */}
-            <button
-                onClick={() => setOpenSidebar(true)}
-                className="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-lg shadow"
-            >
-                <Menu />
-            </button>
+      <aside className="w-64 border-r bg-white p-5">
+        <p className="text-sm font-semibold text-red-600">
+          No se encontró el identificador de la
+          sucursal.
+        </p>
 
-            {/* OVERLAY */}
-            {openSidebar && (
-                <div
-                    className="fixed inset-0 bg-black/40 z-40 md:hidden"
-                    onClick={() => setOpenSidebar(false)}
-                />
-            )}
+        <Link
+          to="/"
+          className="mt-4 block rounded-lg bg-black px-4 py-2 text-center text-sm font-semibold text-white"
+        >
+          Volver a sucursales
+        </Link>
+      </aside>
+    );
+  }
 
-            {/* SIDEBAR */}
-            <aside className={`
-  fixed md:sticky top-0 left-0
-  h-screen w-64
-  bg-white border-r z-50
+  return (
+    <>
+      {/* BOTÓN PARA MÓVIL */}
+      <button
+        type="button"
+        onClick={() =>
+          setOpenSidebar(true)
+        }
+        className="
+          fixed left-4 top-4 z-50
+          rounded-lg border bg-white p-2
+          shadow-md md:hidden
+        "
+        aria-label="Abrir menú"
+      >
+        <Menu size={22} />
+      </button>
 
-  transform transition-transform duration-300
+      {/* FONDO OSCURO EN MÓVIL */}
+      {openSidebar && (
+        <button
+          type="button"
+          aria-label="Cerrar menú"
+          className="
+            fixed inset-0 z-40
+            bg-black/40 md:hidden
+          "
+          onClick={closeMobileSidebar}
+        />
+      )}
 
-  ${openSidebar ? "translate-x-0" : "-translate-x-full"}
-  md:translate-x-0
-`}>
+      {/* SIDEBAR */}
+      <aside
+        className={`
+          fixed left-0 top-0 z-50
+          flex h-screen w-72 flex-col
+          border-r bg-white
+          transition-transform duration-300
+          md:sticky md:translate-x-0
 
-                {/* HEADER */}
-                <div className="flex justify-between items-center p-4 border-b">
-                    <h2 className="font-bold">Discoteca</h2>
-                    <button onClick={() => setOpenSidebar(false)} className="md:hidden">
-                        <X />
-                    </button>
-                </div>
+          ${
+            openSidebar
+              ? "translate-x-0"
+              : "-translate-x-full"
+          }
+        `}
+      >
+        {/* ENCABEZADO */}
+        <div
+          className="
+            flex min-h-16 items-center
+            justify-between border-b px-5
+          "
+        >
+          <div>
+            <h2 className="font-bold text-gray-900">
+              Discoteca
+            </h2>
 
-                {/* MENU */}
-                <nav className="p-4 space-y-2">
-                    {menu.map((section) => {
-                        const Icon = section.icon
-                        const isOpen = openSection === section.title
+            <p className="text-xs text-gray-500">
+              Gestión de sucursal
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={closeMobileSidebar}
+            className="
+              rounded-lg p-2
+              hover:bg-gray-100 md:hidden
+            "
+            aria-label="Cerrar menú"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* MENÚ CON SCROLL */}
+        <nav
+          className="
+            flex-1 space-y-2
+            overflow-y-auto p-4
+          "
+        >
+          {menu.map((section) => {
+            const SectionIcon =
+              section.icon;
+
+            const isOpen =
+              openSection === section.title;
+
+            const hasActiveItem =
+              section.items.some((item) => {
+                if (item.end) {
+                  return (
+                    location.pathname ===
+                    item.to
+                  );
+                }
+
+                return location.pathname.startsWith(
+                  item.to
+                );
+              });
+
+            return (
+              <div key={section.title}>
+                {/* TÍTULO DE LA SECCIÓN */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    toggleSection(
+                      section.title
+                    )
+                  }
+                  className={`
+                    flex w-full items-center
+                    justify-between rounded-xl
+                    px-3 py-2.5
+                    transition-colors
+
+                    ${
+                      hasActiveItem
+                        ? "bg-gray-100 text-black"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }
+                  `}
+                >
+                  <div className="flex items-center gap-3">
+                    <SectionIcon size={19} />
+
+                    <span className="text-sm font-semibold">
+                      {section.title}
+                    </span>
+                  </div>
+
+                  {isOpen ? (
+                    <ChevronDown size={17} />
+                  ) : (
+                    <ChevronRight size={17} />
+                  )}
+                </button>
+
+                {/* SUBMENÚ */}
+                {isOpen && (
+                  <div
+                    className="
+                      ml-4 mt-1 space-y-1
+                      border-l pl-3
+                    "
+                  >
+                    {section.items.map(
+                      (item) => {
+                        const ItemIcon =
+                          item.icon;
 
                         return (
-                            <div key={section.title}>
+                          <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end={item.end}
+                            onClick={
+                              closeMobileSidebar
+                            }
+                            className={({
+                              isActive,
+                            }) => `
+                              flex items-center gap-2
+                              rounded-lg px-3 py-2
+                              text-sm transition-colors
 
-                                {/* TITULO */}
-                                <button
-                                    onClick={() => toggleSection(section.title)}
-                                    className="w-full flex justify-between items-center px-3 py-2 hover:bg-gray-100 rounded-lg"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Icon size={18} />
-                                        <span className="text-sm font-medium">
-                                            {section.title}
-                                        </span>
-                                    </div>
+                              ${
+                                isActive
+                                  ? "bg-black font-semibold text-white"
+                                  : "text-gray-600 hover:bg-gray-100 hover:text-black"
+                              }
+                            `}
+                          >
+                            {ItemIcon && (
+                              <ItemIcon
+                                size={16}
+                              />
+                            )}
 
-                                    {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                                </button>
-
-                                {/* SUBMENU */}
-                                {isOpen && (
-                                    <div className="ml-8 mt-1 space-y-1">
-                                        {section.items.map((item) => (
-                                            <Link
-                                                key={item.to}
-                                                to={item.to}
-                                                className={`
-                          block px-2 py-1 text-sm rounded-md
-                          ${isActive(item.to)
-                                                        ? "bg-black text-white"
-                                                        : "text-gray-600 hover:bg-gray-100"
-                                                    }
-                        `}
-                                            >
-                                                {item.text}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                )}
-
-                            </div>
-                        )
-                    })}
-                </nav>
-
-            </aside>
-        </>
-    )
+                            <span>
+                              {item.text}
+                            </span>
+                          </NavLink>
+                        );
+                      }
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
+  );
 }

@@ -7,24 +7,61 @@ import {
 } from "axios";
 
 import {
-
+  CreateSolicitudResponseSchema,
   SolicitudArraySchema,
-
   SolicitudSchema,
-
   SolicitudesPorSucursalResponseSchema,
 
-  CreateSolicitudResponseSchema,
-
   type SolicitudForm,
-
-  type SolicitudType,
-
   type UpdateSolicitudType,
-
   type DeleteSolicitudType,
-
 } from "@/types/SolicitudType";
+
+/* =========================
+    MENSAJE DE ERROR
+========================= */
+
+function obtenerMensajeError(
+  error: unknown,
+  mensajePredeterminado: string
+): string {
+
+  if (
+    isAxiosError(error) &&
+    error.response
+  ) {
+
+    const errorBackend =
+      error.response.data?.error;
+
+    const mensajeBackend =
+      error.response.data?.message;
+
+    if (
+      typeof errorBackend ===
+      "string"
+    ) {
+      return errorBackend;
+    }
+
+    if (
+      typeof mensajeBackend ===
+      "string"
+    ) {
+      return mensajeBackend;
+    }
+
+  }
+
+  if (
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return mensajePredeterminado;
+
+}
 
 /* =========================
     CREAR SOLICITUD
@@ -36,51 +73,83 @@ export async function createSolicitud(
 
   try {
 
-    const { data } =
-      await api.post(
+    if (!formData.idPerfil) {
 
-        "/solicitud",
-
-        formData
-
+      throw new Error(
+        "El perfil es obligatorio"
       );
+
+    }
+
+    if (!formData.idSucursal) {
+
+      throw new Error(
+        "La sucursal es obligatoria"
+      );
+
+    }
+
+    if (!formData.idAlmacenDestino) {
+
+      throw new Error(
+        "El almacén destino es obligatorio"
+      );
+
+    }
+
+    if (
+      formData.idAlmacenOrigen &&
+      formData.idAlmacenOrigen ===
+        formData.idAlmacenDestino
+    ) {
+
+      throw new Error(
+        "El almacén origen y destino no pueden ser iguales"
+      );
+
+    }
+
+    const {
+      data,
+    } = await api.post(
+
+      "/solicitud",
+
+      formData
+
+    );
 
     const response =
-      CreateSolicitudResponseSchema.safeParse(
-        data
-      );
+      CreateSolicitudResponseSchema
+        .safeParse(data);
 
     if (!response.success) {
 
       console.log(
+        "RESPUESTA REAL SOLICITUD:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD SOLICITUD:",
         response.error.format()
       );
 
-      /*
-        Por si tu backend todavía devuelve solo texto:
-        "Solicitud creada"
-      */
-      return data;
+      throw new Error(
+        "La respuesta de la solicitud no coincide con el type"
+      );
 
     }
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error creando solicitud"
+      obtenerMensajeError(
+        error,
+        "Error creando solicitud"
+      )
     );
 
   }
@@ -95,10 +164,11 @@ export async function getSolicitudes() {
 
   try {
 
-    const { data } =
-      await api(
-        "/solicitud"
-      );
+    const {
+      data,
+    } = await api.get(
+      "/solicitud"
+    );
 
     const response =
       SolicitudArraySchema.safeParse(
@@ -106,6 +176,10 @@ export async function getSolicitudes() {
       );
 
     if (!response.success) {
+
+      console.log(
+        data
+      );
 
       console.log(
         response.error.format()
@@ -119,21 +193,13 @@ export async function getSolicitudes() {
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo solicitudes"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo solicitudes"
+      )
     );
 
   }
@@ -141,7 +207,7 @@ export async function getSolicitudes() {
 }
 
 /* =========================
-    OBTENER SOLICITUDES POR SUCURSAL
+    OBTENER POR SUCURSAL
 ========================= */
 
 export async function getSolicitudesBySucursal(
@@ -150,17 +216,32 @@ export async function getSolicitudesBySucursal(
 
   try {
 
-    const { data } =
-      await api(
-        `/solicitud/sucursal/${idSucursal}`
+    if (!idSucursal) {
+
+      throw new Error(
+        "El ID de la sucursal es obligatorio"
       );
+
+    }
+
+    const {
+      data,
+    } = await api.get(
+
+      `/solicitud/sucursal/${idSucursal}`
+
+    );
 
     const response =
-      SolicitudesPorSucursalResponseSchema.safeParse(
-        data
-      );
+      SolicitudesPorSucursalResponseSchema
+        .safeParse(data);
 
     if (!response.success) {
+
+      console.log(
+        "RESPUESTA SOLICITUDES:",
+        data
+      );
 
       console.log(
         response.error.format()
@@ -174,21 +255,13 @@ export async function getSolicitudesBySucursal(
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo solicitudes por sucursal"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo solicitudes por sucursal"
+      )
     );
 
   }
@@ -200,15 +273,24 @@ export async function getSolicitudesBySucursal(
 ========================= */
 
 export async function getSolicitudById(
-  id: SolicitudType["_id"]
+  id: string
 ) {
 
   try {
 
-    const { data } =
-      await api(
-        `/solicitud/${id}`
+    if (!id) {
+
+      throw new Error(
+        "El ID de la solicitud es obligatorio"
       );
+
+    }
+
+    const {
+      data,
+    } = await api.get(
+      `/solicitud/${id}`
+    );
 
     const response =
       SolicitudSchema.safeParse(
@@ -216,6 +298,10 @@ export async function getSolicitudById(
       );
 
     if (!response.success) {
+
+      console.log(
+        data
+      );
 
       console.log(
         response.error.format()
@@ -229,21 +315,13 @@ export async function getSolicitudById(
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo solicitud"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo solicitud"
+      )
     );
 
   }
@@ -251,7 +329,7 @@ export async function getSolicitudById(
 }
 
 /* =========================
-    ACTUALIZAR SOLICITUD
+    ACTUALIZAR
 ========================= */
 
 export async function updateSolicitud({
@@ -264,32 +342,33 @@ export async function updateSolicitud({
 
   try {
 
-    const { data } =
-      await api.put(
-
-        `/solicitud/${solicitudId}`,
-
-        formData
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    if (!solicitudId) {
 
       throw new Error(
-        error.response.data.error
+        "El ID de la solicitud es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.put(
+
+      `/solicitud/${solicitudId}`,
+
+      formData
+
+    );
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error actualizando solicitud"
+      obtenerMensajeError(
+        error,
+        "Error actualizando solicitud"
+      )
     );
 
   }
@@ -297,7 +376,7 @@ export async function updateSolicitud({
 }
 
 /* =========================
-    ELIMINAR / ANULAR SOLICITUD
+    ANULAR
 ========================= */
 
 export async function deleteSolicitudById({
@@ -310,36 +389,41 @@ export async function deleteSolicitudById({
 
   try {
 
-    const { data } =
-      await api.delete(
-
-        `/solicitud/${id}`,
-
-        {
-          data: {
-            eliminadoPor,
-          },
-        }
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    if (!id) {
 
       throw new Error(
-        error.response.data.error
+        "El ID de la solicitud es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.delete(
+
+      `/solicitud/${id}`,
+
+      {
+        data: {
+
+          eliminadoPor:
+            eliminadoPor ||
+            "admin",
+
+        },
+      }
+
+    );
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error anulando solicitud"
+      obtenerMensajeError(
+        error,
+        "Error anulando solicitud"
+      )
     );
 
   }

@@ -3,82 +3,156 @@
 // import { z } from "zod";
 
 // /* =========================
-//     ALMACEN POPULATE
+//     OBJECT ID SEGURO
 // ========================= */
 
-// export const AlmacenPopulateSchema =
+// const ObjectIdStringSchema =
+//   z.preprocess(
+//     (value) => {
+
+//       if (
+//         typeof value === "object" &&
+//         value !== null &&
+//         "_id" in value
+//       ) {
+
+//         return (
+//           value as {
+//             _id: unknown;
+//           }
+//         )._id;
+
+//       }
+
+//       return value;
+
+//     },
+//     z.string()
+//   );
+
+// /* =========================
+//     SUCURSAL POPULATE
+// ========================= */
+
+// export const SucursalInventarioSchema =
 //   z.object({
 
 //     _id:
-//       z.string().optional(),
+//       ObjectIdStringSchema,
+
+//     nombreSucursal:
+//       z.string()
+//         .nullable()
+//         .optional(),
+
+//     ubicacionSucursal:
+//       z.string()
+//         .nullable()
+//         .optional(),
 
 //     nombre:
-//       z.string(),
-//     tipo:
-//       z.string(),
+//       z.string()
+//         .nullable()
+//         .optional(),
+
+//   }).passthrough();
+
+// /* =========================
+//     ALMACÉN POPULATE
+// ========================= */
+
+// export const AlmacenInventarioSchema =
+//   z.object({
+
+//     _id:
+//       ObjectIdStringSchema,
 
 //     idSucursal:
 //       z.union([
 
-//         z.string(),
+//         ObjectIdStringSchema,
 
-//         z.object({
+//         SucursalInventarioSchema,
 
-//           _id:
-//             z.string(),
+//         z.null(),
 
-//           nombreSucursal:
-//             z.string().optional(),
+//       ])
+//         .optional(),
 
-//         }),
+//     nombre:
+//       z.string()
+//         .nullable()
+//         .optional(),
 
-//       ]).optional(),
+//     descripcion:
+//       z.string()
+//         .nullable()
+//         .optional(),
 
-//   });
+//     tipo:
+//       z.string()
+//         .nullable()
+//         .optional(),
+
+//     ubicacion:
+//       z.string()
+//         .nullable()
+//         .optional(),
+
+//     estado:
+//       z.boolean()
+//         .optional(),
+
+//   }).passthrough();
 
 // /* =========================
 //     PRODUCTO POPULATE
 // ========================= */
 
-// export const ProductoPopulateSchema =
+// export const ProductoInventarioSchema =
 //   z.object({
 
 //     _id:
-//       z.string().optional(),
+//       ObjectIdStringSchema,
 
 //     nombre:
-//       z.string(),
+//       z.string()
+//         .nullable()
+//         .optional(),
 
 //     descripcion:
 //       z.string()
+//         .nullable()
 //         .optional(),
 
 //     marca:
 //       z.string()
+//         .nullable()
 //         .optional(),
 
-//   });
+//     estado:
+//       z.boolean()
+//         .optional(),
+
+//   }).passthrough();
 
 // /* =========================
-//     INVENTARIO SCHEMA
+//     INVENTARIO
 // ========================= */
 
 // export const InventarioSchema =
 //   z.object({
 
 //     _id:
-//       z.string().optional(),
-
-//     /* =========================
-//         RELACIONES
-//     ========================= */
+//       ObjectIdStringSchema
+//         .optional(),
 
 //     idAlmacen:
 //       z.union([
 
-//         z.string(),
+//         ObjectIdStringSchema,
 
-//         AlmacenPopulateSchema,
+//         AlmacenInventarioSchema,
 
 //         z.null(),
 
@@ -87,36 +161,56 @@
 //     idProducto:
 //       z.union([
 
-//         z.string(),
+//         ObjectIdStringSchema,
 
-//         ProductoPopulateSchema,
+//         ProductoInventarioSchema,
 
 //         z.null(),
 
 //       ]),
 
-//     /* =========================
-//         INVENTARIO
-//     ========================= */
-
 //     cantidad:
-//       z.number(),
+//       z.coerce
+//         .number(),
 
+//     /*
+//       Costo promedio ponderado actual.
+//     */
 //     costoUnitario:
-//       z.number(),
+//       z.coerce
+//         .number(),
+
+//     /*
+//       Costo de la última entrada.
+//     */
+//     ultimoCostoEntrada:
+//       z.coerce
+//         .number()
+//         .default(0),
 
 //     precioVenta:
-//       z.number(),
+//       z.coerce
+//         .number(),
 
 //     stockMinimo:
-//       z.number(),
+//       z.coerce
+//         .number(),
+
+//     /*
+//       El backend puede devolverlo
+//       como campo virtual.
+//     */
+//     valorInventario:
+//       z.coerce
+//         .number()
+//         .optional(),
+
+//     disponible:
+//       z.boolean()
+//         .optional(),
 
 //     estado:
 //       z.boolean(),
-
-//     /* =========================
-//         FECHAS
-//     ========================= */
 
 //     fechaCreacion:
 //       z.string()
@@ -133,12 +227,10 @@
 //         .nullable()
 //         .optional(),
 
-//     /* =========================
-//         AUDITORIA
-//     ========================= */
-
 //     creadoPor:
-//       z.string(),
+//       z.string()
+//         .nullable()
+//         .optional(),
 
 //     actualizadoPor:
 //       z.string()
@@ -150,85 +242,196 @@
 //         .nullable()
 //         .optional(),
 
-//   });
+//   }).passthrough();
 
 // /* =========================
-//     LIST SCHEMA
-// ========================= */
-
-// export const InventarioListSchema =
-//   z.object({
-
-//     _id:
-//       z.string().optional(),
-
-//     cantidad:
-//       z.number(),
-
-//     costoUnitario:
-//       z.number(),
-
-//     precioVenta:
-//       z.number(),
-
-//     stockMinimo:
-//       z.number(),
-
-//     estado:
-//       z.boolean(),
-
-//     fechaCreacion:
-//       z.string()
-//         .nullable()
-//         .optional(),
-
-//     /* =========================
-//         RELACIONES
-//     ========================= */
-
-//     idAlmacen:
-//       z.union([
-
-//         z.string(),
-
-//         AlmacenPopulateSchema,
-
-//         z.null(),
-
-//       ]),
-
-//     idProducto:
-//       z.union([
-
-//         z.string(),
-
-//         ProductoPopulateSchema,
-
-//         z.null(),
-
-//       ]),
-
-//   });
-
-// /* =========================
-//     ARRAY SCHEMA
+//     ARRAY INVENTARIOS
 // ========================= */
 
 // export const InventarioArraySchema =
 //   z.array(
-//     InventarioListSchema
+//     InventarioSchema
 //   );
 
 // /* =========================
-//     SAFE SCHEMA
+//     CÁLCULO DE COSTO
 // ========================= */
 
-// export const InventarioSafeSchema =
-//   InventarioSchema.omit({
+// export const CalculoCostoInventarioSchema =
+//   z.object({
 
-//     eliminadoPor: true,
+//     cantidadAnterior:
+//       z.coerce
+//         .number(),
 
-//   });
+//     cantidadEntrada:
+//       z.coerce
+//         .number(),
+
+//     cantidadNueva:
+//       z.coerce
+//         .number(),
+
+//     costoAnterior:
+//       z.coerce
+//         .number(),
+
+//     costoEntrada:
+//       z.coerce
+//         .number(),
+
+//     costoPromedio:
+//       z.coerce
+//         .number(),
+
+//     valorAnterior:
+//       z.coerce
+//         .number(),
+
+//     valorEntrada:
+//       z.coerce
+//         .number(),
+
+//     valorNuevo:
+//       z.coerce
+//         .number(),
+
+//   }).passthrough();
+
+// /* =========================
+//     RESPUESTA CREAR INVENTARIO
+// ========================= */
+
+// export const CreateInventarioResponseSchema =
+//   z.object({
+
+//     message:
+//       z.string(),
+
+//     inventario:
+//       InventarioSchema,
+
+//     calculoCosto:
+//       CalculoCostoInventarioSchema,
+
+//   }).passthrough();
+
+// /* =========================
+//     INVENTARIO PRINCIPAL
+// ========================= */
+
+// export const InventarioPrincipalResponseSchema =
+//   z.object({
+
+//     almacen:
+//       AlmacenInventarioSchema,
+
+//     inventarios:
+//       InventarioArraySchema,
+
+//   }).passthrough();
+
+// /* =========================
+//     PRODUCTO TRANSFERIDO
+// ========================= */
+
+// export const ProductoTransferidoSchema =
+//   z.object({
+
+//     idProducto:
+//       ObjectIdStringSchema,
+
+//     cantidadTransferida:
+//       z.coerce
+//         .number(),
+
+//     origen:
+//       z.object({
+
+//         idAlmacen:
+//           ObjectIdStringSchema,
+
+//         cantidadAnterior:
+//           z.coerce
+//             .number(),
+
+//         cantidadNueva:
+//           z.coerce
+//             .number(),
+
+//         costoPromedio:
+//           z.coerce
+//             .number(),
+
+//       }).passthrough(),
+
+//     destino:
+//       z.object({
+
+//         idAlmacen:
+//           ObjectIdStringSchema,
+
+//         cantidadAnterior:
+//           z.coerce
+//             .number(),
+
+//         cantidadNueva:
+//           z.coerce
+//             .number(),
+
+//         costoAnterior:
+//           z.coerce
+//             .number(),
+
+//         costoEntrada:
+//           z.coerce
+//             .number(),
+
+//         costoPromedio:
+//           z.coerce
+//             .number(),
+
+//       }).passthrough(),
+
+//   }).passthrough();
+
+// /* =========================
+//     RESPUESTA TRANSFERENCIA
+// ========================= */
+
+// export const TransferenciaSolicitudResponseSchema =
+//   z.object({
+
+//     message:
+//       z.string(),
+
+//     solicitud:
+//       z.object({
+
+//         _id:
+//           ObjectIdStringSchema,
+
+//         estado:
+//           z.string(),
+
+//       }).passthrough(),
+
+//     almacenOrigen:
+//       AlmacenInventarioSchema,
+
+//     almacenDestino:
+//       AlmacenInventarioSchema,
+
+//     cantidadTotal:
+//       z.coerce
+//         .number(),
+
+//     productos:
+//       z.array(
+//         ProductoTransferidoSchema
+//       ),
+
+//   }).passthrough();
 
 // /* =========================
 //     TYPES
@@ -240,48 +443,123 @@
 //   >;
 
 // export type InventarioListType =
+//   InventarioType;
+
+// export type InventarioPrincipalResponse =
 //   z.infer<
-//     typeof InventarioListSchema
+//     typeof InventarioPrincipalResponseSchema
+//   >;
+
+// export type CreateInventarioResponse =
+//   z.infer<
+//     typeof CreateInventarioResponseSchema
+//   >;
+
+// export type TransferenciaSolicitudResponse =
+//   z.infer<
+//     typeof TransferenciaSolicitudResponseSchema
 //   >;
 
 // /* =========================
-//     FORM DATA
+//     FORM CREAR ENTRADA
 // ========================= */
 
-// export type InventarioForm =
-//   Pick<
+// export type InventarioForm = {
 
-//     InventarioType,
+//   idAlmacen:
+//     string;
 
-//     | "idAlmacen"
-//     | "idProducto"
-//     | "cantidad"
-//     | "costoUnitario"
-//     | "precioVenta"
-//     | "stockMinimo"
-//     | "estado"
-//     | "creadoPor"
+//   idProducto:
+//     string;
 
-//   >;
+//   /*
+//     Cantidad que está ingresando.
+//   */
+//   cantidad:
+//     number;
 
-// /* =========================
-//     FORM DATA ALIAS
-// ========================= */
+//   /*
+//     En el formulario representa
+//     el costo de esta nueva entrada.
+
+//     El backend calculará el nuevo
+//     costo promedio ponderado.
+//   */
+//   costoUnitario:
+//     number;
+
+//   precioVenta:
+//     number;
+
+//   stockMinimo:
+//     number;
+
+//   estado:
+//     boolean;
+
+//   creadoPor:
+//     string;
+
+// };
 
 // export type InventarioFormData =
 //   InventarioForm;
 
 // /* =========================
-//     DELETE TYPE
+//     FORM ACTUALIZAR
+// ========================= */
+
+// export type UpdateInventarioForm = {
+
+//   precioVenta?:
+//     number;
+
+//   stockMinimo?:
+//     number;
+
+//   estado?:
+//     boolean;
+
+//   actualizadoPor?:
+//     string;
+
+// };
+
+// export type UpdateInventarioType = {
+
+//   inventarioId:
+//     string;
+
+//   formData:
+//     UpdateInventarioForm;
+
+// };
+
+// /* =========================
+//     ELIMINAR
 // ========================= */
 
 // export type DeleteInventarioType = {
 
 //   id:
-//   string;
+//     string;
 
 //   eliminadoPor?:
-//   string;
+//     string;
+
+// };
+
+// /* =========================
+//     APROBAR Y TRANSFERIR
+// ========================= */
+
+// export type AprobarTransferenciaSolicitudType = {
+
+//   idSolicitud:
+//     string;
+
+//   actualizadoPor?:
+//     string;
 
 // };
 
@@ -290,38 +568,72 @@
 import { z } from "zod";
 
 /* =========================
+    OBJECT ID
+
+    No debe transformar objetos
+    populados en strings.
+========================= */
+
+export const ObjectIdSchema =
+  z.string();
+
+/* =========================
     SUCURSAL POPULATE
 ========================= */
 
-export const SucursalPopulateSchema =
+export const SucursalInventarioSchema =
   z.object({
 
     _id:
-      z.string(),
+      ObjectIdSchema,
 
     nombreSucursal:
       z.string()
+        .nullable()
         .optional(),
 
     nombre:
       z.string()
+        .nullable()
         .optional(),
 
-  });
+    ubicacionSucursal:
+      z.string()
+        .nullable()
+        .optional(),
+
+    estado:
+      z.boolean()
+        .optional(),
+
+  }).passthrough();
 
 /* =========================
-    ALMACEN POPULATE
+    ALMACÉN POPULATE
 ========================= */
 
-export const AlmacenPopulateSchema =
+export const AlmacenInventarioSchema =
   z.object({
 
     _id:
-      z.string()
+      ObjectIdSchema,
+
+    idSucursal:
+      z.union([
+
+        SucursalInventarioSchema,
+
+        ObjectIdSchema,
+
+        z.null(),
+
+      ])
         .optional(),
 
     nombre:
-      z.string(),
+      z.string()
+        .nullable()
+        .optional(),
 
     descripcion:
       z.string()
@@ -329,7 +641,9 @@ export const AlmacenPopulateSchema =
         .optional(),
 
     tipo:
-      z.string(),
+      z.string()
+        .nullable()
+        .optional(),
 
     ubicacion:
       z.string()
@@ -340,32 +654,22 @@ export const AlmacenPopulateSchema =
       z.boolean()
         .optional(),
 
-    idSucursal:
-      z.union([
-
-        z.string(),
-
-        SucursalPopulateSchema,
-
-        z.null(),
-
-      ]).optional(),
-
-  });
+  }).passthrough();
 
 /* =========================
     PRODUCTO POPULATE
 ========================= */
 
-export const ProductoPopulateSchema =
+export const ProductoInventarioSchema =
   z.object({
 
     _id:
-      z.string()
-        .optional(),
+      ObjectIdSchema,
 
     nombre:
-      z.string(),
+      z.string()
+        .nullable()
+        .optional(),
 
     descripcion:
       z.string()
@@ -381,29 +685,30 @@ export const ProductoPopulateSchema =
       z.boolean()
         .optional(),
 
-  });
+  }).passthrough();
 
 /* =========================
-    INVENTARIO SCHEMA
+    INVENTARIO
 ========================= */
 
 export const InventarioSchema =
   z.object({
 
     _id:
-      z.string()
+      ObjectIdSchema
         .optional(),
 
-    /* =========================
-        RELACIONES
-    ========================= */
-
+    /*
+      Puede llegar como objeto populado
+      o como ID string.
+      El objeto debe estar primero.
+    */
     idAlmacen:
       z.union([
 
-        z.string(),
+        AlmacenInventarioSchema,
 
-        AlmacenPopulateSchema,
+        ObjectIdSchema,
 
         z.null(),
 
@@ -412,36 +717,51 @@ export const InventarioSchema =
     idProducto:
       z.union([
 
-        z.string(),
+        ProductoInventarioSchema,
 
-        ProductoPopulateSchema,
+        ObjectIdSchema,
 
         z.null(),
 
       ]),
 
-    /* =========================
-        INVENTARIO
-    ========================= */
-
     cantidad:
-      z.number(),
+      z.coerce
+        .number()
+        .default(0),
 
     costoUnitario:
-      z.number(),
+      z.coerce
+        .number()
+        .default(0),
+
+    ultimoCostoEntrada:
+      z.coerce
+        .number()
+        .default(0),
 
     precioVenta:
-      z.number(),
+      z.coerce
+        .number()
+        .default(0),
 
     stockMinimo:
-      z.number(),
+      z.coerce
+        .number()
+        .default(0),
+
+    valorInventario:
+      z.coerce
+        .number()
+        .optional(),
+
+    disponible:
+      z.boolean()
+        .optional(),
 
     estado:
-      z.boolean(),
-
-    /* =========================
-        FECHAS
-    ========================= */
+      z.boolean()
+        .default(true),
 
     fechaCreacion:
       z.string()
@@ -458,12 +778,9 @@ export const InventarioSchema =
         .nullable()
         .optional(),
 
-    /* =========================
-        AUDITORIA
-    ========================= */
-
     creadoPor:
       z.string()
+        .nullable()
         .optional(),
 
     actualizadoPor:
@@ -476,54 +793,169 @@ export const InventarioSchema =
         .nullable()
         .optional(),
 
-  });
+  }).passthrough();
 
 /* =========================
-    LIST SCHEMA
-========================= */
-
-export const InventarioListSchema =
-  InventarioSchema.pick({
-
-    _id: true,
-
-    idAlmacen: true,
-
-    idProducto: true,
-
-    cantidad: true,
-
-    costoUnitario: true,
-
-    precioVenta: true,
-
-    stockMinimo: true,
-
-    estado: true,
-
-    fechaCreacion: true,
-
-  });
-
-/* =========================
-    ARRAY SCHEMA
+    ARRAY
 ========================= */
 
 export const InventarioArraySchema =
   z.array(
-    InventarioListSchema
+    InventarioSchema
   );
 
 /* =========================
-    SAFE SCHEMA
+    RESPUESTA CREAR
 ========================= */
 
-export const InventarioSafeSchema =
-  InventarioSchema.omit({
+export const CalculoCostoInventarioSchema =
+  z.object({
 
-    eliminadoPor: true,
+    cantidadAnterior:
+      z.coerce.number(),
 
-  });
+    cantidadEntrada:
+      z.coerce.number(),
+
+    cantidadNueva:
+      z.coerce.number(),
+
+    costoAnterior:
+      z.coerce.number(),
+
+    costoEntrada:
+      z.coerce.number(),
+
+    costoPromedio:
+      z.coerce.number(),
+
+    valorAnterior:
+      z.coerce.number(),
+
+    valorEntrada:
+      z.coerce.number(),
+
+    valorNuevo:
+      z.coerce.number(),
+
+  }).passthrough();
+
+export const CreateInventarioResponseSchema =
+  z.object({
+
+    message:
+      z.string(),
+
+    inventario:
+      InventarioSchema,
+
+    calculoCosto:
+      CalculoCostoInventarioSchema,
+
+  }).passthrough();
+
+/* =========================
+    INVENTARIO PRINCIPAL
+========================= */
+
+export const InventarioPrincipalResponseSchema =
+  z.object({
+
+    almacen:
+      AlmacenInventarioSchema,
+
+    inventarios:
+      InventarioArraySchema,
+
+  }).passthrough();
+
+/* =========================
+    TRANSFERENCIA
+========================= */
+
+export const ProductoTransferidoSchema =
+  z.object({
+
+    idProducto:
+      ObjectIdSchema,
+
+    cantidadTransferida:
+      z.coerce.number(),
+
+    origen:
+      z.object({
+
+        idAlmacen:
+          ObjectIdSchema,
+
+        cantidadAnterior:
+          z.coerce.number(),
+
+        cantidadNueva:
+          z.coerce.number(),
+
+        costoPromedio:
+          z.coerce.number(),
+
+      }).passthrough(),
+
+    destino:
+      z.object({
+
+        idAlmacen:
+          ObjectIdSchema,
+
+        cantidadAnterior:
+          z.coerce.number(),
+
+        cantidadNueva:
+          z.coerce.number(),
+
+        costoAnterior:
+          z.coerce.number(),
+
+        costoEntrada:
+          z.coerce.number(),
+
+        costoPromedio:
+          z.coerce.number(),
+
+      }).passthrough(),
+
+  }).passthrough();
+
+export const TransferenciaSolicitudResponseSchema =
+  z.object({
+
+    message:
+      z.string(),
+
+    solicitud:
+      z.object({
+
+        _id:
+          ObjectIdSchema,
+
+        estado:
+          z.string(),
+
+      }).passthrough(),
+
+    almacenOrigen:
+      AlmacenInventarioSchema,
+
+    almacenDestino:
+      AlmacenInventarioSchema,
+
+    cantidadTotal:
+      z.coerce.number(),
+
+    productos:
+      z.array(
+        ProductoTransferidoSchema
+      ),
+
+  }).passthrough();
 
 /* =========================
     TYPES
@@ -535,39 +967,100 @@ export type InventarioType =
   >;
 
 export type InventarioListType =
+  InventarioType;
+
+export type AlmacenInventarioType =
   z.infer<
-    typeof InventarioListSchema
+    typeof AlmacenInventarioSchema
+  >;
+
+export type ProductoInventarioType =
+  z.infer<
+    typeof ProductoInventarioSchema
+  >;
+
+export type InventarioPrincipalResponse =
+  z.infer<
+    typeof InventarioPrincipalResponseSchema
+  >;
+
+export type CreateInventarioResponse =
+  z.infer<
+    typeof CreateInventarioResponseSchema
+  >;
+
+export type TransferenciaSolicitudResponse =
+  z.infer<
+    typeof TransferenciaSolicitudResponseSchema
   >;
 
 /* =========================
-    FORM DATA
+    FORMULARIO CREAR
 ========================= */
 
-export type InventarioForm =
-  Pick<
+export type InventarioForm = {
 
-    InventarioType,
+  idAlmacen:
+    string;
 
-    | "idAlmacen"
-    | "idProducto"
-    | "cantidad"
-    | "costoUnitario"
-    | "precioVenta"
-    | "stockMinimo"
-    | "estado"
-    | "creadoPor"
+  idProducto:
+    string;
 
-  >;
+  cantidad:
+    number;
 
-/* =========================
-    FORM DATA ALIAS
-========================= */
+  costoUnitario:
+    number;
+
+  precioVenta:
+    number;
+
+  stockMinimo:
+    number;
+
+  estado:
+    boolean;
+
+  creadoPor:
+    string;
+
+};
 
 export type InventarioFormData =
   InventarioForm;
 
 /* =========================
-    DELETE TYPE
+    ACTUALIZAR
+========================= */
+
+export type UpdateInventarioForm = {
+
+  precioVenta?:
+    number;
+
+  stockMinimo?:
+    number;
+
+  estado?:
+    boolean;
+
+  actualizadoPor?:
+    string;
+
+};
+
+export type UpdateInventarioType = {
+
+  inventarioId:
+    string;
+
+  formData:
+    UpdateInventarioForm;
+
+};
+
+/* =========================
+    ELIMINAR
 ========================= */
 
 export type DeleteInventarioType = {
@@ -576,6 +1069,20 @@ export type DeleteInventarioType = {
     string;
 
   eliminadoPor?:
+    string;
+
+};
+
+/* =========================
+    APROBAR TRANSFERENCIA
+========================= */
+
+export type AprobarTransferenciaSolicitudType = {
+
+  idSolicitud:
+    string;
+
+  actualizadoPor?:
     string;
 
 };

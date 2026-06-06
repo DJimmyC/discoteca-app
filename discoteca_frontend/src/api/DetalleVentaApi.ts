@@ -7,20 +7,127 @@ import {
 } from "axios";
 
 import {
-
+  CreateDetalleVentaResponseSchema,
   DetalleVentaArraySchema,
-
   DetalleVentaSchema,
 
   type DetalleVentaForm,
-
   type DetalleVentaType,
-
   type UpdateDetalleVentaType,
-
   type DeleteDetalleVentaType,
-
 } from "@/types/DetalleVentaType";
+
+/* =========================
+    OBTENER MENSAJE DE ERROR
+========================= */
+
+function obtenerMensajeError(
+  error: unknown,
+  mensajePredeterminado: string
+): string {
+
+  if (
+    isAxiosError(error) &&
+    error.response
+  ) {
+
+    const mensajeBackend =
+      error.response.data?.error;
+
+    if (
+      typeof mensajeBackend ===
+      "string"
+    ) {
+      return mensajeBackend;
+    }
+
+  }
+
+  if (
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return mensajePredeterminado;
+
+}
+
+/* =========================
+    VALIDAR DETALLE
+========================= */
+
+function validarDetalleVenta(
+  formData: DetalleVentaForm
+): void {
+
+  if (!formData.idVenta) {
+
+    throw new Error(
+      "El ID de la venta es obligatorio"
+    );
+
+  }
+
+  if (!formData.idProducto) {
+
+    throw new Error(
+      "El ID del producto es obligatorio"
+    );
+
+  }
+
+  if (!formData.idInventario) {
+
+    throw new Error(
+      "El ID del inventario es obligatorio"
+    );
+
+  }
+
+  if (!formData.idAlmacen) {
+
+    throw new Error(
+      "El ID del almacén es obligatorio"
+    );
+
+  }
+
+  const cantidad =
+    Number(
+      formData.cantidad
+    );
+
+  const precioUnitario =
+    Number(
+      formData.precioUnitario
+    );
+
+  if (
+    !Number.isFinite(cantidad) ||
+    cantidad <= 0
+  ) {
+
+    throw new Error(
+      "La cantidad debe ser mayor a cero"
+    );
+
+  }
+
+  if (
+    !Number.isFinite(
+      precioUnitario
+    ) ||
+    precioUnitario < 0
+  ) {
+
+    throw new Error(
+      "El precio unitario no es válido"
+    );
+
+  }
+
+}
 
 /* =========================
     CREAR DETALLE VENTA
@@ -32,32 +139,51 @@ export async function createDetalleVenta(
 
   try {
 
-    const { data } =
-      await api.post(
+    validarDetalleVenta(
+      formData
+    );
 
-        "/detalleventa",
+    const {
+      data,
+    } = await api.post(
 
-        formData
+      "/detalleventa",
 
+      formData
+
+    );
+
+    const response =
+      CreateDetalleVentaResponseSchema
+        .safeParse(data);
+
+    if (!response.success) {
+
+      console.log(
+        "RESPUESTA DETALLE VENTA:",
+        data
       );
 
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+      console.log(
+        "ERROR ZOD:",
+        response.error.format()
+      );
 
       throw new Error(
-        error.response.data.error
+        "La respuesta del detalle de venta no coincide con el type"
       );
 
     }
 
+    return response.data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error creando detalle de venta"
+      obtenerMensajeError(
+        error,
+        "Error creando detalle de venta"
+      )
     );
 
   }
@@ -74,40 +200,50 @@ export async function createManyDetalleVenta(
 
   try {
 
-    const responses =
-      await Promise.all(
-
-        detalles.map((detalle) =>
-          api.post(
-
-            "/detalleventa",
-
-            detalle
-
-          )
-        )
-
-      );
-
-    return responses.map(
-      (response) => response.data
-    );
-
-  } catch (error) {
-
     if (
-      isAxiosError(error) &&
-      error.response
+      !detalles ||
+      detalles.length === 0
     ) {
 
       throw new Error(
-        error.response.data.error
+        "No existen detalles para registrar"
       );
 
     }
 
+    const respuestas = [];
+
+    /*
+      Se registran uno por uno para evitar
+      el error de Promise.all y controlar
+      mejor cuál detalle falla.
+    */
+
+    for (
+      const detalle
+      of detalles
+    ) {
+
+      const respuesta =
+        await createDetalleVenta(
+          detalle
+        );
+
+      respuestas.push(
+        respuesta
+      );
+
+    }
+
+    return respuestas;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error creando detalles de venta"
+      obtenerMensajeError(
+        error,
+        "Error creando detalles de venta"
+      )
     );
 
   }
@@ -122,10 +258,11 @@ export async function getDetallesVenta() {
 
   try {
 
-    const { data } =
-      await api(
-        "/detalleventa"
-      );
+    const {
+      data,
+    } = await api.get(
+      "/detalleventa"
+    );
 
     const response =
       DetalleVentaArraySchema.safeParse(
@@ -135,6 +272,12 @@ export async function getDetallesVenta() {
     if (!response.success) {
 
       console.log(
+        "RESPUESTA DETALLES:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD:",
         response.error.format()
       );
 
@@ -146,21 +289,13 @@ export async function getDetallesVenta() {
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo detalles de venta"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo detalles de venta"
+      )
     );
 
   }
@@ -177,10 +312,19 @@ export async function getDetalleVentaById(
 
   try {
 
-    const { data } =
-      await api(
-        `/detalleventa/${id}`
+    if (!id) {
+
+      throw new Error(
+        "El ID del detalle de venta es obligatorio"
       );
+
+    }
+
+    const {
+      data,
+    } = await api.get(
+      `/detalleventa/${id}`
+    );
 
     const response =
       DetalleVentaSchema.safeParse(
@@ -190,6 +334,12 @@ export async function getDetalleVentaById(
     if (!response.success) {
 
       console.log(
+        "RESPUESTA DETALLE:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD:",
         response.error.format()
       );
 
@@ -201,21 +351,13 @@ export async function getDetalleVentaById(
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo detalle de venta"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo detalle de venta"
+      )
     );
 
   }
@@ -223,7 +365,7 @@ export async function getDetalleVentaById(
 }
 
 /* =========================
-    ACTUALIZAR DETALLE VENTA
+    ACTUALIZAR DETALLE
 ========================= */
 
 export async function updateDetalleVenta({
@@ -236,32 +378,33 @@ export async function updateDetalleVenta({
 
   try {
 
-    const { data } =
-      await api.put(
-
-        `/detalleventa/${detalleVentaId}`,
-
-        formData
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    if (!detalleVentaId) {
 
       throw new Error(
-        error.response.data.error
+        "El ID del detalle de venta es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.put(
+
+      `/detalleventa/${detalleVentaId}`,
+
+      formData
+
+    );
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error actualizando detalle de venta"
+      obtenerMensajeError(
+        error,
+        "Error actualizando detalle de venta"
+      )
     );
 
   }
@@ -269,7 +412,7 @@ export async function updateDetalleVenta({
 }
 
 /* =========================
-    ELIMINAR DETALLE VENTA
+    ELIMINAR DETALLE
 ========================= */
 
 export async function deleteDetalleVentaById({
@@ -282,36 +425,41 @@ export async function deleteDetalleVentaById({
 
   try {
 
-    const { data } =
-      await api.delete(
-
-        `/detalleventa/${id}`,
-
-        {
-          data: {
-            eliminadoPor,
-          },
-        }
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    if (!id) {
 
       throw new Error(
-        error.response.data.error
+        "El ID del detalle de venta es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.delete(
+
+      `/detalleventa/${id}`,
+
+      {
+        data: {
+
+          eliminadoPor:
+            eliminadoPor ||
+            "admin",
+
+        },
+      }
+
+    );
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error eliminando detalle de venta"
+      obtenerMensajeError(
+        error,
+        "Error eliminando detalle de venta"
+      )
     );
 
   }

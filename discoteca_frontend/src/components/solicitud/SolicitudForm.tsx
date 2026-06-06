@@ -47,6 +47,7 @@ type ProductoOption = {
   descripcion?: string | null;
   marca?: string | null;
   estado?: boolean | null;
+  stockDisponible?: number;
 };
 
 /* =========================
@@ -314,8 +315,8 @@ export default function SolicitudForm({
               En tránsito
             </option>
 
-            <option value="completada">
-              Completada
+            <option value="atendida">
+              Atendida
             </option>
 
             <option value="anulada">
@@ -339,17 +340,21 @@ export default function SolicitudForm({
                 e.target.value
               )
             }
-            disabled={esCompraExterna}
+            disabled={true}
             className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-4 text-slate-700 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
           >
             <option value="">
               {esCompraExterna
                 ? "Compra externa / proveedor"
-                : "Seleccione almacén origen"}
+                : "Almacén principal seleccionado automáticamente"}
             </option>
 
             {almacenes
-              .filter((almacen) => almacen._id)
+              .filter(
+                (almacen) =>
+                  almacen._id &&
+                  almacen._id !== idAlmacenOrigen
+              )
               .map((almacen) => (
 
                 <option
@@ -544,6 +549,9 @@ export default function SolicitudForm({
                               {producto.marca
                                 ? ` - ${producto.marca}`
                                 : ""}
+                              {typeof producto.stockDisponible === "number"
+                                ? ` | Stock: ${producto.stockDisponible}`
+                                : ""}
                             </option>
 
                           ))}
@@ -562,6 +570,10 @@ export default function SolicitudForm({
                       <input
                         type="number"
                         min={1}
+                        max={
+                          productoSeleccionado
+                            ?.stockDisponible
+                        }
                         value={detalle.cantidadSolicitada}
                         onChange={(e) =>
                           actualizarDetalle(
@@ -574,6 +586,12 @@ export default function SolicitudForm({
                         }
                         className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-700 outline-none transition focus:border-purple-400"
                       />
+
+                      {typeof productoSeleccionado?.stockDisponible === "number" && (
+                        <p className="mt-2 text-xs font-bold text-emerald-700">
+                          Stock disponible: {productoSeleccionado.stockDisponible}
+                        </p>
+                      )}
 
                     </div>
 

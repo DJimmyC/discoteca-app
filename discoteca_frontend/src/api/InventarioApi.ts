@@ -8,18 +8,74 @@ import {
 
 import {
 
+  CreateInventarioResponseSchema,
+
   InventarioArraySchema,
+
+  InventarioPrincipalResponseSchema,
 
   InventarioSchema,
 
+  TransferenciaSolicitudResponseSchema,
+
+  type AprobarTransferenciaSolicitudType,
+
+  type DeleteInventarioType,
+
   type InventarioForm,
 
-  type InventarioType,
+  type UpdateInventarioType,
 
 } from "@/types/InventarioType";
 
 /* =========================
-    CREAR INVENTARIO
+    MENSAJE DE ERROR
+========================= */
+
+function obtenerMensajeError(
+  error: unknown,
+  mensajePredeterminado: string
+): string {
+
+  if (
+    isAxiosError(error) &&
+    error.response
+  ) {
+
+    const errorBackend =
+      error.response.data?.error;
+
+    const mensajeBackend =
+      error.response.data?.message;
+
+    if (
+      typeof errorBackend ===
+      "string"
+    ) {
+      return errorBackend;
+    }
+
+    if (
+      typeof mensajeBackend ===
+      "string"
+    ) {
+      return mensajeBackend;
+    }
+
+  }
+
+  if (
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return mensajePredeterminado;
+
+}
+
+/* =========================
+    CREAR O INGRESAR STOCK
 ========================= */
 
 export async function createInventario(
@@ -28,34 +84,97 @@ export async function createInventario(
 
   try {
 
-    const { data } =
-      await api.post(
-
-        "/inventario",
-
-        formData
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-      error.response
-
-    ) {
+    if (!formData.idAlmacen) {
 
       throw new Error(
-        error.response.data.error
+        "Debe seleccionar un almacén"
       );
 
     }
 
+    if (!formData.idProducto) {
+
+      throw new Error(
+        "Debe seleccionar un producto"
+      );
+
+    }
+
+    if (
+      !Number.isFinite(
+        Number(
+          formData.cantidad
+        )
+      ) ||
+      Number(
+        formData.cantidad
+      ) <= 0
+    ) {
+
+      throw new Error(
+        "La cantidad de entrada debe ser mayor a cero"
+      );
+
+    }
+
+    if (
+      !Number.isFinite(
+        Number(
+          formData.costoUnitario
+        )
+      ) ||
+      Number(
+        formData.costoUnitario
+      ) < 0
+    ) {
+
+      throw new Error(
+        "El costo de entrada no es válido"
+      );
+
+    }
+
+    const {
+      data,
+    } = await api.post(
+
+      "/inventario",
+
+      formData
+
+    );
+
+    const response =
+      CreateInventarioResponseSchema
+        .safeParse(data);
+
+    if (!response.success) {
+
+      console.log(
+        "RESPUESTA REAL INVENTARIO:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD INVENTARIO:",
+        response.error.format()
+      );
+
+      throw new Error(
+        "La respuesta del inventario no coincide con el type"
+      );
+
+    }
+
+    return response.data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error creando inventario"
+      obtenerMensajeError(
+        error,
+        "Error creando inventario"
+      )
     );
 
   }
@@ -70,17 +189,22 @@ export async function getInventarios() {
 
   try {
 
-    const { data } =
-      await api(
-        "/inventario"
-      );
+    const {
+      data,
+    } = await api.get(
+      "/inventario"
+    );
 
     const response =
-      InventarioArraySchema.safeParse(
-        data
-      );
+      InventarioArraySchema
+        .safeParse(data);
 
     if (!response.success) {
+
+      console.log(
+        "RESPUESTA REAL INVENTARIOS:",
+        data
+      );
 
       console.log(
         response.error.format()
@@ -94,23 +218,13 @@ export async function getInventarios() {
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-      error.response
-
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo inventarios"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo inventarios"
+      )
     );
 
   }
@@ -122,22 +236,34 @@ export async function getInventarios() {
 ========================= */
 
 export async function getInventarioById(
-  id: InventarioType["_id"]
+  id: string
 ) {
 
   try {
 
-    const { data } =
-      await api(
-        `/inventario/${id}`
+    if (!id) {
+
+      throw new Error(
+        "El ID del inventario es obligatorio"
       );
+
+    }
+
+    const {
+      data,
+    } = await api.get(
+      `/inventario/${id}`
+    );
 
     const response =
-      InventarioSchema.safeParse(
-        data
-      );
+      InventarioSchema
+        .safeParse(data);
 
     if (!response.success) {
+
+      console.log(
+        data
+      );
 
       console.log(
         response.error.format()
@@ -151,23 +277,13 @@ export async function getInventarioById(
 
     return response.data;
 
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-      error.response
-
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
+  } catch (error: unknown) {
 
     throw new Error(
-      "Error obteniendo inventario"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo inventario"
+      )
     );
 
   }
@@ -175,18 +291,8 @@ export async function getInventarioById(
 }
 
 /* =========================
-    ACTUALIZAR
+    ACTUALIZAR CONFIGURACIÓN
 ========================= */
-
-type UpdateInventarioType = {
-
-  inventarioId:
-    InventarioType["_id"];
-
-  formData:
-    InventarioForm;
-
-};
 
 export async function updateInventario({
 
@@ -198,34 +304,33 @@ export async function updateInventario({
 
   try {
 
-    const { data } =
-      await api.put(
-
-        `/inventario/${inventarioId}`,
-
-        formData
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-      error.response
-
-    ) {
+    if (!inventarioId) {
 
       throw new Error(
-        error.response.data.error
+        "El ID del inventario es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.put(
+
+      `/inventario/${inventarioId}`,
+
+      formData
+
+    );
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error actualizando inventario"
+      obtenerMensajeError(
+        error,
+        "Error actualizando inventario"
+      )
     );
 
   }
@@ -235,16 +340,6 @@ export async function updateInventario({
 /* =========================
     ELIMINAR
 ========================= */
-
-type DeleteInventarioType = {
-
-  id:
-    InventarioType["_id"];
-
-  eliminadoPor:
-    string;
-
-};
 
 export async function deleteInventarioById({
 
@@ -256,71 +351,83 @@ export async function deleteInventarioById({
 
   try {
 
-    const { data } =
-      await api.delete(
-
-        `/inventario/${id}`,
-
-        {
-
-          data: {
-
-            eliminadoPor,
-
-          },
-
-        }
-
-      );
-
-    return data;
-
-  } catch (error) {
-
-    if (
-
-      isAxiosError(error) &&
-      error.response
-
-    ) {
+    if (!id) {
 
       throw new Error(
-        error.response.data.error
+        "El ID del inventario es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.delete(
+
+      `/inventario/${id}`,
+
+      {
+        data: {
+
+          eliminadoPor:
+            eliminadoPor ||
+            "admin",
+
+        },
+      }
+
+    );
+
+    return data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error eliminando inventario"
+      obtenerMensajeError(
+        error,
+        "Error eliminando inventario"
+      )
     );
 
   }
 
-  
-
 }
+
 /* =========================
-    OBTENER INVENTARIO BARRA POR SUCURSAL
+    INVENTARIO BARRA
 ========================= */
 
-export async function getInventarioBarraPorSucursal(
+export async function
+getInventarioBarraPorSucursal(
   idSucursal: string
 ) {
 
   try {
 
-    const { data } =
-      await api(
-        `/inventario/sucursal/${idSucursal}/barra`
+    if (!idSucursal) {
+
+      throw new Error(
+        "El ID de la sucursal es obligatorio"
       );
-      
+
+    }
+
+    const {
+      data,
+    } = await api.get(
+
+      `/inventario/sucursal/${idSucursal}/barra`
+
+    );
 
     const response =
-      InventarioArraySchema.safeParse(
-        data
-      );
+      InventarioArraySchema
+        .safeParse(data);
 
     if (!response.success) {
+
+      console.log(
+        data
+      );
 
       console.log(
         response.error.format()
@@ -334,23 +441,213 @@ export async function getInventarioBarraPorSucursal(
 
     return response.data;
 
-  } catch (error) {
+  } catch (error: unknown) {
 
-    if (
+    throw new Error(
+      obtenerMensajeError(
+        error,
+        "Error obteniendo inventario de barra"
+      )
+    );
 
-      isAxiosError(error) &&
-      error.response
+  }
 
-    ) {
+}
+
+
+/* =========================
+    INVENTARIOS POR SUCURSAL
+========================= */
+
+export async function getInventariosPorSucursal(
+  idSucursal: string
+) {
+
+  try {
+
+    if (!idSucursal) {
+      throw new Error(
+        "El ID de la sucursal es obligatorio"
+      );
+    }
+
+    const {
+      data,
+    } = await api.get(
+      `/inventario/sucursal/${idSucursal}`
+    );
+
+    console.log(data)
+    const response =
+      InventarioArraySchema.safeParse(
+        data
+      );
+
+    if (!response.success) {
+
+      console.log(
+        "RESPUESTA INVENTARIOS SUCURSAL:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD INVENTARIOS SUCURSAL:",
+        response.error.format()
+      );
 
       throw new Error(
-        error.response.data.error
+        "La respuesta de inventarios por sucursal no coincide con el type"
+      );
+    }
+
+    return response.data;
+
+  } catch (error: unknown) {
+
+    throw new Error(
+      obtenerMensajeError(
+        error,
+        "Error obteniendo inventarios de la sucursal"
+      )
+    );
+  }
+}
+
+/* =========================
+    INVENTARIO PRINCIPAL
+========================= */
+
+export async function
+getInventarioPrincipalPorSucursal(
+  idSucursal: string
+) {
+
+  try {
+
+    if (!idSucursal) {
+
+      throw new Error(
+        "El ID de la sucursal es obligatorio"
       );
 
     }
 
+    const {
+      data,
+    } = await api.get(
+
+      `/inventario/sucursal/${idSucursal}/principal`
+
+    );
+
+    const response =
+      InventarioPrincipalResponseSchema
+        .safeParse(data);
+
+    if (!response.success) {
+
+      console.log(
+        "RESPUESTA INVENTARIO PRINCIPAL:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD INVENTARIO PRINCIPAL:",
+        response.error.format()
+      );
+
+      throw new Error(
+        "Error validando inventario principal"
+      );
+
+    }
+
+    return response.data;
+
+  } catch (error: unknown) {
+
     throw new Error(
-      "Error obteniendo inventario de barra"
+      obtenerMensajeError(
+        error,
+        "Error obteniendo inventario principal"
+      )
+    );
+
+  }
+
+}
+
+/* =========================
+    APROBAR Y TRANSFERIR
+    SOLICITUD
+========================= */
+
+export async function
+aprobarYTransferirSolicitud({
+
+  idSolicitud,
+
+  actualizadoPor,
+
+}: AprobarTransferenciaSolicitudType) {
+
+  try {
+
+    if (!idSolicitud) {
+
+      throw new Error(
+        "El ID de la solicitud es obligatorio"
+      );
+
+    }
+
+    const {
+      data,
+    } = await api.patch(
+
+      `/inventario/solicitud/${idSolicitud}/aprobar-transferir`,
+
+      {
+
+        actualizadoPor:
+          actualizadoPor ||
+          "sistema",
+
+      }
+
+    );
+
+    const response =
+      TransferenciaSolicitudResponseSchema
+        .safeParse(data);
+
+    if (!response.success) {
+
+      console.log(
+        "RESPUESTA TRANSFERENCIA:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD TRANSFERENCIA:",
+        response.error.format()
+      );
+
+      throw new Error(
+        "La respuesta de la transferencia no coincide con el type"
+      );
+
+    }
+
+    return response.data;
+
+  } catch (error: unknown) {
+
+    throw new Error(
+      obtenerMensajeError(
+        error,
+        "Error aprobando y transfiriendo la solicitud"
+      )
     );
 
   }

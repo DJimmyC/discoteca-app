@@ -1,9 +1,13 @@
+// src/views/aperturaCaja/CreateAperturaCajaView.tsx
+
 import {
+  useEffect,
   useState,
 } from "react";
 
 import {
   useMutation,
+  useQueryClient,
 } from "@tanstack/react-query";
 
 import {
@@ -12,16 +16,9 @@ import {
 } from "react-router-dom";
 
 import Swal from "sweetalert2";
-
-import {
-  motion,
-} from "framer-motion";
+import { motion } from "framer-motion";
 
 import MenuList from "@/components/MenuList";
-import {
-  createMovimiento,
-} from "@/api/MovimientoApi";
-
 import AperturaCajaForm from "@/components/aperturacaja/AperturaCajaForm";
 
 import {
@@ -31,290 +28,216 @@ import {
 import type {
   AperturaCajaForm as AperturaCajaFormType,
 } from "@/types/AperturaCajaType";
+
 import { useAuth } from "@/hooks/useAuth";
 
-export default function
-CreateAperturaCajaView() {
+function obtenerFechaHoraLocal(): string {
+
+  const ahora =
+    new Date();
+
+  const compensacion =
+    ahora.getTimezoneOffset() *
+    60000;
+
+  return new Date(
+    ahora.getTime() -
+    compensacion
+  )
+    .toISOString()
+    .slice(0, 16);
+}
+
+export default function CreateAperturaCajaView() {
 
   const navigate =
     useNavigate();
- 
+
+  const queryClient =
+    useQueryClient();
+
   const {
     sucursalId,
     cajaId,
   } = useParams();
 
-  /* =========================
-      FECHA Y HORA
-  ========================= */
-
-  const now =
-    new Date();
-
-  const fecha =
-    now.toISOString();
-
-  const horaApertura =
-    now
-      .toTimeString()
-      .slice(0, 5);
-const {data: perfil} = useAuth();
-
-const idPerfil =
-  typeof perfil?._id === "string"
-    ? perfil._id
-    : perfil?._id! || "";
-  /* =========================
-      FORM DATA
-  ========================= */
+  const {
+    data: perfil,
+  } = useAuth();
 
   const [
     formData,
-
-    setFormData
-
+    setFormData,
   ] = useState<AperturaCajaFormType>({
-
-    idPerfil:perfil?._id  ||    "",
-
+    idPerfil: "",
     idCaja:
       cajaId || "",
-
-    fecha,
-
-    horaApertura,
-
-    montoInicial:
-      0,
-
-    observacion:
-      "",
-
-    estado:
-      true,
-
-    creadoPor: idPerfil!,
-
+    fechaApertura:
+      obtenerFechaHoraLocal(),
+    montoInicial: 0,
+    observacion: "",
+    creadoPor: "",
   });
 
-  /* =========================
-      MUTATION
-  ========================= */
+  useEffect(() => {
 
-const {
+    if (!perfil?._id) {
+      return;
+    }
 
-  mutate,
+    setFormData(
+      (actual) => ({
+        ...actual,
+        idPerfil:
+          String(perfil._id),
+        creadoPor:
+          perfil.nombres ||
+          "sistema",
+      })
+    );
 
-  isPending,
+  }, [
+    perfil,
+  ]);
 
-} = useMutation({
+  const {
+    mutate,
+    isPending,
+  } = useMutation({
 
-  mutationFn: async (
-    dataForm:
-      AperturaCajaFormType
-  ) => {
+    mutationFn:
+      createAperturaCaja,
 
-    const apertura =
-      await createAperturaCaja(
-        dataForm
-      );
+    onSuccess:
+      async (
+        respuesta
+      ) => {
 
-    await createMovimiento({
+        await Promise.all([
 
-      fecha:
-        dataForm.fecha,
+          queryClient.invalidateQueries({
+            queryKey: [
+              "aperturasCaja",
+              cajaId,
+            ],
+          }),
 
-      tipoMovimiento:
-        "apertura_caja",
+          queryClient.invalidateQueries({
+            queryKey: [
+              "apertura-activa",
+              cajaId,
+            ],
+          }),
 
-      modulo:
-        "caja",
+          queryClient.invalidateQueries({
+            queryKey: [
+              "cajas-sucursal",
+              sucursalId,
+            ],
+          }),
 
-      idSucursal:
-        sucursalId || "",
+          queryClient.invalidateQueries({
+            queryKey: [
+              "movimientos",
+            ],
+          }),
 
-      idCaja:
-        cajaId || "",
+        ]);
 
-      idPerfil:
-        dataForm.idPerfil,
+        await Swal.fire({
+          icon:
+            "success",
+          title:
+            respuesta.message,
+          text:
+            "La caja quedó abierta y el movimiento fue registrado por el backend.",
+        });
 
-      montoInicial:
-        Number(
-          dataForm.montoInicial
-        ),
+        navigate(
+          `/sucursal/${sucursalId}/caja/${cajaId}/apertura`
+        );
+      },
 
-      montoEntrada:
-        Number(
-          dataForm.montoInicial
-        ),
+    onError:
+      async (
+        error: Error
+      ) => {
 
-      total:
-        Number(
-          dataForm.montoInicial
-        ),
-
-      estado:
-        "activo",
-
-      observacion:
-        dataForm.observacion ||
-        "Apertura de caja",
-
-      referenciaModelo:
-        "AperturaCaja",
-
-      creadoPor:
-        dataForm.creadoPor ||
-        "admin",
-
-    });
-
-    return apertura;
-
-  },
-
-  onSuccess:
-    async (
-      data
-    ) => {
-
-      await Swal.fire({
-
-        icon:
-          "success",
-
-        title:
-          data,
-
-        timer:
-          2000,
-
-        showConfirmButton:
-          false,
-
-      });
-
-      navigate(
-
-        `/sucursal/${sucursalId}/caja`
-
-      );
-
-    },
-
-  onError:
-    async (
-      error: any
-    ) => {
-
-      await Swal.fire({
-
-        icon:
-          "error",
-
-        title:
-          error.message,
-
-      });
-
-    },
-
-});
-  /* =========================
-      SUBMIT
-  ========================= */
+        await Swal.fire({
+          icon:
+            "error",
+          title:
+            "No se pudo abrir la caja",
+          text:
+            error.message,
+        });
+      },
+  });
 
   const handleSubmit = (
-    e: React.FormEvent
+    event:
+      React.FormEvent<HTMLFormElement>
   ) => {
 
-    e.preventDefault();
+    event.preventDefault();
+
+    if (
+      !formData.idPerfil ||
+      !formData.idCaja
+    ) {
+      Swal.fire({
+        icon:
+          "error",
+        title:
+          "Datos incompletos",
+        text:
+          "No se pudo identificar el perfil o la caja.",
+      });
+
+      return;
+    }
 
     mutate(formData);
-
   };
 
   return (
 
     <div className="flex min-h-screen bg-slate-50">
 
-      {/* SIDEBAR */}
       <MenuList />
 
-      {/* CONTENT */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-4 md:p-8">
 
         <motion.div
-
           initial={{
-
             opacity: 0,
-
             y: 20,
-
           }}
-
           animate={{
-
             opacity: 1,
-
             y: 0,
-
           }}
-
-          className="
-            rounded-3xl
-            border
-            border-slate-200
-            bg-white
-            p-8
-            shadow-sm
-          "
+          className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
         >
-
-          {/* HEADER */}
 
           <div className="mb-8">
 
-            <h1 className="text-4xl font-black text-slate-800">
-
-              Nueva Apertura
-
+            <h1 className="text-3xl font-black text-slate-800 md:text-4xl">
+              Nueva apertura
             </h1>
 
             <p className="mt-2 text-slate-500">
-
-              Registrar apertura de caja
-
+              Registra el monto inicial y el inicio de la jornada.
             </p>
 
           </div>
 
-          {/* FORM */}
-
           <AperturaCajaForm
-
-            formData={
-              formData
-            }
-
-            setFormData={
-              setFormData
-            }
-
-            onSubmit={
-              handleSubmit
-            }
-
-            loading={
-              isPending
-            }
-
-            submitText="
-              Guardar Apertura
-            "
-
+            formData={formData}
+            setFormData={setFormData}
+            onSubmit={handleSubmit}
+            loading={isPending}
+            submitText="Abrir caja"
           />
 
         </motion.div>
@@ -322,7 +245,5 @@ const {
       </main>
 
     </div>
-
   );
-
 }

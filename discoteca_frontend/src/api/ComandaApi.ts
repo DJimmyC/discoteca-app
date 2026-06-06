@@ -555,6 +555,7 @@ export async function getComandasConDetallesPorPerfil(
         `/comanda/perfil/${idPerfil}/detalles`
       );
 
+      console.log(data)
     const response =
       ComandasConDetallesPorPerfilSchema.safeParse(
         data

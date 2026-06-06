@@ -1,6 +1,8 @@
 // src/views/solicitud/CreateSolicitudView.tsx
 
 import {
+  useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -24,7 +26,9 @@ import {
 
 import Swal from "sweetalert2";
 
-import { useAuth } from "@/hooks/useAuth";
+import {
+  useAuth,
+} from "@/hooks/useAuth";
 
 import MenuList from "@/components/MenuList";
 
@@ -37,8 +41,8 @@ import {
 } from "@/api/AlmacenApi";
 
 import {
-  getProductos,
-} from "@/api/ProductoApi";
+  getInventarioPrincipalPorSucursal,
+} from "@/api/InventarioApi";
 
 import {
   createSolicitud,
@@ -48,21 +52,69 @@ import {
   createManyDetalleSolicitud,
 } from "@/api/DetalleSolicitudApi";
 
+import {
+  createMovimiento,
+} from "@/api/MovimientoApi";
+
+import type {
+  DetalleSolicitudForm,
+} from "@/types/DetalleSolicitudType";
+
+import type {
+  MovimientoForm,
+} from "@/types/MovimientoType";
+
+/* =========================
+    OBTENER ID
+========================= */
+
+function obtenerIdRelacion(
+  relacion:
+    | string
+    | {
+        _id?: string;
+      }
+    | null
+    | undefined
+): string {
+
+  if (
+    typeof relacion ===
+    "string"
+  ) {
+    return relacion;
+  }
+
+  return relacion?._id || "";
+
+}
+
+/* =========================
+    COMPONENTE
+========================= */
+
 export default function CreateSolicitudView() {
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   const {
-    data: perfil,
-    isLoading: loadingAuth,
+    data:
+      perfil,
+
+    isLoading:
+      loadingAuth,
   } = useAuth();
 
   const [
     tipoSolicitud,
     setTipoSolicitud,
-  ] = useState("reposicion_interna");
+  ] = useState(
+    "reposicion_interna"
+  );
 
   const [
     idAlmacenOrigen,
@@ -77,7 +129,9 @@ export default function CreateSolicitudView() {
   const [
     estado,
     setEstado,
-  ] = useState("pendiente");
+  ] = useState(
+    "pendiente"
+  );
 
   const [
     observacion,
@@ -87,44 +141,78 @@ export default function CreateSolicitudView() {
   const [
     detalles,
     setDetalles,
-  ] = useState<DetalleSolicitudItem[]>([
-    {
-      idProducto: "",
-      cantidadSolicitada: 1,
-      cantidadAprobada: null,
-      cantidadAtendida: null,
-      unidad: "unidades",
-      observacion: "",
-      estado: "pendiente",
-      esNuevo: true,
-    },
-  ]);
+  ] =
+    useState<
+      DetalleSolicitudItem[]
+    >([
+
+      {
+        idProducto:
+          "",
+
+        cantidadSolicitada:
+          1,
+
+        cantidadAprobada:
+          null,
+
+        cantidadAtendida:
+          null,
+
+        unidad:
+          "unidades",
+
+        observacion:
+          "",
+
+        estado:
+          "pendiente",
+
+        esNuevo:
+          true,
+      },
+
+    ]);
 
   /* =========================
-      DATOS DEL PERFIL
+      DATOS PERFIL
   ========================= */
 
   const idPerfil =
-    perfil?._id;
+    obtenerIdRelacion(
+      perfil?._id
+    );
 
   const idSucursal =
-    typeof perfil?.idSucursal === "object"
-      ? perfil.idSucursal?._id
-      : perfil?.idSucursal;
+    obtenerIdRelacion(
+      perfil?.idSucursal
+    );
 
   const nombreSucursal =
-    typeof perfil?.idSucursal === "object"
-      ? perfil.idSucursal?.nombreSucursal
+    typeof perfil?.idSucursal ===
+      "object"
+      ? perfil.idSucursal
+          ?.nombreSucursal ||
+        "Sucursal"
       : "Sucursal";
+
+  const nombreUsuario =
+    perfil?.nombres ||
+    "sistema";
 
   /* =========================
       ALMACENES
   ========================= */
 
   const {
-    data: dataAlmacenes,
-    isLoading: loadingAlmacenes,
-    isError: errorAlmacenes,
+    data:
+      dataAlmacenes,
+
+    isLoading:
+      loadingAlmacenes,
+
+    isError:
+      errorAlmacenes,
   } = useQuery({
 
     queryKey: [
@@ -134,220 +222,669 @@ export default function CreateSolicitudView() {
 
     queryFn: () =>
       getAlmacenesBySucursal(
-        idSucursal!
+        idSucursal
       ),
 
     enabled:
-      !!idSucursal,
+      Boolean(
+        idSucursal
+      ),
 
   });
 
   const almacenes =
-    dataAlmacenes?.almacenes || [];
+    dataAlmacenes
+      ?.almacenes ||
+    [];
 
   /* =========================
-      PRODUCTOS
+      INVENTARIO PRINCIPAL
   ========================= */
 
   const {
-    data: productos = [],
-    isLoading: loadingProductos,
-    isError: errorProductos,
+    data:
+      inventarioPrincipal,
+
+    isLoading:
+      loadingProductos,
+
+    isError:
+      errorProductos,
   } = useQuery({
 
     queryKey: [
-      "productos",
+      "inventario-principal",
+      idSucursal,
     ],
 
-    queryFn:
-      getProductos,
+    queryFn: () =>
+      getInventarioPrincipalPorSucursal(
+        idSucursal
+      ),
+
+    enabled:
+      Boolean(
+        idSucursal
+      ),
 
   });
 
-  const productosValidos =
-    productos || [];
+  const productos =
+    useMemo(() => {
+
+      return (
+        inventarioPrincipal
+          ?.inventarios || []
+      )
+        .filter(
+          (inventario) =>
+            inventario.estado !== false &&
+            inventario.cantidad > 0 &&
+            typeof inventario.idProducto === "object" &&
+            inventario.idProducto !== null &&
+            Boolean(
+              inventario.idProducto._id
+            )
+        )
+        .map(
+          (inventario) => {
+
+            const producto =
+              typeof inventario.idProducto === "object" &&
+              inventario.idProducto !== null
+                ? inventario.idProducto
+                : null;
+
+            return {
+              _id:
+                producto?._id || "",
+
+              nombre:
+                producto?.nombre ||
+                "Producto",
+
+              descripcion:
+                producto?.descripcion ||
+                "",
+
+              marca:
+                producto?.marca ||
+                "",
+
+              estado:
+                producto?.estado ??
+                true,
+
+              stockDisponible:
+                Number(
+                  inventario.cantidad || 0
+                ),
+            };
+          }
+        );
+
+    }, [
+      inventarioPrincipal,
+    ]);
+
+  useEffect(() => {
+
+    if (
+      tipoSolicitud ===
+      "compra_externa"
+    ) {
+      setIdAlmacenOrigen("");
+      return;
+    }
+
+    const idPrincipal =
+      inventarioPrincipal
+        ?.almacen
+        ?._id ||
+      "";
+
+    setIdAlmacenOrigen(
+      idPrincipal
+    );
+
+  }, [
+    inventarioPrincipal,
+    tipoSolicitud,
+  ]);
 
   /* =========================
-      CREAR SOLICITUD
+      MUTATION
   ========================= */
 
   const {
-    mutate: guardarSolicitud,
+    mutate:
+      guardarSolicitud,
+
     isPending,
   } = useMutation({
 
-    mutationFn: async () => {
+    mutationFn:
+      async () => {
 
-      if (!idPerfil) {
-        throw new Error(
-          "No se encontró el perfil del usuario"
-        );
-      }
+        /* =========================
+            VALIDACIONES
+        ========================= */
 
-      if (!idSucursal) {
-        throw new Error(
-          "No se encontró la sucursal del usuario"
-        );
-      }
+        if (!idPerfil) {
 
-      if (!idAlmacenDestino) {
-        throw new Error(
-          "Debe seleccionar el almacén destino"
-        );
-      }
+          throw new Error(
+            "No se encontró el perfil del usuario"
+          );
 
-      if (
-        tipoSolicitud === "reposicion_interna" &&
-        !idAlmacenOrigen
-      ) {
-        throw new Error(
-          "Debe seleccionar el almacén origen"
-        );
-      }
+        }
 
-      if (
-        tipoSolicitud === "reposicion_interna" &&
-        idAlmacenOrigen === idAlmacenDestino
-      ) {
-        throw new Error(
-          "El almacén origen y destino no pueden ser iguales"
-        );
-      }
+        if (!idSucursal) {
 
-      const detallesValidos =
-        detalles.filter(
-          (detalle) =>
-            detalle.idProducto &&
-            Number(detalle.cantidadSolicitada) > 0
-        );
+          throw new Error(
+            "No se encontró la sucursal del usuario"
+          );
 
-      if (detallesValidos.length === 0) {
-        throw new Error(
-          "Debe agregar al menos un producto válido"
-        );
-      }
+        }
 
-      /*
-        1. Crear solicitud
-      */
-      const responseSolicitud =
-        await createSolicitud({
+        if (
+          !idAlmacenDestino
+        ) {
 
-          idPerfil,
+          throw new Error(
+            "Debe seleccionar el almacén destino"
+          );
 
-          idSucursal,
+        }
 
-          idAlmacenOrigen:
-            tipoSolicitud === "compra_externa"
-              ? null
-              : idAlmacenOrigen,
+        if (
+          tipoSolicitud ===
+            "reposicion_interna" &&
+          !idAlmacenOrigen
+        ) {
 
-          idAlmacenDestino,
+          throw new Error(
+            "Debe seleccionar el almacén origen"
+          );
 
-          fechaSolicitud:
-            new Date().toISOString(),
+        }
 
-          estado,
+        if (
+          tipoSolicitud ===
+            "reposicion_interna" &&
+          idAlmacenOrigen ===
+            idAlmacenDestino
+        ) {
 
-          observacion:
-            observacion ||
-            "Sin observación",
+          throw new Error(
+            "El almacén origen y destino no pueden ser iguales"
+          );
 
-          creadoPor:
-            perfil?.nombres ||
-            "sistema",
+        }
 
-        });
+        const detallesValidos =
+          detalles.filter(
+            (
+              detalle
+            ) =>
+              Boolean(
+                detalle.idProducto
+              ) &&
+              Number(
+                detalle
+                  .cantidadSolicitada
+              ) > 0
+          );
 
-      const idSolicitudCreada =
-        responseSolicitud?.solicitud?._id;
+        if (
+          detallesValidos.length ===
+          0
+        ) {
 
-      if (!idSolicitudCreada) {
-        throw new Error(
-          "No se recibió el ID de la solicitud creada. Revisa que el backend devuelva la solicitud."
-        );
-      }
+          throw new Error(
+            "Debe agregar al menos un producto válido"
+          );
 
-      /*
-        2. Crear detalles
-      */
-      const detallesPayload =
-        detallesValidos.map((detalle) => ({
+        }
+
+        for (
+          const detalle
+          of detallesValidos
+        ) {
+
+          const producto =
+            productos.find(
+              (item) =>
+                item._id ===
+                detalle.idProducto
+            );
+
+          const stockDisponible =
+            Number(
+              producto
+                ?.stockDisponible ||
+              0
+            );
+
+          if (
+            Number(
+              detalle
+                .cantidadSolicitada
+            ) >
+            stockDisponible
+          ) {
+
+            throw new Error(
+              `La cantidad solicitada de ${
+                producto?.nombre ||
+                "un producto"
+              } supera el stock disponible (${stockDisponible})`
+            );
+          }
+        }
+
+        const productosDuplicados =
+          detallesValidos.some(
+            (
+              detalle,
+              index,
+              array
+            ) =>
+              array.findIndex(
+                (
+                  item
+                ) =>
+                  item.idProducto ===
+                  detalle.idProducto
+              ) !== index
+          );
+
+        if (
+          productosDuplicados
+        ) {
+
+          throw new Error(
+            "No puede repetir el mismo producto dentro de la solicitud"
+          );
+
+        }
+
+        /* =========================
+            1. CREAR SOLICITUD
+        ========================= */
+
+        const respuestaSolicitud =
+          await createSolicitud({
+
+            idPerfil,
+
+            idSucursal,
+
+            idAlmacenOrigen:
+              tipoSolicitud ===
+              "compra_externa"
+                ? null
+                : idAlmacenOrigen,
+
+            idAlmacenDestino,
+
+            fechaSolicitud:
+              new Date()
+                .toISOString(),
+
+            /*
+              Toda solicitud nueva
+              comienza pendiente.
+            */
+            estado:
+              "pendiente",
+
+            observacion:
+              observacion.trim() ||
+              "Sin observación",
+
+            creadoPor:
+              nombreUsuario,
+
+          });
+
+        const idSolicitudCreada =
+          respuestaSolicitud
+            .solicitud
+            ._id;
+
+        if (
+          !idSolicitudCreada
+        ) {
+
+          throw new Error(
+            "El backend no devolvió el ID de la solicitud creada"
+          );
+
+        }
+
+        /* =========================
+            2. PREPARAR DETALLES
+        ========================= */
+
+        const detallesPayload:
+          DetalleSolicitudForm[] =
+          detallesValidos.map(
+            (
+              detalle
+            ) => ({
+
+              idSolicitud:
+                idSolicitudCreada,
+
+              idProducto:
+                detalle.idProducto,
+
+              cantidadSolicitada:
+                Number(
+                  detalle
+                    .cantidadSolicitada
+                ),
+
+              /*
+                Una solicitud nueva todavía
+                no está aprobada ni atendida.
+              */
+              cantidadAprobada:
+                0,
+
+              cantidadAtendida:
+                0,
+
+              unidad:
+                detalle.unidad ||
+                "unidades",
+
+              observacion:
+                detalle
+                  .observacion ||
+                "",
+
+              estado:
+                "pendiente",
+
+              creadoPor:
+                nombreUsuario,
+
+            })
+          );
+
+        /* =========================
+            3. CREAR DETALLES
+        ========================= */
+
+        const detallesCreados =
+          await createManyDetalleSolicitud(
+            detallesPayload
+          );
+
+        /* =========================
+            4. MOVIMIENTO GENERAL
+        ========================= */
+
+        const totalSolicitado =
+          detallesPayload.reduce<number>(
+            (
+              total,
+              detalle
+            ) =>
+              total +
+              Number(
+                detalle
+                  .cantidadSolicitada
+              ),
+            0
+          );
+
+        const movimientoSolicitud:
+          MovimientoForm = {
+
+          fecha:
+            new Date()
+              .toISOString(),
+
+          tipoMovimiento:
+            "solicitud",
+
+          origenMovimiento:
+            "solicitud",
+
+          modulo:
+            "solicitud",
 
           idSolicitud:
             idSolicitudCreada,
 
-          idProducto:
-            detalle.idProducto,
+          idSucursal,
 
-          cantidadSolicitada:
-            Number(
-              detalle.cantidadSolicitada
-            ),
+          idPerfil,
 
-          cantidadAprobada:
-            detalle.cantidadAprobada ??
-            null,
+          idAlmacenOrigen:
+            tipoSolicitud ===
+            "compra_externa"
+              ? undefined
+              : idAlmacenOrigen,
 
-          cantidadAtendida:
-            detalle.cantidadAtendida ??
-            null,
+          idAlmacenDestino,
 
-          unidad:
-            detalle.unidad ||
-            "unidades",
-
-          observacion:
-            detalle.observacion ||
-            "",
+          cantidad:
+            totalSolicitado,
 
           estado:
-            detalle.estado ||
             "pendiente",
 
+          referenciaId:
+            idSolicitudCreada,
+
+          referenciaModelo:
+            "Solicitud",
+
+          observacion:
+            observacion.trim() ||
+            (
+              tipoSolicitud ===
+              "compra_externa"
+                ? "Solicitud de compra externa"
+                : "Solicitud de reposición interna"
+            ),
+
           creadoPor:
-            perfil?.nombres ||
-            "sistema",
+            nombreUsuario,
 
-        }));
+        };
 
-      await createManyDetalleSolicitud(
-        detallesPayload
-      );
+        await createMovimiento(
+          movimientoSolicitud
+        );
 
-    },
+        /* =========================
+            5. MOVIMIENTO POR PRODUCTO
+        ========================= */
 
-    onSuccess: () => {
+        for (
+          const detalle
+          of detallesPayload
+        ) {
 
-      Swal.fire({
-        icon: "success",
-        title: "Solicitud creada",
-        text: "La solicitud y sus detalles fueron registrados correctamente",
-      });
+          const producto =
+            productos.find(
+              (
+                item
+              ) =>
+                item._id ===
+                detalle.idProducto
+            );
 
-      queryClient.invalidateQueries({
-        queryKey: [
-          "solicitudes-sucursal",
-          idSucursal,
-        ],
-      });
+          const movimientoDetalle:
+            MovimientoForm = {
 
-      navigate(-1);
+            fecha:
+              new Date()
+                .toISOString(),
 
-    },
+            tipoMovimiento:
+              "solicitud",
 
-    onError: (error) => {
+            origenMovimiento:
+              "solicitud",
 
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Error al crear la solicitud",
-      });
+            modulo:
+              "solicitud",
 
-    },
+            idSolicitud:
+              idSolicitudCreada,
+
+            idSucursal,
+
+            idPerfil,
+
+            idAlmacenOrigen:
+              tipoSolicitud ===
+              "compra_externa"
+                ? undefined
+                : idAlmacenOrigen,
+
+            idAlmacenDestino,
+
+            idProducto:
+              detalle.idProducto,
+
+            cantidad:
+              detalle
+                .cantidadSolicitada,
+
+            estado:
+              "pendiente",
+
+            referenciaId:
+              idSolicitudCreada,
+
+            referenciaModelo:
+              "DetalleSolicitud",
+
+            observacion:
+              `Producto solicitado: ${
+                producto?.nombre ||
+                "Producto"
+              }`,
+
+            creadoPor:
+              nombreUsuario,
+
+          };
+
+          await createMovimiento(
+            movimientoDetalle
+          );
+
+        }
+
+        return {
+
+          solicitud:
+            respuestaSolicitud
+              .solicitud,
+
+          cantidadDetalles:
+            detallesCreados.length,
+
+          totalSolicitado,
+
+        };
+
+      },
+
+    /* =========================
+        SUCCESS
+    ========================= */
+
+    onSuccess:
+      async (
+        resultado
+      ) => {
+
+        await Swal.fire({
+
+          icon:
+            "success",
+
+          title:
+            "Solicitud creada",
+
+          html: `
+            <p>La solicitud, sus detalles y movimientos fueron registrados.</p>
+
+            <p style="margin-top:8px;">
+              <strong>Productos:</strong>
+              ${resultado.cantidadDetalles}
+            </p>
+
+            <p>
+              <strong>Total solicitado:</strong>
+              ${resultado.totalSolicitado} unidades
+            </p>
+          `,
+
+          timer:
+            2500,
+
+          showConfirmButton:
+            false,
+
+        });
+
+        await queryClient
+          .invalidateQueries({
+
+            queryKey: [
+              "solicitudes-sucursal",
+              idSucursal,
+            ],
+
+          });
+
+        await queryClient
+          .invalidateQueries({
+
+            queryKey: [
+              "movimientos",
+            ],
+
+          });
+
+        navigate(-1);
+
+      },
+
+    /* =========================
+        ERROR
+    ========================= */
+
+    onError:
+      async (
+        error
+      ) => {
+
+        await Swal.fire({
+
+          icon:
+            "error",
+
+          title:
+            "Error al crear solicitud",
+
+          text:
+            error instanceof Error
+              ? error.message
+              : "Error desconocido al crear la solicitud",
+
+        });
+
+      },
 
   });
 
@@ -361,7 +898,9 @@ export default function CreateSolicitudView() {
       "AUTH_TOKEN"
     );
 
-    navigate("/auth/login");
+    navigate(
+      "/auth/login"
+    );
 
   };
 
@@ -376,11 +915,17 @@ export default function CreateSolicitudView() {
   ) {
 
     return (
+
       <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-900">
+
         <p className="text-lg font-bold">
+
           Cargando formulario...
+
         </p>
+
       </div>
+
     );
 
   }
@@ -395,11 +940,17 @@ export default function CreateSolicitudView() {
   ) {
 
     return (
+
       <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-900">
+
         <p className="text-lg font-bold text-red-500">
+
           Error al cargar almacenes o productos
+
         </p>
+
       </div>
+
     );
 
   }
@@ -409,65 +960,22 @@ export default function CreateSolicitudView() {
     <div className="min-h-screen bg-slate-100 text-slate-900">
 
       {/* TOP BAR */}
-      <header className="fixed left-0 top-0 z-50 flex h-20 w-full items-center justify-between bg-[#4b4f58] px-6 text-white shadow-md">
 
-        <div className="flex items-center gap-3">
-
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black text-white">
-            <Wallet className="h-5 w-5" />
-          </div>
-
-          <h1 className="text-xl font-black">
-            Discoteca Manager
-          </h1>
-
-        </div>
-
-        <div className="hidden w-[520px] items-center rounded-xl bg-slate-800 px-4 py-3 md:flex">
-
-          <Search className="mr-3 h-5 w-5 text-slate-400" />
-
-          <input
-            type="text"
-            placeholder="Buscar..."
-            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-400"
-          />
-
-        </div>
-
-        <div className="flex items-center gap-3 rounded-xl bg-slate-900 px-4 py-3">
-
-          <div className="h-10 w-10 rounded-full bg-purple-500" />
-
-          <span className="hidden text-sm font-bold md:block">
-            {perfil?.nombres || "Usuario"}
-          </span>
-
-          <button
-            type="button"
-            onClick={cerrarSesion}
-            title="Cerrar sesión"
-            aria-label="Cerrar sesión"
-            className="rounded-xl bg-red-500/10 p-2 text-red-300 hover:bg-red-500/20"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
-
-        </div>
-
-      </header>
 
       {/* SIDEBAR */}
+
       <aside className="fixed left-0 top-20 z-40 h-[calc(100vh-5rem)] w-72 border-r border-slate-200 bg-white">
+
         <MenuList />
+
       </aside>
 
       {/* MAIN */}
+
       <main className="ml-72 pt-20">
 
         <div className="p-8">
 
-          {/* HEADER CARD */}
           <section className="mb-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
 
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
@@ -479,23 +987,31 @@ export default function CreateSolicitudView() {
                   <ClipboardList className="h-4 w-4" />
 
                   <span>
-                    {nombreSucursal || "Sucursal"}
+
+                    {nombreSucursal}
+
                   </span>
 
                   <span>/</span>
 
                   <span className="font-bold text-purple-600">
+
                     Nueva Solicitud
+
                   </span>
 
                 </div>
 
                 <h1 className="text-4xl font-black text-slate-900">
+
                   Crear Solicitud
+
                 </h1>
 
                 <p className="mt-2 text-slate-500">
+
                   Registra una solicitud de productos para reposición o compra.
+
                 </p>
 
               </div>
@@ -509,7 +1025,9 @@ export default function CreateSolicitudView() {
                 aria-label="Volver"
                 className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 transition hover:bg-slate-200"
               >
+
                 <ArrowLeft className="h-6 w-6" />
+
               </button>
 
             </div>
@@ -517,25 +1035,73 @@ export default function CreateSolicitudView() {
           </section>
 
           <SolicitudForm
-            almacenes={almacenes}
-            productos={productosValidos}
-            tipoSolicitud={tipoSolicitud}
-            setTipoSolicitud={setTipoSolicitud}
-            idAlmacenOrigen={idAlmacenOrigen}
-            setIdAlmacenOrigen={setIdAlmacenOrigen}
-            idAlmacenDestino={idAlmacenDestino}
-            setIdAlmacenDestino={setIdAlmacenDestino}
-            estado={estado}
-            setEstado={setEstado}
-            observacion={observacion}
-            setObservacion={setObservacion}
-            detalles={detalles}
-            setDetalles={setDetalles}
-            isPending={isPending}
+
+            almacenes={
+              almacenes
+            }
+
+            productos={
+              productos
+            }
+
+            tipoSolicitud={
+              tipoSolicitud
+            }
+
+            setTipoSolicitud={
+              setTipoSolicitud
+            }
+
+            idAlmacenOrigen={
+              idAlmacenOrigen
+            }
+
+            setIdAlmacenOrigen={
+              setIdAlmacenOrigen
+            }
+
+            idAlmacenDestino={
+              idAlmacenDestino
+            }
+
+            setIdAlmacenDestino={
+              setIdAlmacenDestino
+            }
+
+            estado={
+              estado
+            }
+
+            setEstado={
+              setEstado
+            }
+
+            observacion={
+              observacion
+            }
+
+            setObservacion={
+              setObservacion
+            }
+
+            detalles={
+              detalles
+            }
+
+            setDetalles={
+              setDetalles
+            }
+
+            isPending={
+              isPending
+            }
+
             buttonText="Registrar solicitud"
+
             onSubmit={() =>
               guardarSolicitud()
             }
+
           />
 
         </div>
