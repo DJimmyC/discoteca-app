@@ -1,117 +1,173 @@
-import mongoose, { Schema, Document } from "mongoose";
+// src/models/AperturaCaja.ts
 
-export interface AperturaCajaType extends Document {
-  idPerfil: mongoose.Types.ObjectId;
-  idCaja: mongoose.Types.ObjectId;
+import mongoose, {
+  Schema,
+  Document,
+} from "mongoose";
 
-  fecha: Date;
-  horaApertura: string;
+export type EstadoAperturaCaja =
+  | "abierta"
+  | "cerrada"
+  | "anulada";
 
-  montoInicial: number;
+export interface AperturaCajaType
+  extends Document {
 
-  observacion?: string;
+  idPerfil:
+    mongoose.Types.ObjectId;
 
-  estado: boolean;
+  idSucursal:
+    mongoose.Types.ObjectId;
 
-  fechaCreacion?: Date;
-  creadoPor?: string;
-  fechaActualizacion?: Date;
-  actualizadoPor?: string;
-  fechaEliminado?: Date;
-  eliminadoPor?: string;
+  idCaja:
+    mongoose.Types.ObjectId;
+
+  fechaApertura:
+    Date;
+
+  montoInicial:
+    number;
+
+  estado:
+    EstadoAperturaCaja;
+
+  observacion?:
+    string;
+
+  fechaCreacion?:
+    Date;
+
+  creadoPor?:
+    string;
+
+  fechaActualizacion?:
+    Date;
+
+  actualizadoPor?:
+    string;
+
+  fechaEliminado?:
+    Date;
+
+  eliminadoPor?:
+    string;
 }
 
-const AperturaCajaSchema: Schema = new Schema(
+const AperturaCajaSchema =
+  new Schema<AperturaCajaType>(
+    {
+      idPerfil: {
+        type: Schema.Types.ObjectId,
+        ref: "PerfilUsuario",
+        required: true,
+      },
+
+      idSucursal: {
+        type: Schema.Types.ObjectId,
+        ref: "Sucursal",
+        required: true,
+      },
+
+      idCaja: {
+        type: Schema.Types.ObjectId,
+        ref: "Caja",
+        required: true,
+      },
+
+      fechaApertura: {
+        type: Date,
+        required: true,
+        default: Date.now,
+      },
+
+      montoInicial: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0,
+      },
+
+      estado: {
+        type: String,
+        enum: [
+          "abierta",
+          "cerrada",
+          "anulada",
+        ],
+        default: "abierta",
+        required: true,
+      },
+
+      observacion: {
+        type: String,
+        trim: true,
+        maxlength: 300,
+      },
+
+      fechaCreacion: {
+        type: Date,
+        default: Date.now,
+      },
+
+      creadoPor: {
+        type: String,
+        trim: true,
+        maxlength: 50,
+        default: "sistema",
+      },
+
+      fechaActualizacion: {
+        type: Date,
+      },
+
+      actualizadoPor: {
+        type: String,
+        trim: true,
+        maxlength: 50,
+      },
+
+      fechaEliminado: {
+        type: Date,
+      },
+
+      eliminadoPor: {
+        type: String,
+        trim: true,
+        maxlength: 50,
+      },
+    },
+    {
+      versionKey: false,
+      collection: "apertura_cajas",
+    }
+  );
+
+/*
+  Solo permite una apertura activa por caja.
+  El índice parcial ignora aperturas cerradas o anuladas.
+*/
+AperturaCajaSchema.index(
   {
-    idPerfil: {
-      type: Schema.Types.ObjectId,
-      ref: "PerfilUsuario",
-      required: true,
-    },
-
-    idCaja: {
-      type: Schema.Types.ObjectId,
-      ref: "Caja",
-      required: true,
-    },
-
-    fecha: {
-      type: Date,
-      required: true,
-      default: Date.now,
-    },
-
-    // 🔥 TIME en Mongo → string
-    horaApertura: {
-      type: String,
-      required: true,
-      match: /^([0-1]\d|2[0-3]):([0-5]\d)$/, // formato HH:mm
-    },
-
-    montoInicial: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-
-    observacion: {
-      type: String,
-      trim: true,
-      maxlength: 200,
-    },
-
-    estado: {
-      type: Boolean,
-      default: true,
-    },
-
-    // 🔥 Auditoría
-    fechaCreacion: {
-      type: Date,
-      default: Date.now,
-    },
-
-    creadoPor: {
-      type: String,
-      trim: true,
-      maxlength: 50,
-    },
-
-    fechaActualizacion: {
-      type: Date,
-    },
-
-    actualizadoPor: {
-      type: String,
-      trim: true,
-      maxlength: 50,
-    },
-
-    fechaEliminado: {
-      type: Date,
-    },
-
-    eliminadoPor: {
-      type: String,
-      trim: true,
-      maxlength: 50,
-    },
+    idCaja: 1,
+    estado: 1,
   },
   {
-    versionKey: false,
-    collection: "apertura_cajas",
+    unique: true,
+    partialFilterExpression: {
+      estado: "abierta",
+    },
   }
 );
 
-//  índice: evita múltiples aperturas activas en la misma caja el mismo día
-AperturaCajaSchema.index(
-  { idCaja: 1, fecha: 1 },
-  { unique: false }
-);
+AperturaCajaSchema.index({
+  idSucursal: 1,
+  fechaApertura: -1,
+});
 
-const AperturaCaja = mongoose.model<AperturaCajaType>(
-  "AperturaCaja",
-  AperturaCajaSchema
-);
+const AperturaCaja =
+  mongoose.model<AperturaCajaType>(
+    "AperturaCaja",
+    AperturaCajaSchema
+  );
 
 export default AperturaCaja;

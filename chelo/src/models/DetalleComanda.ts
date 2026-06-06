@@ -1,116 +1,271 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { HydratedDocument } from "mongoose";
+// src/models/DetalleComanda.ts
 
-export interface DetalleComandaType extends Document {
-  idComanda: mongoose.Types.ObjectId;
-  idProducto: mongoose.Types.ObjectId;
+import mongoose, {
+  Schema,
+  Types,
+} from "mongoose";
 
-  cantidad: number;
-  precioUnitario: number;
-  subtotal: number;
+/* =========================
+    INTERFAZ
+========================= */
 
-  estado: string;
-  observacion?: string;
+export interface DetalleComandaType {
 
-  fechaCreacion?: Date;
-  creadoPor?: string;
-  fechaActualizacion?: Date;
-  actualizadoPor?: string;
-  fechaEliminado?: Date;
-  eliminadoPor?: string;
+  idComanda:
+    Types.ObjectId;
+
+  idProducto:
+    Types.ObjectId;
+
+  idInventario:
+    Types.ObjectId;
+
+  idAlmacen:
+    Types.ObjectId;
+
+  cantidad:
+    number;
+
+  precioUnitario:
+    number;
+
+  subtotal:
+    number;
+
+  estado:
+    "activo" | "eliminado";
+
+  observacion?:
+    string;
+
+  fechaCreacion?:
+    Date;
+
+  creadoPor?:
+    string;
+
+  fechaActualizacion?:
+    Date;
+
+  actualizadoPor?:
+    string;
+
+  fechaEliminado?:
+    Date;
+
+  eliminadoPor?:
+    string;
+
 }
 
-const DetalleComandaSchema: Schema = new Schema(
-  {
-    idComanda: {
-      type: Schema.Types.ObjectId,
-      ref: "Comanda",
-      required: true,
-    },
+/* =========================
+    SCHEMA
+========================= */
 
-    idProducto: {
-      type: Schema.Types.ObjectId,
-      ref: "Producto",
-      required: true,
-    },
+const DetalleComandaSchema =
+  new Schema<DetalleComandaType>(
+    {
 
-    cantidad: {
-      type: Number,
-      required: true,
-    },
+      idComanda: {
+        type:
+          Schema.Types.ObjectId,
 
-    precioUnitario: {
-      type: Number,
-      required: true,
-    },
+        ref:
+          "Comanda",
 
-    subtotal: {
-      type: Number,
-    },
+        required:
+          true,
+      },
 
-    estado: {
-      type: String,
-      required: true,
-      enum: ["activo", "eliminado"],
-      default: "activo",
-    },
+      idProducto: {
+        type:
+          Schema.Types.ObjectId,
 
-    observacion: {
-      type: String,
-      trim: true,
-      maxlength: 200,
-    },
+        ref:
+          "Producto",
 
-    // 🔥 Auditoría
-    fechaCreacion: {
-      type: Date,
-      default: Date.now,
-    },
+        required:
+          true,
+      },
 
-    creadoPor: {
-      type: String,
-    },
+      idInventario: {
+        type:
+          Schema.Types.ObjectId,
 
-    fechaActualizacion: {
-      type: Date,
-    },
+        ref:
+          "Inventario",
 
-    actualizadoPor: {
-      type: String,
-    },
+        required:
+          true,
+      },
 
-    fechaEliminado: {
-      type: Date,
-    },
+      idAlmacen: {
+        type:
+          Schema.Types.ObjectId,
 
-    eliminadoPor: {
-      type: String,
+        ref:
+          "Almacen",
+
+        required:
+          true,
+      },
+
+      cantidad: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          1,
+      },
+
+      precioUnitario: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+      },
+
+      subtotal: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        default:
+          0,
+      },
+
+      estado: {
+        type:
+          String,
+
+        enum: [
+          "activo",
+          "eliminado",
+        ],
+
+        default:
+          "activo",
+
+        required:
+          true,
+      },
+
+      observacion: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          200,
+
+        default:
+          "",
+      },
+
+      fechaCreacion: {
+        type:
+          Date,
+
+        default:
+          Date.now,
+      },
+
+      creadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+      },
+
+      fechaActualizacion: {
+        type:
+          Date,
+      },
+
+      actualizadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+      },
+
+      fechaEliminado: {
+        type:
+          Date,
+      },
+
+      eliminadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+      },
+
     },
-  },
-  {
-    versionKey: false,
-    collection: "detalle_comandas",
+    {
+      versionKey:
+        false,
+
+      collection:
+        "detalle_comandas",
+    }
+  );
+
+/* =========================
+    CALCULAR SUBTOTAL
+========================= */
+
+DetalleComandaSchema.pre(
+  "save",
+  function () {
+
+    this.subtotal =
+      Number(this.cantidad) *
+      Number(this.precioUnitario);
+
   }
 );
 
-//  Middleware para calcular subtotal automáticamente
-DetalleComandaSchema.pre("save", function (next) {
-  const doc = this as HydratedDocument<any>;
+/* =========================
+    ÍNDICE
+========================= */
 
-  doc.subtotal = doc.cantidad * doc.precioUnitario;
-
-  next();
-});
-
-//  Índice para evitar duplicados dentro de la misma comanda
 DetalleComandaSchema.index(
-  { idComanda: 1, idProducto: 1 },
-  { unique: false } // puedes cambiar a true si quieres evitar repetir producto
+  {
+    idComanda:
+      1,
+
+    idInventario:
+      1,
+  },
+  {
+    unique:
+      false,
+  }
 );
 
-const DetalleComanda = mongoose.model<DetalleComandaType>(
-  "DetalleComanda",
-  DetalleComandaSchema
-);
+/* =========================
+    MODELO
+========================= */
+
+const DetalleComanda =
+  mongoose.model<DetalleComandaType>(
+    "DetalleComanda",
+    DetalleComandaSchema
+  );
 
 export default DetalleComanda;

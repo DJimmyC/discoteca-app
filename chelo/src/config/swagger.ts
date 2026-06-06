@@ -101,6 +101,10 @@ const options: swaggerJsdoc.Options = {
       {
         name: "Movimiento",
         description: "Operaciones relacionados con Movimientos  ",
+      },
+       {
+        name: "Reportes",
+        description: "Operaciones relacionados con Reportes  ",
       }
       
     ],

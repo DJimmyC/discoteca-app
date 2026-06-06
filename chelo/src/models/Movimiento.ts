@@ -1,296 +1,1073 @@
-import mongoose, { Schema, Document } from "mongoose";
+// src/models/Movimiento.ts
 
-export interface MovimientoType extends Document {
-  fecha: Date;
+import mongoose, {
+  Schema,
+  Document,
+} from "mongoose";
+
+/* =========================
+    TIPOS DE MOVIMIENTO
+========================= */
+
+export type TipoMovimiento =
+  | "apertura_caja"
+  | "cierre_caja"
+  | "venta"
+  | "venta_anulada"
+  | "cortesia"
+  | "egreso"
+  | "solicitud"
+  | "solicitud_aprobada"
+  | "solicitud_rechazada"
+  | "solicitud_anulada"
+  | "entrada_inventario"
+  | "salida_inventario"
+  | "transferencia_inventario"
+  | "ajuste_inventario"
+  | "conteo_fisico"
+  | "diferencia_caja"
+  | "diferencia_inventario";
+
+/* =========================
+    ORIGEN DEL MOVIMIENTO
+========================= */
+
+export type OrigenMovimiento =
+  | "venta"
+  | "cortesia"
+  | "egreso"
+  | "apertura_caja"
+  | "cierre_caja"
+  | "inventario"
+  | "solicitud"
+  | "transferencia"
+  | "ajuste"
+  | "conteo_fisico"
+  | "sistema";
+
+/* =========================
+    MÓDULO
+========================= */
+
+export type ModuloMovimiento =
+  | "caja"
+  | "venta"
+  | "ventas"
+  | "egreso"
+  | "inventario"
+  | "transferencia"
+  | "solicitud"
+  | "cierre"
+  | "sistema";
+
+/* =========================
+    MÉTODO DE PAGO
+========================= */
+
+export type MetodoPagoMovimiento =
+  | "efectivo"
+  | "qr"
+  | "transferencia"
+  | "mixto"
+  | "otro";
+
+/* =========================
+    INTERFAZ
+========================= */
+
+export interface MovimientoType
+  extends Document {
+
+  fecha:
+    Date;
 
   tipoMovimiento:
-    | "apertura_caja"
-    | "cierre_caja"
-    | "venta"
-    | "venta_anulada"
-    | "cortesia"
-    | "egreso"
-    | "entrada_inventario"
-    | "salida_inventario"
-    | "transferencia_inventario"
-    | "ajuste_inventario"
-    | "conteo_fisico"
-    | "diferencia_caja"
-    | "diferencia_inventario";
+    TipoMovimiento;
+
+  origenMovimiento?:
+    OrigenMovimiento;
 
   modulo:
-    | "caja"
-    | "venta"
-    | "egreso"
-    | "inventario"
-    | "transferencia"
-    | "cierre";
+    ModuloMovimiento;
 
-  idSucursal?: mongoose.Types.ObjectId;
-  idCaja?: mongoose.Types.ObjectId;
-  idPerfil?: mongoose.Types.ObjectId;
-  idAlmacen?: mongoose.Types.ObjectId;
-  idProducto?: mongoose.Types.ObjectId;
-  idInventario?: mongoose.Types.ObjectId;
+  /* =========================
+      RELACIONES GENERALES
+  ========================= */
 
-  referenciaId?: mongoose.Types.ObjectId;
-  referenciaModelo?: string;
+  idSucursal?:
+    mongoose.Types.ObjectId;
 
-  metodoPago?: "efectivo" | "qr" | "transferencia" | "otro" | "mixto";
+  idCaja?:
+    mongoose.Types.ObjectId;
 
-  cantidadEntrada?: number;
-  cantidadSalida?: number;
-  cantidadInicial?: number;
-  cantidadEsperada?: number;
-  cantidadFisica?: number;
-  diferenciaCantidad?: number;
+  idPerfil?:
+    mongoose.Types.ObjectId;
 
-  montoEntrada?: number;
-  montoSalida?: number;
-  montoInicial?: number;
-  montoEsperado?: number;
-  montoFisico?: number;
-  diferenciaMonto?: number;
+  idAlmacen?:
+    mongoose.Types.ObjectId;
 
-  costoUnitario?: number;
-  precioUnitario?: number;
-  subtotal?: number;
-  total?: number;
+  idAlmacenOrigen?:
+    mongoose.Types.ObjectId;
 
-  estado?: string;
-  observacion?: string;
+  idAlmacenDestino?:
+    mongoose.Types.ObjectId;
 
-  creadoPor?: string;
-  fechaCreacion?: Date;
+  idProducto?:
+    mongoose.Types.ObjectId;
+
+  idInventario?:
+    mongoose.Types.ObjectId;
+
+  /* =========================
+      RELACIONES DE MÓDULOS
+  ========================= */
+
+  idVenta?:
+    mongoose.Types.ObjectId;
+
+  idComanda?:
+    mongoose.Types.ObjectId;
+
+  idEgreso?:
+    mongoose.Types.ObjectId;
+
+  idSolicitud?:
+    mongoose.Types.ObjectId;
+
+  idAperturaCaja?:
+    mongoose.Types.ObjectId;
+
+  idCierreCaja?:
+    mongoose.Types.ObjectId;
+
+  /* =========================
+      REFERENCIA FLEXIBLE
+  ========================= */
+
+  referenciaId?:
+    mongoose.Types.ObjectId;
+
+  referenciaModelo?:
+    string;
+
+  /* =========================
+      MÉTODO DE PAGO
+  ========================= */
+
+  metodoPago?:
+    MetodoPagoMovimiento;
+
+  /* =========================
+      CANTIDADES
+  ========================= */
+
+  cantidad?:
+    number;
+
+  cantidadEntrada?:
+    number;
+
+  cantidadSalida?:
+    number;
+
+  cantidadInicial?:
+    number;
+
+  cantidadAnterior?:
+    number;
+
+  cantidadNueva?:
+    number;
+
+  cantidadEsperada?:
+    number;
+
+  cantidadFisica?:
+    number;
+
+  diferenciaCantidad?:
+    number;
+
+  /* =========================
+      COSTOS DE INVENTARIO
+  ========================= */
+
+  costoUnitario?:
+    number;
+
+  costoAnterior?:
+    number;
+
+  costoEntrada?:
+    number;
+
+  costoPromedio?:
+    number;
+
+  ultimoCostoEntrada?:
+    number;
+
+  precioUnitario?:
+    number;
+
+  /* =========================
+      IMPORTES
+  ========================= */
+
+  montoEntrada?:
+    number;
+
+  montoSalida?:
+    number;
+
+  montoInicial?:
+    number;
+
+  montoEsperado?:
+    number;
+
+  montoReal?:
+    number;
+
+  montoFisico?:
+    number;
+
+  diferenciaMonto?:
+    number;
+
+  subtotal?:
+    number;
+
+  descuento?:
+    number;
+
+  total?:
+    number;
+
+  valorDiferencia?:
+    number;
+
+  /* =========================
+      INFORMACIÓN GENERAL
+  ========================= */
+
+  estado?:
+    string;
+
+  observacion?:
+    string;
+
+  /* =========================
+      AUDITORÍA
+  ========================= */
+
+  creadoPor?:
+    string;
+
+  fechaCreacion?:
+    Date;
+
+  actualizadoPor?:
+    string;
+
+  fechaActualizacion?:
+    Date;
+
+  eliminadoPor?:
+    string;
+
+  fechaEliminado?:
+    Date;
+
 }
 
-const MovimientoSchema = new Schema(
-  {
-    fecha: {
-      type: Date,
-      required: true,
-      default: Date.now,
-    },
+/* =========================
+    ESQUEMA
+========================= */
 
-    tipoMovimiento: {
-      type: String,
-      required: true,
-      enum: [
-        "apertura_caja",
-        "cierre_caja",
-        "venta",
-        "venta_anulada",
-        "cortesia",
-        "egreso",
-        "entrada_inventario",
-        "salida_inventario",
-        "transferencia_inventario",
-        "ajuste_inventario",
-        "conteo_fisico",
-        "diferencia_caja",
-        "diferencia_inventario",
-      ],
-    },
+const MovimientoSchema =
+  new Schema<MovimientoType>(
+    {
 
-    modulo: {
-      type: String,
-      required: true,
-      enum: [
-        "caja",
-        "venta",
-        "egreso",
-        "inventario",
-        "transferencia",
-        "cierre",
-      ],
-    },
+      fecha: {
+        type:
+          Date,
 
-    idSucursal: {
-      type: Schema.Types.ObjectId,
-      ref: "Sucursal",
-    },
+        required:
+          true,
 
-    idCaja: {
-      type: Schema.Types.ObjectId,
-      ref: "Caja",
-    },
+        default:
+          Date.now,
+      },
 
-    idPerfil: {
-      type: Schema.Types.ObjectId,
-      ref: "PerfilUsuario",
-    },
+      tipoMovimiento: {
+        type:
+          String,
 
-    idAlmacen: {
-      type: Schema.Types.ObjectId,
-      ref: "Almacen",
-    },
+        required:
+          true,
 
-    idProducto: {
-      type: Schema.Types.ObjectId,
-      ref: "Producto",
-    },
+        enum: [
+          "apertura_caja",
+          "cierre_caja",
+          "venta",
+          "venta_anulada",
+          "cortesia",
+          "egreso",
 
-    idInventario: {
-      type: Schema.Types.ObjectId,
-      ref: "Inventario",
-    },
+          "solicitud",
+          "solicitud_aprobada",
+          "solicitud_rechazada",
+          "solicitud_anulada",
 
-    referenciaId: {
-      type: Schema.Types.ObjectId,
-    },
+          "entrada_inventario",
+          "salida_inventario",
+          "transferencia_inventario",
+          "ajuste_inventario",
+          "conteo_fisico",
 
-    referenciaModelo: {
-      type: String,
-    },
+          "diferencia_caja",
+          "diferencia_inventario",
+        ],
+      },
 
-    metodoPago: {
-      type: String,
-      enum: [
-        "efectivo",
-        "qr",
-        "transferencia",
-        "otro",
-      ],
-    },
+      origenMovimiento: {
+        type:
+          String,
 
-    cantidadEntrada: {
-      type: Number,
-      default: 0,
-    },
+        enum: [
+          "venta",
+          "cortesia",
+          "egreso",
+          "apertura_caja",
+          "cierre_caja",
+          "inventario",
+          "solicitud",
+          "transferencia",
+          "ajuste",
+          "conteo_fisico",
+          "sistema",
+        ],
 
-    cantidadSalida: {
-      type: Number,
-      default: 0,
-    },
+        default:
+          "sistema",
+      },
 
-    cantidadInicial: {
-      type: Number,
-      default: 0,
-    },
+      modulo: {
+        type:
+          String,
 
-    cantidadEsperada: {
-      type: Number,
-      default: 0,
-    },
+        required:
+          true,
 
-    cantidadFisica: {
-      type: Number,
-      default: 0,
-    },
+        enum: [
+          "caja",
+          "venta",
+          "ventas",
+          "egreso",
+          "inventario",
+          "transferencia",
+          "solicitud",
+          "cierre",
+          "sistema",
+        ],
+      },
 
-    diferenciaCantidad: {
-      type: Number,
-      default: 0,
-    },
+      /* =========================
+          RELACIONES GENERALES
+      ========================= */
 
-    montoEntrada: {
-      type: Number,
-      default: 0,
-    },
+      idSucursal: {
+        type:
+          Schema.Types.ObjectId,
 
-    montoSalida: {
-      type: Number,
-      default: 0,
-    },
+        ref:
+          "Sucursal",
+      },
 
-    montoInicial: {
-      type: Number,
-      default: 0,
-    },
+      idCaja: {
+        type:
+          Schema.Types.ObjectId,
 
-    montoEsperado: {
-      type: Number,
-      default: 0,
-    },
+        ref:
+          "Caja",
+      },
 
-    montoFisico: {
-      type: Number,
-      default: 0,
-    },
+      idPerfil: {
+        type:
+          Schema.Types.ObjectId,
 
-    diferenciaMonto: {
-      type: Number,
-      default: 0,
-    },
+        ref:
+          "PerfilUsuario",
+      },
 
-    costoUnitario: {
-      type: Number,
-      default: 0,
-    },
+      idAlmacen: {
+        type:
+          Schema.Types.ObjectId,
 
-    precioUnitario: {
-      type: Number,
-      default: 0,
-    },
+        ref:
+          "Almacen",
+      },
 
-    subtotal: {
-      type: Number,
-      default: 0,
-    },
+      idAlmacenOrigen: {
+        type:
+          Schema.Types.ObjectId,
 
-    total: {
-      type: Number,
-      default: 0,
-    },
+        ref:
+          "Almacen",
+      },
 
-    estado: {
-      type: String,
-      default: "activo",
-    },
+      idAlmacenDestino: {
+        type:
+          Schema.Types.ObjectId,
 
-    observacion: {
-      type: String,
-      trim: true,
-    },
+        ref:
+          "Almacen",
+      },
 
-    creadoPor: {
-      type: String,
-      trim: true,
-    },
+      idProducto: {
+        type:
+          Schema.Types.ObjectId,
 
-    fechaCreacion: {
-      type: Date,
-      default: Date.now,
+        ref:
+          "Producto",
+      },
+
+      idInventario: {
+        type:
+          Schema.Types.ObjectId,
+
+        ref:
+          "Inventario",
+      },
+
+      /* =========================
+          RELACIONES DE MÓDULOS
+      ========================= */
+
+      idVenta: {
+        type:
+          Schema.Types.ObjectId,
+
+        ref:
+          "Venta",
+      },
+
+      idComanda: {
+        type:
+          Schema.Types.ObjectId,
+
+        ref:
+          "Comanda",
+      },
+
+      idEgreso: {
+        type:
+          Schema.Types.ObjectId,
+
+        ref:
+          "Egreso",
+      },
+
+      idSolicitud: {
+        type:
+          Schema.Types.ObjectId,
+
+        ref:
+          "Solicitud",
+      },
+
+      idAperturaCaja: {
+        type:
+          Schema.Types.ObjectId,
+
+        ref:
+          "AperturaCaja",
+      },
+
+      idCierreCaja: {
+        type:
+          Schema.Types.ObjectId,
+
+        ref:
+          "CierreCaja",
+      },
+
+      /* =========================
+          REFERENCIA FLEXIBLE
+      ========================= */
+
+      referenciaId: {
+        type:
+          Schema.Types.ObjectId,
+      },
+
+      referenciaModelo: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          100,
+      },
+
+      /* =========================
+          MÉTODO DE PAGO
+      ========================= */
+
+      metodoPago: {
+        type:
+          String,
+
+        enum: [
+          "efectivo",
+          "qr",
+          "transferencia",
+          "mixto",
+          "otro",
+        ],
+      },
+
+      /* =========================
+          CANTIDADES
+      ========================= */
+
+      cantidad: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      cantidadEntrada: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      cantidadSalida: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      cantidadInicial: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      cantidadAnterior: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      cantidadNueva: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      cantidadEsperada: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      cantidadFisica: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      diferenciaCantidad: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      /* =========================
+          COSTOS
+      ========================= */
+
+      /*
+        En una entrada de inventario
+        representa el costo de la entrada.
+      */
+      costoUnitario: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      /*
+        Costo promedio antes del movimiento.
+      */
+      costoAnterior: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      /*
+        Costo con el que ingresaron
+        las nuevas unidades.
+      */
+      costoEntrada: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      /*
+        Costo promedio ponderado
+        después del movimiento.
+      */
+      costoPromedio: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      ultimoCostoEntrada: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      precioUnitario: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      /* =========================
+          IMPORTES
+      ========================= */
+
+      montoEntrada: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      montoSalida: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      montoInicial: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      montoEsperado: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      montoReal: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      montoFisico: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      diferenciaMonto: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      subtotal: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      descuento: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      total: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      valorDiferencia: {
+        type:
+          Number,
+
+        default:
+          0,
+      },
+
+      /* =========================
+          INFORMACIÓN GENERAL
+      ========================= */
+
+      estado: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        default:
+          "activo",
+      },
+
+      observacion: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          500,
+
+        default:
+          "",
+      },
+
+      /* =========================
+          AUDITORÍA
+      ========================= */
+
+      creadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          100,
+
+        default:
+          "sistema",
+      },
+
+      fechaCreacion: {
+        type:
+          Date,
+
+        default:
+          Date.now,
+      },
+
+      actualizadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          100,
+      },
+
+      fechaActualizacion: {
+        type:
+          Date,
+      },
+
+      eliminadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          100,
+      },
+
+      fechaEliminado: {
+        type:
+          Date,
+      },
+
     },
-  },
-  {
-    versionKey: false,
-    collection: "movimientos",
+    {
+      versionKey:
+        false,
+
+      collection:
+        "movimientos",
+    }
+  );
+
+/* =========================
+    VALIDACIÓN DE NÚMEROS
+========================= */
+
+MovimientoSchema.pre(
+  "validate",
+  function (next) {
+
+    const camposNumericos = [
+
+      "cantidad",
+      "cantidadEntrada",
+      "cantidadSalida",
+      "cantidadInicial",
+      "cantidadAnterior",
+      "cantidadNueva",
+      "cantidadEsperada",
+      "cantidadFisica",
+      "diferenciaCantidad",
+
+      "costoUnitario",
+      "costoAnterior",
+      "costoEntrada",
+      "costoPromedio",
+      "ultimoCostoEntrada",
+      "precioUnitario",
+
+      "montoEntrada",
+      "montoSalida",
+      "montoInicial",
+      "montoEsperado",
+      "montoReal",
+      "montoFisico",
+      "diferenciaMonto",
+
+      "subtotal",
+      "descuento",
+      "total",
+      "valorDiferencia",
+
+    ] as const;
+
+    for (
+      const campo
+      of camposNumericos
+    ) {
+
+      const valor =
+        this[campo];
+
+      if (
+        valor === undefined ||
+        valor === null
+      ) {
+        continue;
+      }
+
+      const numero =
+        Number(valor);
+
+      if (
+        !Number.isFinite(numero)
+      ) {
+
+        return next(
+          new Error(
+            `El campo ${campo} debe ser numérico`
+          )
+        );
+
+      }
+
+      (
+        this as unknown as
+        Record<string, number>
+      )[campo] =
+        numero;
+
+    }
+
+    next();
+
   }
 );
 
+/* =========================
+    ÍNDICES
+========================= */
+
 MovimientoSchema.index({
-  fecha: 1,
+  fecha:
+    -1,
 });
 
 MovimientoSchema.index({
-  idSucursal: 1,
-  fecha: 1,
+  tipoMovimiento:
+    1,
+
+  fecha:
+    -1,
 });
 
 MovimientoSchema.index({
-  idCaja: 1,
-  fecha: 1,
+  modulo:
+    1,
+
+  fecha:
+    -1,
 });
 
 MovimientoSchema.index({
-  idPerfil: 1,
-  fecha: 1,
+  idSucursal:
+    1,
+
+  fecha:
+    -1,
 });
 
 MovimientoSchema.index({
-  idAlmacen: 1,
-  fecha: 1,
+  idCaja:
+    1,
+
+  fecha:
+    -1,
 });
 
 MovimientoSchema.index({
-  tipoMovimiento: 1,
-  fecha: 1,
+  idPerfil:
+    1,
+
+  fecha:
+    -1,
 });
 
-const Movimiento = mongoose.model<MovimientoType>(
-  "Movimiento",
-  MovimientoSchema
-);
+MovimientoSchema.index({
+  idAlmacen:
+    1,
+
+  fecha:
+    -1,
+});
+
+MovimientoSchema.index({
+  idAlmacenOrigen:
+    1,
+
+  fecha:
+    -1,
+});
+
+MovimientoSchema.index({
+  idAlmacenDestino:
+    1,
+
+  fecha:
+    -1,
+});
+
+MovimientoSchema.index({
+  idProducto:
+    1,
+
+  fecha:
+    -1,
+});
+
+MovimientoSchema.index({
+  idInventario:
+    1,
+
+  fecha:
+    -1,
+});
+
+MovimientoSchema.index({
+  idSolicitud:
+    1,
+
+  fecha:
+    -1,
+});
+
+MovimientoSchema.index({
+  idVenta:
+    1,
+
+  fecha:
+    -1,
+});
+
+MovimientoSchema.index({
+  referenciaId:
+    1,
+
+  referenciaModelo:
+    1,
+});
+
+/* =========================
+    MODELO
+========================= */
+
+const Movimiento =
+  mongoose.model<MovimientoType>(
+    "Movimiento",
+    MovimientoSchema
+  );
 
 export default Movimiento;

@@ -1,149 +1,432 @@
-import mongoose, { Schema, Document } from "mongoose";
+// src/models/Venta.ts
 
-export interface VentaType extends Document {
-  idComanda?: mongoose.Types.ObjectId;
-  idCaja: mongoose.Types.ObjectId;
-  idPerfil: mongoose.Types.ObjectId;
-  idSucursal: mongoose.Types.ObjectId;
+import mongoose, {
+  Schema,
+  Types,
+} from "mongoose";
 
-  numeroVenta?: string;
-  fechaVenta: Date;
+/* =========================
+    TIPOS CONTROLADOS
+========================= */
 
-  subtotal: number;
-  
-  total: number;
+export type MetodoPagoVenta =
+  | "efectivo"
+  | "qr"
+  | "transferencia"
+  | "mixto";
 
-  metodoPago: string;
-  estado: string;
+export type EstadoVenta =
+  | "pagado"
+  | "anulado"
+  | "cortesia";
 
-  observacion?: string;
+/* =========================
+    INTERFAZ
+========================= */
 
-  fechaCreacion?: Date;
-  creadoPor?: string;
-  fechaActualizacion?: Date;
-  actualizadoPor?: string;
-  fechaEliminado?: Date;
-  eliminadoPor?: string;
+export interface VentaType {
+
+  idComanda?:
+    Types.ObjectId;
+
+  idCaja:
+    Types.ObjectId;
+
+  idPerfil:
+    Types.ObjectId;
+
+  idSucursal:
+    Types.ObjectId;
+
+  numeroVenta?:
+    string;
+
+  fechaVenta:
+    Date;
+
+  subtotal:
+    number;
+
+  descuento:
+    number;
+
+  total:
+    number;
+
+  metodoPago:
+    MetodoPagoVenta;
+
+  estado:
+    EstadoVenta;
+
+  observacion?:
+    string;
+
+  fechaCreacion?:
+    Date;
+
+  creadoPor?:
+    string;
+
+  fechaActualizacion?:
+    Date;
+
+  actualizadoPor?:
+    string;
+
+  fechaEliminado?:
+    Date;
+
+  eliminadoPor?:
+    string;
+
 }
 
-const VentaSchema: Schema = new Schema(
-  {
-    idComanda: {
-      type: Schema.Types.ObjectId,
-      ref: "Comanda",
-    },
+/* =========================
+    SCHEMA
+========================= */
 
-    idCaja: {
-      type: Schema.Types.ObjectId,
-      ref: "Caja",
-      required: true,
-    },
+const VentaSchema =
+  new Schema<VentaType>(
+    {
 
-    idPerfil: {
-      type: Schema.Types.ObjectId,
-      ref: "PerfilUsuario",
-      required: true,
-    },
+      idComanda: {
+        type:
+          Schema.Types.ObjectId,
 
-    idSucursal: {
-      type: Schema.Types.ObjectId,
-      ref: "Sucursal",
-      required: true,
-    },
+        ref:
+          "Comanda",
+      },
 
-    numeroVenta: {
-      type: String,
-      trim: true,
-      maxlength: 20,
-    },
+      idCaja: {
+        type:
+          Schema.Types.ObjectId,
 
-    fechaVenta: {
-      type: Date,
-      required: true,
-      default: Date.now,
-    },
+        ref:
+          "Caja",
 
-    subtotal: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
+        required:
+          true,
+      },
 
-    descuento: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
+      idPerfil: {
+        type:
+          Schema.Types.ObjectId,
 
-    total: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
+        ref:
+          "PerfilUsuario",
 
-    metodoPago: {
-      type: String,
-      required: true,
-      enum: ["efectivo", "qr", "transferencia","mixto"],
-    },
+        required:
+          true,
+      },
 
-    estado: {
-      type: String,
-      required: true,
-      enum: ["pagado", "anulado","cortesia"],
-      default: "pagado",
-    },
+      idSucursal: {
+        type:
+          Schema.Types.ObjectId,
 
-    observacion: {
-      type: String,
-      trim: true,
-      maxlength: 200,
-    },
+        ref:
+          "Sucursal",
 
-    fechaCreacion: {
-      type: Date,
-      default: Date.now,
-    },
+        required:
+          true,
+      },
 
-    creadoPor: {
-      type: String,
-    },
+      numeroVenta: {
+        type:
+          String,
 
-    fechaActualizacion: {
-      type: Date,
-    },
+        trim:
+          true,
 
-    actualizadoPor: {
-      type: String,
-    },
+        maxlength:
+          30,
+      },
 
-    fechaEliminado: {
-      type: Date,
-    },
+      fechaVenta: {
+        type:
+          Date,
 
-    eliminadoPor: {
-      type: String,
+        required:
+          true,
+
+        default:
+          Date.now,
+      },
+
+      subtotal: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+
+        default:
+          0,
+      },
+
+      descuento: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+
+        default:
+          0,
+      },
+
+      total: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+
+        default:
+          0,
+      },
+
+      metodoPago: {
+        type:
+          String,
+
+        required:
+          true,
+
+        enum: [
+          "efectivo",
+          "qr",
+          "transferencia",
+          "mixto",
+        ],
+      },
+
+      estado: {
+        type:
+          String,
+
+        required:
+          true,
+
+        enum: [
+          "pagado",
+          "anulado",
+          "cortesia",
+        ],
+
+        default:
+          "pagado",
+      },
+
+      observacion: {
+        type:
+          String,
+
+        trim:
+          true,
+
+        maxlength:
+          200,
+
+        default:
+          "",
+      },
+
+      /* =========================
+          AUDITORÍA
+      ========================= */
+
+      fechaCreacion: {
+        type:
+          Date,
+
+        default:
+          Date.now,
+      },
+
+      creadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+      },
+
+      fechaActualizacion: {
+        type:
+          Date,
+      },
+
+      actualizadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+      },
+
+      fechaEliminado: {
+        type:
+          Date,
+      },
+
+      eliminadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+      },
+
     },
-  },
-  {
-    versionKey: false,
-    collection: "ventas",
+    {
+      versionKey:
+        false,
+
+      collection:
+        "ventas",
+    }
+  );
+
+/* =========================
+    CALCULAR TOTAL
+========================= */
+
+VentaSchema.pre(
+  "validate",
+  function () {
+
+    const subtotal =
+      Number(
+        this.subtotal || 0
+      );
+
+    const descuento =
+      Number(
+        this.descuento || 0
+      );
+
+    /*
+      El descuento nunca puede ser
+      mayor al subtotal.
+    */
+    this.descuento =
+      Math.min(
+        descuento,
+        subtotal
+      );
+
+    this.total =
+      Math.max(
+        subtotal -
+        this.descuento,
+        0
+      );
+
   }
 );
 
+/* =========================
+    ÍNDICES
+========================= */
 
-// Hook automático (MUY IMPORTANTE)
-VentaSchema.pre("save", function (next) {
-  const doc = this as any;
+/*
+  Número de venta único.
+*/
+VentaSchema.index(
+  {
+    numeroVenta:
+      1,
+  },
+  {
+    unique:
+      true,
 
-  doc.total = doc.subtotal - doc.descuento;
+    sparse:
+      true,
+  }
+);
 
-  next();
+/*
+  Una comanda solo debería convertirse
+  una vez en venta.
+*/
+VentaSchema.index(
+  {
+    idComanda:
+      1,
+  },
+  {
+    unique:
+      true,
+
+    sparse:
+      true,
+  }
+);
+
+/*
+  Reportes de ventas por sucursal
+  y periodo.
+*/
+VentaSchema.index({
+  idSucursal:
+    1,
+
+  fechaVenta:
+    -1,
 });
 
-//  Índice útil (opcional)
-VentaSchema.index({ numeroVenta: 1 }, { unique: true, sparse: true });
+/*
+  Reportes de ventas por mesero.
+*/
+VentaSchema.index({
+  idPerfil:
+    1,
 
-const Venta = mongoose.model<VentaType>("Venta", VentaSchema);
+  fechaVenta:
+    -1,
+});
+
+/*
+  Reportes y cierre por caja.
+*/
+VentaSchema.index({
+  idCaja:
+    1,
+
+  fechaVenta:
+    -1,
+});
+
+/*
+  Consultas por estado.
+*/
+VentaSchema.index({
+  estado:
+    1,
+
+  fechaVenta:
+    -1,
+});
+
+/* =========================
+    MODELO
+========================= */
+
+const Venta =
+  mongoose.model<VentaType>(
+    "Venta",
+    VentaSchema
+  );
 
 export default Venta;

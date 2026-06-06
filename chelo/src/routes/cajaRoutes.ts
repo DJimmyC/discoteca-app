@@ -1,52 +1,89 @@
-import { Router } from "express"
-import { CajaController } from "../controllers/CajaController"
+// src/routes/cajaRoutes.ts
 
-const router = Router()
+import {
+  Router,
+} from "express";
+
+import {
+  CajaController,
+} from "../controllers/CajaController";
+
+const router =
+  Router();
+
+/* =====================================================
+    COMPONENTES SWAGGER
+===================================================== */
 
 /**
  * @openapi
  * components:
  *   schemas:
- *     Caja:
+ *
+ *     SucursalResumenCaja:
  *       type: object
- *       description: Caja asociada a una sucursal
  *       properties:
  *         _id:
  *           type: string
- *           example: "64f123abc456"
- *         idSucursal:
+ *           example: "6a1ba90b7ba11e9abf89383a"
+ *         nombreSucursal:
  *           type: string
- *           description: ID de la sucursal (ObjectId)
- *           example: "64faaa111222"
+ *           example: "Kabanas"
+ *         ubicacionSucursal:
+ *           type: string
+ *           example: "La Paz"
+ *
+ *     Caja:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: "6a1ba6e27ba11e9abf893800"
+ *
+ *         idSucursal:
+ *           oneOf:
+ *             - type: string
+ *               example: "6a1ba90b7ba11e9abf89383a"
+ *             - $ref: '#/components/schemas/SucursalResumenCaja'
+ *
  *         nombre:
  *           type: string
- *           maxLength: 100
- *           example: "Caja Principal"
+ *           example: "Caja principal"
+ *
  *         descripcion:
  *           type: string
- *           maxLength: 150
- *           example: "Caja de atención principal"
+ *           nullable: true
+ *           example: "Caja principal de la sucursal"
+ *
  *         estado:
  *           type: boolean
  *           example: true
+ *
  *         fechaCreacion:
  *           type: string
  *           format: date-time
+ *
  *         creadoPor:
  *           type: string
- *           example: "admin"
+ *           example: "Administrador"
+ *
  *         fechaActualizacion:
  *           type: string
  *           format: date-time
+ *           nullable: true
+ *
  *         actualizadoPor:
  *           type: string
- *           example: "admin"
+ *           nullable: true
+ *
  *         fechaEliminado:
  *           type: string
  *           format: date-time
+ *           nullable: true
+ *
  *         eliminadoPor:
  *           type: string
- *           example: "admin"
+ *           nullable: true
  *
  *     CajaInput:
  *       type: object
@@ -56,21 +93,107 @@ const router = Router()
  *       properties:
  *         idSucursal:
  *           type: string
- *           example: "64faaa111222"
+ *           example: "6a1ba90b7ba11e9abf89383a"
+ *
  *         nombre:
  *           type: string
- *           example: "Caja Principal"
+ *           example: "Caja principal"
+ *
  *         descripcion:
  *           type: string
- *           example: "Caja de atención"
+ *           example: "Caja principal de la sucursal"
+ *
+ *         estado:
+ *           type: boolean
+ *           default: true
+ *           example: true
+ *
+ *         creadoPor:
+ *           type: string
+ *           example: "Administrador"
+ *
+ *     CajaUpdateInput:
+ *       type: object
+ *       properties:
+ *         nombre:
+ *           type: string
+ *           example: "Caja barra primer piso"
+ *
+ *         descripcion:
+ *           type: string
+ *           example: "Caja asignada a la barra principal"
+ *
  *         estado:
  *           type: boolean
  *           example: true
- *         creadoPor:
+ *
+ *         actualizadoPor:
  *           type: string
- *           example: "admin"
- *       
+ *           example: "Administrador"
+ *
+ *     AperturaActivaResumen:
+ *       type: object
+ *       nullable: true
+ *       properties:
+ *         _id:
+ *           type: string
+ *
+ *         idPerfil:
+ *           type: string
+ *
+ *         idCaja:
+ *           type: string
+ *
+ *         fechaApertura:
+ *           type: string
+ *           format: date-time
+ *
+ *         montoInicial:
+ *           type: number
+ *           example: 100
+ *
+ *         estado:
+ *           type: string
+ *           enum:
+ *             - abierta
+ *             - cerrada
+ *             - anulada
+ *           example: "abierta"
+ *
+ *     CajaConApertura:
+ *       type: object
+ *       properties:
+ *         caja:
+ *           $ref: '#/components/schemas/Caja'
+ *
+ *         aperturaActiva:
+ *           $ref: '#/components/schemas/AperturaActivaResumen'
+ *
+ *     CajaPorSucursal:
+ *       allOf:
+ *         - $ref: '#/components/schemas/Caja'
+ *         - type: object
+ *           properties:
+ *             aperturaActiva:
+ *               $ref: '#/components/schemas/AperturaActivaResumen'
+ *
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *           example: "Ocurrió un error"
+ *
+ *     MessageResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
  */
+
+/* =====================================================
+    CREAR CAJA
+===================================================== */
 
 /**
  * @openapi
@@ -78,21 +201,69 @@ const router = Router()
  *   post:
  *     tags:
  *       - Caja
- *     summary: Crear caja
- *     description: Registra una nueva caja en una sucursal
+ *     summary: Crear una caja
+ *     description: |
+ *       Crea una nueva caja dentro de una sucursal.
+ *
+ *       No permite registrar dos cajas con el mismo nombre
+ *       dentro de la misma sucursal.
+ *
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/CajaInput'
+ *           example:
+ *             idSucursal: "6a1ba90b7ba11e9abf89383a"
+ *             nombre: "Caja principal"
+ *             descripcion: "Caja principal de la sucursal"
+ *             estado: true
+ *             creadoPor: "Administrador"
+ *
  *     responses:
- *       200:
+ *       201:
  *         description: Caja creada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Caja creada correctamente"
+ *                 caja:
+ *                   $ref: '#/components/schemas/Caja'
+ *
+ *       400:
+ *         description: Datos obligatorios no válidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
+ *       409:
+ *         description: Ya existe una caja con el mismo nombre
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
  *       500:
- *         description: Error al crear caja
+ *         description: Error interno al crear la caja
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/', CajaController.createCaja)
+router.post(
+  "/",
+  CajaController.createCaja
+);
+
+/* =====================================================
+    OBTENER TODAS
+===================================================== */
 
 /**
  * @openapi
@@ -101,16 +272,33 @@ router.post('/', CajaController.createCaja)
  *     tags:
  *       - Caja
  *     summary: Obtener todas las cajas
- *     description: Lista todas las cajas con su sucursal (populate)
+ *     description: Retorna todas las cajas registradas con su sucursal.
+ *
  *     responses:
  *       200:
  *         description: Lista de cajas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Caja'
+ *
  *       500:
- *         description: Error al obtener datos
+ *         description: Error al obtener las cajas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/', CajaController.getAllCajas)
+router.get(
+  "/",
+  CajaController.getAllCajas
+);
 
-
+/* =====================================================
+    CAJAS POR SUCURSAL
+===================================================== */
 
 /**
  * @openapi
@@ -118,16 +306,23 @@ router.get('/', CajaController.getAllCajas)
  *   get:
  *     tags:
  *       - Caja
- *     summary: Obtener cajas por sucursal
- *     description: Retorna todas las cajas activas asociadas a una sucursal específica. Se utiliza para seleccionar la caja que recibirá el pago al momento de registrar una venta.
+ *     summary: Obtener cajas activas de una sucursal
+ *     description: |
+ *       Retorna todas las cajas activas de una sucursal.
+ *
+ *       Cada caja incluye su apertura activa, cuando exista.
+ *       Esto permite saber si la caja está abierta o disponible
+ *       para realizar una nueva apertura.
+ *
  *     parameters:
  *       - in: path
  *         name: idSucursal
  *         required: true
- *         description: ID de la sucursal a la que pertenecen las cajas.
+ *         description: ID de la sucursal
  *         schema:
  *           type: string
- *         example: "68d5d65430dcdf69852d1e3e"
+ *         example: "6a1ba90b7ba11e9abf89383a"
+ *
  *     responses:
  *       200:
  *         description: Lista de cajas activas de la sucursal
@@ -136,14 +331,23 @@ router.get('/', CajaController.getAllCajas)
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Caja'
+ *                 $ref: '#/components/schemas/CajaPorSucursal'
+ *
  *       500:
- *         description: Error al obtener cajas por sucursal
+ *         description: Error al obtener las cajas de la sucursal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get(
   "/sucursal/:idSucursal",
   CajaController.getCajasBySucursal
 );
+
+/* =====================================================
+    OBTENER CAJA POR ID
+===================================================== */
 
 /**
  * @openapi
@@ -151,20 +355,50 @@ router.get(
  *   get:
  *     tags:
  *       - Caja
- *     summary: Obtener caja por ID
+ *     summary: Obtener una caja por ID
+ *     description: |
+ *       Retorna la información de una caja y su apertura
+ *       activa, cuando exista.
+ *
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: ID de la caja
  *         schema:
  *           type: string
+ *         example: "6a1ba6e27ba11e9abf893800"
+ *
  *     responses:
  *       200:
  *         description: Caja encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CajaConApertura'
+ *
  *       404:
  *         description: Caja no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
+ *       500:
+ *         description: Error al obtener la caja
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:id', CajaController.getCajaById)
+router.get(
+  "/:id",
+  CajaController.getCajaById
+);
+
+/* =====================================================
+    ACTUALIZAR CAJA
+===================================================== */
 
 /**
  * @openapi
@@ -172,26 +406,56 @@ router.get('/:id', CajaController.getCajaById)
  *   put:
  *     tags:
  *       - Caja
- *     summary: Actualizar caja
+ *     summary: Actualizar una caja
+ *     description: Permite modificar el nombre, descripción y estado de una caja.
+ *
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: ID de la caja
  *         schema:
  *           type: string
+ *
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CajaInput'
+ *             $ref: '#/components/schemas/CajaUpdateInput'
+ *
  *     responses:
  *       200:
  *         description: Caja actualizada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Caja actualizada correctamente"
+ *                 caja:
+ *                   $ref: '#/components/schemas/Caja'
+ *
+ *       404:
+ *         description: Caja no encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
  *       500:
- *         description: Error al actualizar
+ *         description: Error al actualizar la caja
  */
-router.put('/:id', CajaController.updateCaja)
+router.put(
+  "/:id",
+  CajaController.updateCaja
+);
+
+/* =====================================================
+    ELIMINAR CAJA
+===================================================== */
 
 /**
  * @openapi
@@ -199,14 +463,21 @@ router.put('/:id', CajaController.updateCaja)
  *   delete:
  *     tags:
  *       - Caja
- *     summary: Eliminar caja (lógico)
- *     description: Cambia el estado de la caja a inactivo
+ *     summary: Desactivar una caja
+ *     description: |
+ *       Realiza una eliminación lógica de la caja.
+ *
+ *       No permite desactivar una caja cuando tiene una
+ *       apertura activa.
+ *
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: ID de la caja
  *         schema:
  *           type: string
+ *
  *     requestBody:
  *       required: false
  *       content:
@@ -216,13 +487,34 @@ router.put('/:id', CajaController.updateCaja)
  *             properties:
  *               eliminadoPor:
  *                 type: string
- *                 example: "admin"
+ *                 example: "Administrador"
+ *
  *     responses:
  *       200:
- *         description: Caja eliminada correctamente
+ *         description: Caja desactivada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Caja desactivada correctamente"
+ *                 caja:
+ *                   $ref: '#/components/schemas/Caja'
+ *
+ *       400:
+ *         description: La caja tiene una apertura activa
+ *
+ *       404:
+ *         description: Caja no encontrada
+ *
  *       500:
- *         description: Error al eliminar
+ *         description: Error al desactivar la caja
  */
-router.delete('/:id', CajaController.deleteCaja)
+router.delete(
+  "/:id",
+  CajaController.deleteCaja
+);
 
-export default router
+export default router;

@@ -191,190 +191,769 @@ export class ComandaController {
 
 
 
-    // Obtener comandas por perfil con sus detalles
- static getComandasConDetallesPorPerfil = async (
+  static getComandasConDetallesPorPerfil = async (
     req: Request,
     res: Response
 ) => {
 
     try {
 
-        const { idPerfil } = req.params;
-
-        /*
-            1. Buscar comandas del perfil
-            Se seleccionan solo los datos necesarios.
-        */
-        const comandas = await Comanda.find({
+        const {
             idPerfil,
-        })
-            .populate({
-                path: "idPerfil",
-                select: "_id nombres apellidos email telefono ci idSucursal",
-                populate: {
-                    path: "idSucursal",
-                    select: "_id nombreSucursal ubicacionSucursal",
-                },
-            })
-            .populate({
-                path: "idSucursal",
-                select: "_id nombreSucursal ubicacionSucursal",
-            })
-            .sort({
-                fechaCreacion: -1,
-            })
-            .lean();
+        } = req.params;
 
-        /*
-            2. Si no existen comandas
-        */
-        if (comandas.length === 0) {
-            return res.json({
-                perfil: null,
-                sucursal: null,
-                comandas: [],
+        /* =========================
+            1. VALIDAR ID PERFIL
+        ========================= */
+
+        if (!idPerfil) {
+
+            return res.status(400).json({
+                error:
+                    "El ID del perfil es obligatorio",
             });
+
         }
 
-        /*
-            3. Sacar perfil y sucursal una sola vez
-        */
-        const primeraComanda: any = comandas[0];
+        /* =========================
+            2. BUSCAR COMANDAS
+        ========================= */
 
-        const perfil = primeraComanda.idPerfil
-            ? {
-                _id: primeraComanda.idPerfil._id,
-                nombres: primeraComanda.idPerfil.nombres,
-                apellidos: primeraComanda.idPerfil.apellidos,
-                email: primeraComanda.idPerfil.email,
-                telefono: primeraComanda.idPerfil.telefono,
-                ci: primeraComanda.idPerfil.ci,
-            }
-            : null;
+        const comandas =
+            await Comanda.find({
+                idPerfil,
+            })
+                .populate({
+                    path:
+                        "idPerfil",
 
-        const sucursal = primeraComanda.idSucursal
-            ? {
-                _id: primeraComanda.idSucursal._id,
-                nombreSucursal: primeraComanda.idSucursal.nombreSucursal,
-                ubicacionSucursal: primeraComanda.idSucursal.ubicacionSucursal,
-            }
-            : primeraComanda.idPerfil?.idSucursal
+                    select:
+                        "_id nombres apellidos email telefono ci idSucursal idAlmacen",
+
+                    populate: [
+                        {
+                            path:
+                                "idSucursal",
+
+                            select:
+                                "_id nombreSucursal ubicacionSucursal",
+                        },
+                        {
+                            path:
+                                "idAlmacen",
+
+                            select:
+                                "_id idSucursal nombre descripcion tipo ubicacion estado",
+                        },
+                    ],
+                })
+                .populate({
+                    path:
+                        "idSucursal",
+
+                    select:
+                        "_id nombreSucursal ubicacionSucursal",
+                })
+                .sort({
+                    fechaCreacion:
+                        -1,
+                })
+                .lean();
+
+        /* =========================
+            3. SIN COMANDAS
+        ========================= */
+
+        if (
+            comandas.length === 0
+        ) {
+
+            return res.json({
+
+                perfil:
+                    null,
+
+                sucursal:
+                    null,
+
+                almacen:
+                    null,
+
+                comandas:
+                    [],
+
+            });
+
+        }
+
+        /* =========================
+            4. PERFIL, SUCURSAL
+            Y ALMACÉN GENERAL
+        ========================= */
+
+        const primeraComanda: any =
+            comandas[0];
+
+        const perfil =
+            primeraComanda.idPerfil
                 ? {
-                    _id: primeraComanda.idPerfil.idSucursal._id,
-                    nombreSucursal: primeraComanda.idPerfil.idSucursal.nombreSucursal,
-                    ubicacionSucursal: primeraComanda.idPerfil.idSucursal.ubicacionSucursal,
+
+                    _id:
+                        primeraComanda
+                            .idPerfil
+                            ._id,
+
+                    nombres:
+                        primeraComanda
+                            .idPerfil
+                            .nombres,
+
+                    apellidos:
+                        primeraComanda
+                            .idPerfil
+                            .apellidos,
+
+                    email:
+                        primeraComanda
+                            .idPerfil
+                            .email,
+
+                    telefono:
+                        primeraComanda
+                            .idPerfil
+                            .telefono,
+
+                    ci:
+                        primeraComanda
+                            .idPerfil
+                            .ci,
+
                 }
                 : null;
 
-        /*
-            4. Obtener IDs de comandas
-        */
-        const idsComandas = comandas.map(
-            (comanda) => comanda._id
-        );
+        const sucursal =
+            primeraComanda.idSucursal
+                ? {
 
-        /*
-            5. Buscar detalles de esas comandas
-        */
-        const detalles = await DetalleComanda.find({
-            idComanda: {
-                $in: idsComandas,
-            },
-        })
-            .populate({
-                path: "idProducto",
-                select: "_id nombre descripcion marca estado",
+                    _id:
+                        primeraComanda
+                            .idSucursal
+                            ._id,
+
+                    nombreSucursal:
+                        primeraComanda
+                            .idSucursal
+                            .nombreSucursal,
+
+                    ubicacionSucursal:
+                        primeraComanda
+                            .idSucursal
+                            .ubicacionSucursal,
+
+                }
+                : primeraComanda
+                    .idPerfil
+                    ?.idSucursal
+                    ? {
+
+                        _id:
+                            primeraComanda
+                                .idPerfil
+                                .idSucursal
+                                ._id,
+
+                        nombreSucursal:
+                            primeraComanda
+                                .idPerfil
+                                .idSucursal
+                                .nombreSucursal,
+
+                        ubicacionSucursal:
+                            primeraComanda
+                                .idPerfil
+                                .idSucursal
+                                .ubicacionSucursal,
+
+                    }
+                    : null;
+
+        const almacen =
+            primeraComanda
+                .idPerfil
+                ?.idAlmacen
+                ? {
+
+                    _id:
+                        primeraComanda
+                            .idPerfil
+                            .idAlmacen
+                            ._id,
+
+                    idSucursal:
+                        primeraComanda
+                            .idPerfil
+                            .idAlmacen
+                            .idSucursal,
+
+                    nombre:
+                        primeraComanda
+                            .idPerfil
+                            .idAlmacen
+                            .nombre,
+
+                    descripcion:
+                        primeraComanda
+                            .idPerfil
+                            .idAlmacen
+                            .descripcion,
+
+                    tipo:
+                        primeraComanda
+                            .idPerfil
+                            .idAlmacen
+                            .tipo,
+
+                    ubicacion:
+                        primeraComanda
+                            .idPerfil
+                            .idAlmacen
+                            .ubicacion,
+
+                    estado:
+                        primeraComanda
+                            .idPerfil
+                            .idAlmacen
+                            .estado,
+
+                }
+                : null;
+
+        /* =========================
+            5. IDS DE COMANDAS
+        ========================= */
+
+        const idsComandas =
+            comandas.map(
+                (comanda) =>
+                    comanda._id
+            );
+
+        /* =========================
+            6. BUSCAR DETALLES
+            CON TODAS LAS RELACIONES
+        ========================= */
+
+        const detalles =
+            await DetalleComanda.find({
+
+                idComanda: {
+                    $in:
+                        idsComandas,
+                },
+
             })
-            .lean();
+                .populate({
+                    path:
+                        "idProducto",
 
-        /*
-            6. Armar comandas limpias
-        */
-        const comandasLimpias = comandas.map(
-            (comanda: any) => {
+                    select:
+                        "_id nombre descripcion marca estado",
+                })
+                .populate({
+                    path:
+                        "idInventario",
 
-                const detallesDeComanda = detalles
-                    .filter(
-                        (detalle: any) =>
-                            detalle.idComanda.toString() ===
-                            comanda._id.toString()
-                    )
-                    .map((detalle: any) => ({
-                        _id: detalle._id,
+                    select:
+                        "_id idAlmacen idProducto cantidad costoUnitario precioVenta stockMinimo estado creadoPor fechaCreacion",
 
-                        producto: detalle.idProducto
-                            ? {
-                                _id: detalle.idProducto._id,
-                                nombre: detalle.idProducto.nombre,
-                                descripcion: detalle.idProducto.descripcion,
-                                marca: detalle.idProducto.marca,
-                                estado: detalle.idProducto.estado,
-                            }
-                            : null,
+                    populate: [
+                        {
+                            path:
+                                "idProducto",
 
-                        cantidad: detalle.cantidad,
-                        precioUnitario: detalle.precioUnitario,
-                        subtotal: detalle.subtotal,
-                        estado: detalle.estado,
-                        observacion: detalle.observacion,
-                        creadoPor: detalle.creadoPor,
-                        fechaCreacion: detalle.fechaCreacion,
-                    }));
+                            select:
+                                "_id nombre descripcion marca estado",
+                        },
+                        {
+                            path:
+                                "idAlmacen",
 
-                const total = detallesDeComanda.reduce(
-                    (acc, detalle) =>
-                        acc + Number(detalle.subtotal || 0),
-                    0
-                );
+                            select:
+                                "_id idSucursal nombre descripcion tipo ubicacion estado",
+                        },
+                    ],
+                })
+                .populate({
+                    path:
+                        "idAlmacen",
 
-                return {
-                    _id: comanda._id,
+                    select:
+                        "_id idSucursal nombre descripcion tipo ubicacion estado",
+                })
+                .sort({
+                    fechaCreacion:
+                        1,
+                })
+                .lean();
 
-                    numeroComanda: comanda.numeroComanda,
+        /* =========================
+            7. ARMAR COMANDAS
+        ========================= */
 
-                    estado: comanda.estado,
+        const comandasLimpias =
+            comandas.map(
+                (comanda: any) => {
 
-                    observacion: comanda.observacion,
+                    const detallesDeComanda =
+                        detalles
+                            .filter(
+                                (
+                                    detalle: any
+                                ) =>
+                                    String(
+                                        detalle.idComanda
+                                    ) ===
+                                    String(
+                                        comanda._id
+                                    )
+                            )
+                            .map(
+                                (
+                                    detalle: any
+                                ) => {
 
-                    creadoPor: comanda.creadoPor,
+                                    /*
+                                        Producto poblado directamente.
+                                    */
+                                    const producto =
+                                        detalle.idProducto &&
+                                        typeof detalle.idProducto ===
+                                            "object"
+                                            ? {
+                                                _id:
+                                                    detalle
+                                                        .idProducto
+                                                        ._id,
 
-                    actualizadoPor: comanda.actualizadoPor,
+                                                nombre:
+                                                    detalle
+                                                        .idProducto
+                                                        .nombre,
 
-                    eliminadoPor: comanda.eliminadoPor,
+                                                descripcion:
+                                                    detalle
+                                                        .idProducto
+                                                        .descripcion,
 
-                    fechaApertura: comanda.fechaApertura,
+                                                marca:
+                                                    detalle
+                                                        .idProducto
+                                                        .marca,
 
-                    fechaCierre: comanda.fechaCierre,
+                                                estado:
+                                                    detalle
+                                                        .idProducto
+                                                        .estado,
+                                            }
+                                            : null;
 
-                    fechaCreacion: comanda.fechaCreacion,
+                                    /*
+                                        Inventario poblado.
+                                    */
+                                    const inventario =
+                                        detalle.idInventario &&
+                                        typeof detalle.idInventario ===
+                                            "object"
+                                            ? {
+                                                _id:
+                                                    detalle
+                                                        .idInventario
+                                                        ._id,
 
-                    fechaActualizacion: comanda.fechaActualizacion,
+                                                idProducto:
+                                                    detalle
+                                                        .idInventario
+                                                        .idProducto,
 
-                    fechaEliminado: comanda.fechaEliminado,
+                                                idAlmacen:
+                                                    detalle
+                                                        .idInventario
+                                                        .idAlmacen,
 
-                    detalles: detallesDeComanda,
+                                                cantidad:
+                                                    Number(
+                                                        detalle
+                                                            .idInventario
+                                                            .cantidad ||
+                                                        0
+                                                    ),
 
-                    total,
-                };
+                                                costoUnitario:
+                                                    Number(
+                                                        detalle
+                                                            .idInventario
+                                                            .costoUnitario ||
+                                                        0
+                                                    ),
 
-            }
-        );
+                                                precioVenta:
+                                                    Number(
+                                                        detalle
+                                                            .idInventario
+                                                            .precioVenta ||
+                                                        0
+                                                    ),
 
-        /*
-            7. Respuesta final organizada
-        */
+                                                stockMinimo:
+                                                    Number(
+                                                        detalle
+                                                            .idInventario
+                                                            .stockMinimo ||
+                                                        0
+                                                    ),
+
+                                                estado:
+                                                    detalle
+                                                        .idInventario
+                                                        .estado,
+                                            }
+                                            : detalle.idInventario ||
+                                            null;
+
+                                    /*
+                                        Almacén guardado directamente
+                                        en detalle_comandas.
+
+                                        Para comandas antiguas se usa
+                                        como respaldo el almacén del
+                                        inventario o del perfil.
+                                    */
+                                    let almacenDetalle =
+                                        null;
+
+                                    if (
+                                        detalle.idAlmacen &&
+                                        typeof detalle.idAlmacen ===
+                                            "object"
+                                    ) {
+
+                                        almacenDetalle = {
+
+                                            _id:
+                                                detalle
+                                                    .idAlmacen
+                                                    ._id,
+
+                                            idSucursal:
+                                                detalle
+                                                    .idAlmacen
+                                                    .idSucursal,
+
+                                            nombre:
+                                                detalle
+                                                    .idAlmacen
+                                                    .nombre,
+
+                                            descripcion:
+                                                detalle
+                                                    .idAlmacen
+                                                    .descripcion,
+
+                                            tipo:
+                                                detalle
+                                                    .idAlmacen
+                                                    .tipo,
+
+                                            ubicacion:
+                                                detalle
+                                                    .idAlmacen
+                                                    .ubicacion,
+
+                                            estado:
+                                                detalle
+                                                    .idAlmacen
+                                                    .estado,
+
+                                        };
+
+                                    } else if (
+                                        detalle
+                                            .idInventario
+                                            ?.idAlmacen &&
+                                        typeof detalle
+                                            .idInventario
+                                            .idAlmacen ===
+                                            "object"
+                                    ) {
+
+                                        almacenDetalle = {
+
+                                            _id:
+                                                detalle
+                                                    .idInventario
+                                                    .idAlmacen
+                                                    ._id,
+
+                                            idSucursal:
+                                                detalle
+                                                    .idInventario
+                                                    .idAlmacen
+                                                    .idSucursal,
+
+                                            nombre:
+                                                detalle
+                                                    .idInventario
+                                                    .idAlmacen
+                                                    .nombre,
+
+                                            descripcion:
+                                                detalle
+                                                    .idInventario
+                                                    .idAlmacen
+                                                    .descripcion,
+
+                                            tipo:
+                                                detalle
+                                                    .idInventario
+                                                    .idAlmacen
+                                                    .tipo,
+
+                                            ubicacion:
+                                                detalle
+                                                    .idInventario
+                                                    .idAlmacen
+                                                    .ubicacion,
+
+                                            estado:
+                                                detalle
+                                                    .idInventario
+                                                    .idAlmacen
+                                                    .estado,
+
+                                        };
+
+                                    } else {
+
+                                        almacenDetalle =
+                                            almacen;
+
+                                    }
+
+                                    const cantidad =
+                                        Number(
+                                            detalle.cantidad ||
+                                            0
+                                        );
+
+                                    /*
+                                        Usa el precio guardado en el
+                                        detalle. Si es una comanda
+                                        antigua con precio 0, usa como
+                                        respaldo precioVenta del inventario.
+                                    */
+                                    const precioUnitarioGuardado =
+                                        Number(
+                                            detalle
+                                                .precioUnitario ||
+                                            0
+                                        );
+
+                                    const precioInventario =
+                                        detalle
+                                            .idInventario &&
+                                        typeof detalle
+                                            .idInventario ===
+                                            "object"
+                                            ? Number(
+                                                detalle
+                                                    .idInventario
+                                                    .precioVenta ||
+                                                0
+                                            )
+                                            : 0;
+
+                                    const precioUnitario =
+                                        precioUnitarioGuardado >
+                                            0
+                                            ? precioUnitarioGuardado
+                                            : precioInventario;
+
+                                    /*
+                                        Recalcular subtotal para
+                                        comandas antiguas con subtotal 0.
+                                    */
+                                    const subtotalGuardado =
+                                        Number(
+                                            detalle.subtotal ||
+                                            0
+                                        );
+
+                                    const subtotal =
+                                        subtotalGuardado >
+                                            0
+                                            ? subtotalGuardado
+                                            : cantidad *
+                                            precioUnitario;
+
+                                    return {
+
+                                        _id:
+                                            detalle._id,
+
+                                        /*
+                                            Se devuelve también el ID
+                                            o populate original.
+                                        */
+                                        idProducto:
+                                            detalle.idProducto ||
+                                            null,
+
+                                        producto,
+
+                                        idInventario:
+                                            inventario,
+
+                                        idAlmacen:
+                                            almacenDetalle,
+
+                                        cantidad,
+
+                                        precioUnitario,
+
+                                        subtotal,
+
+                                        estado:
+                                            detalle.estado,
+
+                                        observacion:
+                                            detalle.observacion ||
+                                            "",
+
+                                        creadoPor:
+                                            detalle.creadoPor,
+
+                                        actualizadoPor:
+                                            detalle
+                                                .actualizadoPor,
+
+                                        eliminadoPor:
+                                            detalle
+                                                .eliminadoPor,
+
+                                        fechaCreacion:
+                                            detalle
+                                                .fechaCreacion,
+
+                                        fechaActualizacion:
+                                            detalle
+                                                .fechaActualizacion,
+
+                                        fechaEliminado:
+                                            detalle
+                                                .fechaEliminado,
+
+                                    };
+
+                                }
+                            );
+
+                    /* =========================
+                        TOTAL DE LA COMANDA
+                    ========================= */
+
+                    const total =
+                        detallesDeComanda.reduce(
+                            (
+                                acumulado,
+                                detalle
+                            ) =>
+                                acumulado +
+                                Number(
+                                    detalle.subtotal ||
+                                    0
+                                ),
+                            0
+                        );
+
+                    return {
+
+                        _id:
+                            comanda._id,
+
+                        numeroComanda:
+                            comanda.numeroComanda,
+
+                        estado:
+                            comanda.estado,
+
+                        observacion:
+                            comanda.observacion,
+
+                        creadoPor:
+                            comanda.creadoPor,
+
+                        actualizadoPor:
+                            comanda.actualizadoPor,
+
+                        eliminadoPor:
+                            comanda.eliminadoPor,
+
+                        fechaApertura:
+                            comanda.fechaApertura,
+
+                        fechaCierre:
+                            comanda.fechaCierre,
+
+                        fechaCreacion:
+                            comanda.fechaCreacion,
+
+                        fechaActualizacion:
+                            comanda.fechaActualizacion,
+
+                        fechaEliminado:
+                            comanda.fechaEliminado,
+
+                        detalles:
+                            detallesDeComanda,
+
+                        total,
+
+                    };
+
+                }
+            );
+
+        /* =========================
+            8. RESPUESTA FINAL
+        ========================= */
+
         return res.json({
+
             perfil,
+
             sucursal,
-            comandas: comandasLimpias,
+
+            almacen,
+
+            comandas:
+                comandasLimpias,
+
         });
 
     } catch (error) {
 
-        console.log(error);
+        console.log(
+            "Error obteniendo comandas con detalles:",
+            error
+        );
 
-        res.status(500).json({
-            error: "Error al obtener comandas con detalles por perfil",
+        return res.status(500).json({
+
+            error:
+                error instanceof Error
+                    ? error.message
+                    : "Error al obtener comandas con detalles por perfil",
+
         });
 
     }

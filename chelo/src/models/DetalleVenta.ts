@@ -1,105 +1,420 @@
-import mongoose, { Schema, Document } from "mongoose";
+// import mongoose, { Schema, Document } from "mongoose";
 
-export interface DetalleVentaType extends Document {
-  idVenta: mongoose.Types.ObjectId;
-  idProducto: mongoose.Types.ObjectId;
+// export interface DetalleVentaType extends Document {
+//   idVenta: mongoose.Types.ObjectId;
+//   idProducto: mongoose.Types.ObjectId;
 
-  cantidad: number;
-  precioUnitario: number;
-  subtotal: number;
+//   cantidad: number;
+//   precioUnitario: number;
+//   subtotal: number;
 
-  fechaCreacion?: Date;
-  creadoPor?: string;
-  fechaActualizacion?: Date;
-  actualizadoPor?: string;
-  fechaEliminado?: Date;
-  eliminadoPor?: string;
+//   fechaCreacion?: Date;
+//   creadoPor?: string;
+//   fechaActualizacion?: Date;
+//   actualizadoPor?: string;
+//   fechaEliminado?: Date;
+//   eliminadoPor?: string;
+// }
+
+// const DetalleVentaSchema: Schema = new Schema(
+//   {
+//     idVenta: {
+//       type: Schema.Types.ObjectId,
+//       ref: "Venta",
+//       required: true,
+//     },
+
+//     idProducto: {
+//       type: Schema.Types.ObjectId,
+//       ref: "Producto",
+//       required: true,
+//     },
+
+//     cantidad: {
+//       type: Number,
+//       required: true,
+//       min: 0,
+//     },
+
+//     precioUnitario: {
+//       type: Number,
+//       required: true,
+//       min: 0,
+//     },
+
+//     subtotal: {
+//       type: Number,
+//       required: true,
+//       default: 0,
+//     },
+
+//     // 🔥 Auditoría
+//     fechaCreacion: {
+//       type: Date,
+//       default: Date.now,
+//     },
+
+//     creadoPor: {
+//       type: String,
+//     },
+
+//     fechaActualizacion: {
+//       type: Date,
+//     },
+
+//     actualizadoPor: {
+//       type: String,
+//     },
+
+//     fechaEliminado: {
+//       type: Date,
+//     },
+
+//     eliminadoPor: {
+//       type: String,
+//     },
+//   },
+//   {
+//     versionKey: false,
+//     collection: "detalle_ventas",
+//   }
+// );
+
+
+// //  Cálculo automático (IMPORTANTE)
+// DetalleVentaSchema.pre("save", function (next) {
+//   const doc = this as any;
+
+//   doc.subtotal = Number(doc.cantidad) * Number(doc.precioUnitario);
+
+//   next();
+// });
+
+
+// //  Índice útil (opcional)
+// DetalleVentaSchema.index(
+//   { idVenta: 1, idProducto: 1 },
+//   { unique: false }
+// );
+
+// const DetalleVenta = mongoose.model<DetalleVentaType>(
+//   "DetalleVenta",
+//   DetalleVentaSchema
+// );
+
+// export default DetalleVenta;
+
+// src/models/DetalleVenta.ts
+
+import mongoose, {
+  Schema,
+  Types,
+} from "mongoose";
+
+/* =========================
+    INTERFAZ
+========================= */
+
+export interface DetalleVentaType {
+
+  idVenta:
+    Types.ObjectId;
+
+  idProducto:
+    Types.ObjectId;
+
+  /*
+    Inventario exacto del que
+    salió el producto.
+  */
+  idInventario:
+    Types.ObjectId;
+
+  /*
+    Almacén exacto al que
+    pertenecía el inventario.
+  */
+  idAlmacen:
+    Types.ObjectId;
+
+  cantidad:
+    number;
+
+  precioUnitario:
+    number;
+
+  /*
+    Se guarda el costo utilizado
+    al momento de la venta.
+
+    Esto permitirá calcular:
+    - costo de ventas
+    - utilidad por producto
+    - estado de resultados
+  */
+  costoUnitario:
+    number;
+
+  subtotal:
+    number;
+
+  estado:
+    "activo" | "eliminado";
+
+  fechaCreacion?:
+    Date;
+
+  creadoPor?:
+    string;
+
+  fechaActualizacion?:
+    Date;
+
+  actualizadoPor?:
+    string;
+
+  fechaEliminado?:
+    Date;
+
+  eliminadoPor?:
+    string;
+
 }
 
-const DetalleVentaSchema: Schema = new Schema(
-  {
-    idVenta: {
-      type: Schema.Types.ObjectId,
-      ref: "Venta",
-      required: true,
-    },
+/* =========================
+    SCHEMA
+========================= */
 
-    idProducto: {
-      type: Schema.Types.ObjectId,
-      ref: "Producto",
-      required: true,
-    },
+const DetalleVentaSchema =
+  new Schema<DetalleVentaType>(
+    {
 
-    cantidad: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+      idVenta: {
+        type:
+          Schema.Types.ObjectId,
 
-    precioUnitario: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+        ref:
+          "Venta",
 
-    subtotal: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
+        required:
+          true,
+      },
 
-    // 🔥 Auditoría
-    fechaCreacion: {
-      type: Date,
-      default: Date.now,
-    },
+      idProducto: {
+        type:
+          Schema.Types.ObjectId,
 
-    creadoPor: {
-      type: String,
-    },
+        ref:
+          "Producto",
 
-    fechaActualizacion: {
-      type: Date,
-    },
+        required:
+          true,
+      },
 
-    actualizadoPor: {
-      type: String,
-    },
+      idInventario: {
+        type:
+          Schema.Types.ObjectId,
 
-    fechaEliminado: {
-      type: Date,
-    },
+        ref:
+          "Inventario",
 
-    eliminadoPor: {
-      type: String,
+        required:
+          true,
+      },
+
+      idAlmacen: {
+        type:
+          Schema.Types.ObjectId,
+
+        ref:
+          "Almacen",
+
+        required:
+          true,
+      },
+
+      cantidad: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          1,
+      },
+
+      precioUnitario: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+      },
+
+      costoUnitario: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+
+        default:
+          0,
+      },
+
+      subtotal: {
+        type:
+          Number,
+
+        required:
+          true,
+
+        min:
+          0,
+
+        default:
+          0,
+      },
+
+      estado: {
+        type:
+          String,
+
+        enum: [
+          "activo",
+          "eliminado",
+        ],
+
+        default:
+          "activo",
+
+        required:
+          true,
+      },
+
+      /* =========================
+          AUDITORÍA
+      ========================= */
+
+      fechaCreacion: {
+        type:
+          Date,
+
+        default:
+          Date.now,
+      },
+
+      creadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+      },
+
+      fechaActualizacion: {
+        type:
+          Date,
+      },
+
+      actualizadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+      },
+
+      fechaEliminado: {
+        type:
+          Date,
+      },
+
+      eliminadoPor: {
+        type:
+          String,
+
+        trim:
+          true,
+      },
+
     },
-  },
-  {
-    versionKey: false,
-    collection: "detalle_ventas",
+    {
+      versionKey:
+        false,
+
+      collection:
+        "detalle_ventas",
+    }
+  );
+
+/* =========================
+    CALCULAR SUBTOTAL
+========================= */
+
+DetalleVentaSchema.pre(
+  "validate",
+  function () {
+
+    this.subtotal =
+      Number(this.cantidad) *
+      Number(this.precioUnitario);
+
   }
 );
 
+/* =========================
+    ÍNDICES
+========================= */
 
-//  Cálculo automático (IMPORTANTE)
-DetalleVentaSchema.pre("save", function (next) {
-  const doc = this as any;
-
-  doc.subtotal = Number(doc.cantidad) * Number(doc.precioUnitario);
-
-  next();
+/*
+  Ayuda a buscar todos los productos
+  correspondientes a una venta.
+*/
+DetalleVentaSchema.index({
+  idVenta:
+    1,
 });
 
+/*
+  Ayuda a obtener ventas y reportes
+  por producto.
+*/
+DetalleVentaSchema.index({
+  idProducto:
+    1,
 
-//  Índice útil (opcional)
-DetalleVentaSchema.index(
-  { idVenta: 1, idProducto: 1 },
-  { unique: false }
-);
+  fechaCreacion:
+    -1,
+});
 
-const DetalleVenta = mongoose.model<DetalleVentaType>(
-  "DetalleVenta",
-  DetalleVentaSchema
-);
+/*
+  Permite localizar rápidamente
+  el inventario usado en la venta.
+*/
+DetalleVentaSchema.index({
+  idInventario:
+    1,
+
+  idVenta:
+    1,
+});
+
+/* =========================
+    MODELO
+========================= */
+
+const DetalleVenta =
+  mongoose.model<DetalleVentaType>(
+    "DetalleVenta",
+    DetalleVentaSchema
+  );
 
 export default DetalleVenta;

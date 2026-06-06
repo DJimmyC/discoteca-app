@@ -104,7 +104,30 @@ router.post('/', DetalleSolicitudController.createDetalle)
  *         description: Error al obtener datos
  */
 router.get('/', DetalleSolicitudController.getAllDetalles)
-
+/**
+ * @openapi
+ * /api/detallesolicitud/solicitud/{idSolicitud}:
+ *   get:
+ *     tags:
+ *       - DetalleSolicitud
+ *     summary: Obtener detalles por solicitud
+ *     parameters:
+ *       - in: path
+ *         name: idSolicitud
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Detalles de la solicitud
+ *       500:
+ *         description: Error al obtener los detalles
+ */
+router.get(
+  "/solicitud/:idSolicitud",
+  DetalleSolicitudController
+    .getDetallesBySolicitud
+);
 /**
  * @openapi
  * /api/detallesolicitud/{id}:

@@ -1,138 +1,297 @@
-import mongoose, { Schema, Document } from "mongoose";
+// src/models/CierreCaja.ts
 
-export interface CierreCajaType extends Document {
-  idPerfil: mongoose.Types.ObjectId;
-  idSucursal: mongoose.Types.ObjectId;
-  idCaja: mongoose.Types.ObjectId;
+import mongoose, {
+  Schema,
+  Document,
+} from "mongoose";
 
-  fechaApertura: Date;
-  fechaCierre: Date;
+export type EstadoCierreCaja =
+  | "cuadrado"
+  | "sobrante"
+  | "faltante"
+  | "anulado";
 
-  montoInicial: number;
-  totalVentas: number;
-  totalEgresos: number;
-  totalEsperado: number;
-  montoReal: number;
-  diferencia: number;
+export interface CierreCajaType
+  extends Document {
 
-  estado: string; // cerrado | cuadrado | descuadre
-  observacion?: string;
+  idAperturaCaja:
+    mongoose.Types.ObjectId;
 
-  fechaCreacion?: Date;
-  creadoPor?: string;
-  fechaActualizacion?: Date;
-  actualizadoPor?: string;
-  fechaEliminado?: Date;
-  eliminadoPor?: string;
+  idPerfil:
+    mongoose.Types.ObjectId;
+
+  idSucursal:
+    mongoose.Types.ObjectId;
+
+  idCaja:
+    mongoose.Types.ObjectId;
+
+  fechaApertura:
+    Date;
+
+  fechaCierre:
+    Date;
+
+  montoInicial:
+    number;
+
+  totalVentas:
+    number;
+
+  totalVentasEfectivo:
+    number;
+
+  totalVentasQr:
+    number;
+
+  totalVentasTransferencia:
+    number;
+
+  totalVentasMixto:
+    number;
+
+  totalCortesias:
+    number;
+
+  totalVentasAnuladas:
+    number;
+
+  totalEgresos:
+    number;
+
+  totalEgresosEfectivo:
+    number;
+
+  totalEsperadoEfectivo:
+    number;
+
+  montoReal:
+    number;
+
+  diferencia:
+    number;
+
+  cantidadVentas:
+    number;
+
+  cantidadProductosVendidos:
+    number;
+
+  cantidadEgresos:
+    number;
+
+  estado:
+    EstadoCierreCaja;
+
+  observacion?:
+    string;
+
+  fechaCreacion?:
+    Date;
+
+  creadoPor?:
+    string;
+
+  fechaActualizacion?:
+    Date;
+
+  actualizadoPor?:
+    string;
+
+  fechaEliminado?:
+    Date;
+
+  eliminadoPor?:
+    string;
 }
 
-const CierreCajaSchema: Schema = new Schema(
-  {
-    idPerfil: {
-      type: Schema.Types.ObjectId,
-      ref: "PerfilUsuario",
-      required: true,
-    },
+const CierreCajaSchema =
+  new Schema<CierreCajaType>(
+    {
+      idAperturaCaja: {
+        type: Schema.Types.ObjectId,
+        ref: "AperturaCaja",
+        required: true,
+        unique: true,
+      },
 
-    idSucursal: {
-      type: Schema.Types.ObjectId,
-      ref: "Sucursal",
-      required: true,
-    },
+      idPerfil: {
+        type: Schema.Types.ObjectId,
+        ref: "PerfilUsuario",
+        required: true,
+      },
 
-    idCaja: {
-      type: Schema.Types.ObjectId,
-      ref: "Caja",
-      required: true,
-    },
+      idSucursal: {
+        type: Schema.Types.ObjectId,
+        ref: "Sucursal",
+        required: true,
+      },
 
-    fechaApertura: {
-      type: Date,
-      required: true,
-    },
+      idCaja: {
+        type: Schema.Types.ObjectId,
+        ref: "Caja",
+        required: true,
+      },
 
-    fechaCierre: {
-      type: Date,
-      required: true,
-    },
+      fechaApertura: {
+        type: Date,
+        required: true,
+      },
 
-    montoInicial: {
-      type: Number,
-      default: 0,
-    },
+      fechaCierre: {
+        type: Date,
+        required: true,
+      },
 
-    totalVentas: {
-      type: Number,
-      default: 0,
-    },
+      montoInicial: {
+        type: Number,
+        default: 0,
+      },
 
-    totalEgresos: {
-      type: Number,
-      default: 0,
-    },
+      totalVentas: {
+        type: Number,
+        default: 0,
+      },
 
-    totalEsperado: {
-      type: Number,
-      default: 0,
-    },
+      totalVentasEfectivo: {
+        type: Number,
+        default: 0,
+      },
 
-    montoReal: {
-      type: Number,
-      default: 0,
-    },
+      totalVentasQr: {
+        type: Number,
+        default: 0,
+      },
 
-    diferencia: {
-      type: Number,
-      default: 0,
-    },
+      totalVentasTransferencia: {
+        type: Number,
+        default: 0,
+      },
 
-    estado: {
-      type: String,
-      required: true,
-      enum: ["cerrado", "cuadrado", "descuadre"],
-      default: "cerrado",
-    },
+      totalVentasMixto: {
+        type: Number,
+        default: 0,
+      },
 
-    observacion: {
-      type: String,
-      trim: true,
-      maxlength: 200,
-    },
+      totalCortesias: {
+        type: Number,
+        default: 0,
+      },
 
-    fechaCreacion: {
-      type: Date,
-      default: Date.now,
-    },
+      totalVentasAnuladas: {
+        type: Number,
+        default: 0,
+      },
 
-    creadoPor: {
-      type: String,
-    },
+      totalEgresos: {
+        type: Number,
+        default: 0,
+      },
 
-    fechaActualizacion: {
-      type: Date,
-    },
+      totalEgresosEfectivo: {
+        type: Number,
+        default: 0,
+      },
 
-    actualizadoPor: {
-      type: String,
-    },
+      totalEsperadoEfectivo: {
+        type: Number,
+        default: 0,
+      },
 
-    fechaEliminado: {
-      type: Date,
-    },
+      montoReal: {
+        type: Number,
+        default: 0,
+      },
 
-    eliminadoPor: {
-      type: String,
-    },
-  },
-  {
-    versionKey: false,
-    collection: "cierre_caja",
-  }
-);
+      diferencia: {
+        type: Number,
+        default: 0,
+      },
 
-const CierreCaja = mongoose.model<CierreCajaType>(
-  "CierreCaja",
-  CierreCajaSchema
-);
+      cantidadVentas: {
+        type: Number,
+        default: 0,
+      },
+
+      cantidadProductosVendidos: {
+        type: Number,
+        default: 0,
+      },
+
+      cantidadEgresos: {
+        type: Number,
+        default: 0,
+      },
+
+      estado: {
+        type: String,
+        enum: [
+          "cuadrado",
+          "sobrante",
+          "faltante",
+          "anulado",
+        ],
+        required: true,
+      },
+
+      observacion: {
+        type: String,
+        trim: true,
+        maxlength: 500,
+      },
+
+      fechaCreacion: {
+        type: Date,
+        default: Date.now,
+      },
+
+      creadoPor: {
+        type: String,
+        trim: true,
+        maxlength: 50,
+        default: "sistema",
+      },
+
+      fechaActualizacion: {
+        type: Date,
+      },
+
+      actualizadoPor: {
+        type: String,
+        trim: true,
+        maxlength: 50,
+      },
+
+      fechaEliminado: {
+        type: Date,
+      },
+
+      eliminadoPor: {
+        type: String,
+        trim: true,
+        maxlength: 50,
+      },
+    },
+    {
+      versionKey: false,
+      collection: "cierre_caja",
+    }
+  );
+
+CierreCajaSchema.index({
+  idCaja: 1,
+  fechaCierre: -1,
+});
+
+CierreCajaSchema.index({
+  idSucursal: 1,
+  fechaCierre: -1,
+});
+
+const CierreCaja =
+  mongoose.model<CierreCajaType>(
+    "CierreCaja",
+    CierreCajaSchema
+  );
 
 export default CierreCaja;
