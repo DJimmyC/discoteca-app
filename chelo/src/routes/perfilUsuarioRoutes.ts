@@ -150,33 +150,163 @@ router.post('/', PerfilUsuarioController.createPerfilUsuario)
  */
 router.get('/', PerfilUsuarioController.getAllPerfilUsuarios)
 router.get('/usuario', authenticate, PerfilUsuarioController.usuario)
-
 /**
  * @openapi
- * /api/perfilusuario/sucursal/{idSucursal}:
+ * /api/perfilusuario/sucursal/{idSucursal}/personal:
  *   get:
  *     tags:
  *       - PerfilUsuario
- *     summary: Obtener perfiles de usuario por sucursal
- *     description: Retorna la sucursal una sola vez y todos los perfiles de usuario asociados a esa sucursal, incluyendo usuario y rol sin repetir datos innecesarios.
+ *     summary: Obtener todo el personal de una sucursal
+ *     description: >
+ *       Obtiene la información de todos los perfiles de usuario registrados
+ *       en una sucursal determinada. La respuesta incluye los datos personales,
+ *       el rol, el almacén, el estado del usuario y un resumen con la cantidad
+ *       total de personal activo e inactivo.
  *     parameters:
  *       - in: path
  *         name: idSucursal
  *         required: true
- *         description: ID de la sucursal.
+ *         description: ID de la sucursal de la cual se obtendrá el personal
  *         schema:
  *           type: string
- *         example: ""
+ *           example: "683f51a534b85c91b926a123"
  *     responses:
  *       200:
- *         description: Lista de perfiles por sucursal
+ *         description: Personal de la sucursal obtenido correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Personal de la sucursal obtenido correctamente"
+ *                 sucursal:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: "683f51a534b85c91b926a123"
+ *                     nombre:
+ *                       type: string
+ *                       example: "Sucursal La Paz"
+ *                     ubicacion:
+ *                       type: string
+ *                       example: "Zona Central"
+ *                     estado:
+ *                       type: boolean
+ *                       example: true
+ *                 cantidadPersonal:
+ *                   type: integer
+ *                   example: 5
+ *                 cantidadActivos:
+ *                   type: integer
+ *                   example: 4
+ *                 cantidadInactivos:
+ *                   type: integer
+ *                   example: 1
+ *                 personal:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                         example: "683f51ec34b85c91b926a456"
+ *                       nombres:
+ *                         type: string
+ *                         example: "Juan"
+ *                       apellidos:
+ *                         type: string
+ *                         example: "Pérez"
+ *                       nombreCompleto:
+ *                         type: string
+ *                         example: "Juan Pérez"
+ *                       edad:
+ *                         type: integer
+ *                         nullable: true
+ *                         example: 25
+ *                       sexo:
+ *                         type: string
+ *                         example: "Masculino"
+ *                       ci:
+ *                         type: string
+ *                         example: "12345678"
+ *                       telefono:
+ *                         type: string
+ *                         example: "78945612"
+ *                       email:
+ *                         type: string
+ *                         example: "juan@gmail.com"
+ *                       estado:
+ *                         type: boolean
+ *                         example: true
+ *                       rol:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           nombre:
+ *                             type: string
+ *                             example: "Administrador"
+ *                           descripcion:
+ *                             type: string
+ *                             example: "Administrador de la sucursal"
+ *                           estado:
+ *                             type: boolean
+ *                             example: true
+ *                       almacen:
+ *                         type: object
+ *                         nullable: true
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           nombre:
+ *                             type: string
+ *                             example: "Almacén principal"
+ *                           tipo:
+ *                             type: string
+ *                             example: "Principal"
+ *                           descripcion:
+ *                             type: string
+ *                           estado:
+ *                             type: boolean
+ *                             example: true
+ *                       fechaCreacion:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                       fechaActualizacion:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *       400:
+ *         description: El ID de la sucursal no es válido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "El ID de la sucursal no es válido"
  *       500:
- *         description: Error al obtener perfiles por sucursal
+ *         description: Error interno al obtener el personal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Error al obtener el personal de la sucursal"
  */
 router.get(
-    "/sucursal/:idSucursal",
-    PerfilUsuarioController.getPerfilUsuariosBySucursal
-);
+    "/sucursal/:idSucursal/personal",
+    PerfilUsuarioController.getPersonalBySucursal
+)
 /**
  * @openapi
  * /api/perfilusuario/{id}:
