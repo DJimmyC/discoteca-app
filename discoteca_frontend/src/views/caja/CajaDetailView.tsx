@@ -1,4 +1,3 @@
-
 import {
   useMemo,
   useState,
@@ -10,207 +9,155 @@ import {
 } from "react-router-dom";
 
 import {
-  useMutation,
   useQuery,
-  useQueryClient,
 } from "@tanstack/react-query";
 
 import {
   motion,
 } from "framer-motion";
 
-import Swal from "sweetalert2";
+import {
+  CheckCircle2,
+  CircleUserRound,
+  Eye,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
+  Plus,
+  Search,
+  ShieldCheck,
+  UserRoundX,
+  Users,
+  Warehouse,
+  XCircle,
+} from "lucide-react";
 
 import MenuList from "@/components/MenuList";
 
 import {
+  getPersonalBySucursal,
+} from "@/api/PerfilUsuarioApi";
 
-  deleteCajaById,
+type FiltroEstado =
+  | "todos"
+  | "activos"
+  | "inactivos";
 
-  getCajas,
-
-} from "@/api/CajaApi";
-
-import {
-  getSucursalById,
-} from "@/api/SucursalApi";
-
-import {
-
-  Banknote,
-
-  Eye,
-
-  Pencil,
-
-  Plus,
-
-  Search,
-
-  Trash2,
-
-} from "lucide-react";
-
-import CajaDetailModal from "@/components/caja/CajaDetailModal";
-
-export default function CajaDetailView() {
-
-  const queryClient =
-    useQueryClient();
-
-  const { sucursalId } =
-    useParams();
-
-  const [search, setSearch] =
-    useState("");
-
-  /* =========================
-      GET SUCURSAL
-  ========================= */
+export default function PersonalSucursalView() {
 
   const {
-    data: sucursal,
-  } = useQuery({
+    sucursalId,
+  } = useParams<{
+    sucursalId: string;
+  }>();
 
-    queryKey: [
+  const [
+    search,
+    setSearch,
+  ] = useState("");
 
-      "sucursal",
-
-      sucursalId,
-
-    ],
-
-    queryFn: () =>
-      getSucursalById(
-        sucursalId!
-      ),
-
-    enabled:
-      !!sucursalId,
-
-  });
+  const [
+    filtroEstado,
+    setFiltroEstado,
+  ] = useState<FiltroEstado>(
+    "todos"
+  );
 
   /* =========================
-      GET CAJAS
+      GET PERSONAL
   ========================= */
 
   const {
     data,
     isLoading,
+    isError,
+    error,
   } = useQuery({
 
     queryKey: [
-      "cajas"
+      "personal-sucursal",
+      sucursalId,
     ],
 
-    queryFn:
-      getCajas,
+    queryFn: () =>
+      getPersonalBySucursal(
+        sucursalId!
+      ),
+
+    enabled:
+      Boolean(sucursalId),
 
   });
 
   /* =========================
-      FILTRAR
+      FILTRAR PERSONAL
   ========================= */
 
-  const filteredCajas =
+  const personalFiltrado =
     useMemo(() => {
 
-      if (!data)
-        return [];
+      const personal =
+        data?.personal ?? [];
 
-      return data
+      const texto =
+        search
+          .trim()
+          .toLowerCase();
 
-        .filter((caja) => {
+      return personal.filter(
+        (persona) => {
 
-          const cajaSucursalId =
+          const valores = [
 
-            typeof caja.idSucursal ===
-              "string"
+            persona.nombreCompleto,
 
-              ? caja.idSucursal
+            persona.nombres,
 
-              : caja.idSucursal?._id;
+            persona.apellidos,
+
+            persona.email,
+
+            persona.ci,
+
+            persona.telefono,
+
+            persona.rol?.nombre,
+
+            persona.almacen?.nombre,
+
+          ];
+
+          const coincideBusqueda =
+            !texto ||
+            valores.some(
+              (valor) =>
+                valor
+                  ?.toString()
+                  .toLowerCase()
+                  .includes(texto)
+            );
+
+          const coincideEstado =
+            filtroEstado === "todos"
+              ? true
+              : filtroEstado === "activos"
+                ? persona.estado
+                : !persona.estado;
 
           return (
-            cajaSucursalId ===
-            sucursalId
+            coincideBusqueda &&
+            coincideEstado
           );
 
-        })
-
-        .filter((caja) =>
-
-          caja.nombre
-            .toLowerCase()
-            .includes(
-              search.toLowerCase()
-            )
-
-        );
+        }
+      );
 
     }, [
-
-      data,
-
+      data?.personal,
       search,
-
-      sucursalId,
-
+      filtroEstado,
     ]);
-
-  /* =========================
-      DELETE
-  ========================= */
-
-  const { mutate } =
-    useMutation({
-
-      mutationFn:
-        deleteCajaById,
-
-      onSuccess: async (
-        data
-      ) => {
-
-        await Swal.fire({
-
-          icon: "success",
-
-          title:
-            data,
-
-          timer: 2000,
-
-          showConfirmButton: false,
-
-        });
-
-        queryClient.invalidateQueries({
-
-          queryKey: [
-            "cajas"
-          ],
-
-        });
-
-      },
-
-      onError: async (
-        error: any
-      ) => {
-
-        await Swal.fire({
-
-          icon: "error",
-
-          title:
-            error.message,
-
-        });
-
-      },
-
-    });
 
   /* =========================
       LOADING
@@ -220,9 +167,67 @@ export default function CajaDetailView() {
 
     return (
 
-      <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen bg-slate-50">
 
-        <div className="h-16 w-16 animate-spin rounded-full border-b-4 border-fuchsia-600"></div>
+        <MenuList />
+
+        <main className="flex flex-1 items-center justify-center">
+
+          <div className="text-center">
+
+            <div className="mx-auto h-16 w-16 animate-spin rounded-full border-b-4 border-fuchsia-600" />
+
+            <p className="mt-4 font-semibold text-slate-600">
+
+              Cargando personal...
+
+            </p>
+
+          </div>
+
+        </main>
+
+      </div>
+
+    );
+
+  }
+
+  /* =========================
+      ERROR
+  ========================= */
+
+  if (isError) {
+
+    return (
+
+      <div className="flex min-h-screen bg-slate-50">
+
+        <MenuList />
+
+        <main className="flex flex-1 items-center justify-center p-8">
+
+          <div className="w-full max-w-lg rounded-3xl border border-red-200 bg-white p-10 text-center shadow-sm">
+
+            <XCircle className="mx-auto h-16 w-16 text-red-500" />
+
+            <h1 className="mt-4 text-2xl font-black text-slate-800">
+
+              No se pudo cargar el personal
+
+            </h1>
+
+            <p className="mt-2 text-sm text-slate-500">
+
+              {error instanceof Error
+                ? error.message
+                : "Ocurrió un error inesperado"}
+
+            </p>
+
+          </div>
+
+        </main>
 
       </div>
 
@@ -238,9 +243,12 @@ export default function CajaDetailView() {
       <MenuList />
 
       {/* CONTENT */}
-      <main className="flex-1 p-8">
+      <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
 
-        {/* HEADER */}
+        {/* =========================
+            HEADER
+        ========================= */}
+
         <motion.div
 
           initial={{
@@ -253,38 +261,55 @@ export default function CajaDetailView() {
             y: 0,
           }}
 
-          className="mb-6 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
+          className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
         >
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
 
-            <div>
+            <div className="min-w-0">
 
-              <h1 className="text-4xl font-black text-slate-800">
+              <h1 className="break-words text-3xl font-black text-slate-800 sm:text-4xl">
 
-                Cajas.
-                {" "}
+                Personal.{" "}
 
-                {sucursal?.nombreSucursal}
+                <span className="uppercase">
+
+                  {data?.sucursal?.nombre ||
+                    "Sucursal"}
+
+                </span>
 
               </h1>
 
               <p className="mt-2 text-slate-500">
 
-                Gestión de cajas por sucursal
+                Gestión de personal por sucursal
 
               </p>
 
+              {data?.sucursal?.ubicacion && (
+
+                <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+
+                  <MapPin className="h-4 w-4 text-fuchsia-600" />
+
+                  {data.sucursal.ubicacion}
+
+                </div>
+
+              )}
+
             </div>
 
-            {/* NUEVO */}
             <Link
 
-              to={`/sucursal/${sucursalId}/caja/create`}
+              to={`/sucursal/${sucursalId}/personal/create`}
 
               className="
-                flex
+                inline-flex
+                w-full
                 items-center
+                justify-center
                 gap-2
                 rounded-2xl
                 bg-gradient-to-r
@@ -298,12 +323,13 @@ export default function CajaDetailView() {
                 shadow-lg
                 transition
                 hover:scale-105
+                sm:w-auto
               "
             >
 
               <Plus className="h-5 w-5" />
 
-              Nueva Caja
+              Nuevo Personal
 
             </Link>
 
@@ -311,23 +337,29 @@ export default function CajaDetailView() {
 
         </motion.div>
 
-        {/* RESUMEN */}
+        {/* =========================
+            RESUMEN
+        ========================= */}
+
         <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
 
-            {/* STATS */}
-            <div className="flex gap-10">
+            {/* ESTADÍSTICAS */}
+
+            <div className="flex flex-wrap gap-8 sm:gap-10">
 
               <div>
 
                 <p className="text-xs uppercase text-slate-500">
+
                   Total
+
                 </p>
 
                 <p className="text-4xl font-black text-slate-800">
 
-                  {filteredCajas.length}
+                  {data?.cantidadPersonal ?? 0}
 
                 </p>
 
@@ -336,18 +368,14 @@ export default function CajaDetailView() {
               <div>
 
                 <p className="text-xs uppercase text-slate-500">
+
                   Activos
+
                 </p>
 
                 <p className="text-4xl font-black text-emerald-600">
 
-                  {
-
-                    filteredCajas.filter(
-                      (c) => c.estado
-                    ).length
-
-                  }
+                  {data?.cantidadActivos ?? 0}
 
                 </p>
 
@@ -356,18 +384,14 @@ export default function CajaDetailView() {
               <div>
 
                 <p className="text-xs uppercase text-slate-500">
+
                   Inactivos
+
                 </p>
 
                 <p className="text-4xl font-black text-red-500">
 
-                  {
-
-                    filteredCajas.filter(
-                      (c) => !c.estado
-                    ).length
-
-                  }
+                  {data?.cantidadInactivos ?? 0}
 
                 </p>
 
@@ -375,18 +399,19 @@ export default function CajaDetailView() {
 
             </div>
 
-            {/* SEARCH */}
+            {/* BUSCADOR */}
+
             <div className="relative w-full max-w-md">
 
-              <Search className="absolute left-4 top-4 h-5 w-5 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
 
               <input
                 type="text"
-                placeholder="Buscar caja..."
+                placeholder="Buscar personal..."
                 value={search}
-                onChange={(e) =>
+                onChange={(event) =>
                   setSearch(
-                    e.target.value
+                    event.target.value
                   )
                 }
                 className="
@@ -399,8 +424,11 @@ export default function CajaDetailView() {
                   pl-12
                   pr-4
                   text-sm
+                  outline-none
+                  transition
                   focus:border-fuchsia-500
-                  focus:outline-none
+                  focus:ring-4
+                  focus:ring-fuchsia-100
                 "
               />
 
@@ -408,306 +436,302 @@ export default function CajaDetailView() {
 
           </div>
 
+          {/* FILTROS */}
+
+          <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+
+            <p className="text-sm text-slate-500">
+
+              Mostrando{" "}
+
+              <span className="font-bold text-slate-800">
+
+                {personalFiltrado.length}
+
+              </span>{" "}
+
+              de{" "}
+
+              <span className="font-bold text-slate-800">
+
+                {data?.cantidadPersonal ?? 0}
+
+              </span>{" "}
+
+              personas
+
+            </p>
+
+            <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+
+              <FiltroButton
+                activo={
+                  filtroEstado === "todos"
+                }
+                onClick={() =>
+                  setFiltroEstado(
+                    "todos"
+                  )
+                }
+              >
+
+                Todos
+
+              </FiltroButton>
+
+              <FiltroButton
+                activo={
+                  filtroEstado === "activos"
+                }
+                onClick={() =>
+                  setFiltroEstado(
+                    "activos"
+                  )
+                }
+              >
+
+                Activos
+
+              </FiltroButton>
+
+              <FiltroButton
+                activo={
+                  filtroEstado === "inactivos"
+                }
+                onClick={() =>
+                  setFiltroEstado(
+                    "inactivos"
+                  )
+                }
+              >
+
+                Inactivos
+
+              </FiltroButton>
+
+            </div>
+
+          </div>
+
         </div>
 
-        {/* TABLA */}
+        {/* =========================
+            TABLA
+        ========================= */}
+
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
 
           <div className="overflow-x-auto">
 
             <table className="min-w-full">
 
-              {/* HEADER */}
               <thead className="bg-slate-100">
 
                 <tr>
 
                   <th className="px-6 py-5 text-left text-xs font-black uppercase text-slate-500">
-                    Caja
+
+                    Personal
+
+                  </th>
+
+                  <th className="px-6 py-5 text-left text-xs font-black uppercase text-slate-500">
+
+                    Contacto
+
+                  </th>
+
+                  <th className="px-6 py-5 text-left text-xs font-black uppercase text-slate-500">
+
+                    Rol y almacén
+
                   </th>
 
                   <th className="px-6 py-5 text-center text-xs font-black uppercase text-slate-500">
+
                     Estado
+
                   </th>
 
-
-
                   <th className="px-6 py-5 text-center text-xs font-black uppercase text-slate-500">
+
                     Acciones
+
                   </th>
 
                 </tr>
 
               </thead>
 
-              {/* BODY */}
               <tbody className="divide-y divide-slate-100">
 
-                {filteredCajas.map((caja) => (
+                {personalFiltrado.map(
+                  (persona) => (
 
-                  <tr
-                    key={caja._id}
-                    className="transition hover:bg-slate-50"
-                  >
+                    <tr
+                      key={persona._id}
+                      className="transition hover:bg-slate-50"
+                    >
 
-                    {/* CAJA */}
-                    <td className="px-6 py-5">
+                      {/* PERSONAL */}
 
-                      <div className="flex items-center gap-4">
+                      <td className="px-6 py-5">
 
-                        <div
-                          className="
-                            flex
-                            h-14
-                            w-14
-                            items-center
-                            justify-center
-                            rounded-2xl
-                            bg-fuchsia-100
-                            text-fuchsia-600
-                          "
-                        >
+                        <div className="flex items-center gap-4">
 
-                          <Banknote className="h-7 w-7" />
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-fuchsia-100 font-black text-fuchsia-700">
+
+                            {obtenerIniciales(
+                              persona.nombres,
+                              persona.apellidos
+                            )}
+
+                          </div>
+
+                          <div className="min-w-0">
+
+                            <p className="truncate text-lg font-bold text-slate-800">
+
+                              {persona.nombreCompleto}
+
+                            </p>
+
+                            <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+
+                              <CircleUserRound className="h-4 w-4" />
+
+                              CI:{" "}
+
+                              {persona.ci ||
+                                "No registrado"}
+
+                            </p>
+
+                            <p className="mt-1 text-sm text-slate-500">
+
+                              {persona.edad
+                                ? `${persona.edad} años`
+                                : "Edad no registrada"}
+
+                              {" · "}
+
+                              {persona.sexo ||
+                                "Sexo no registrado"}
+
+                            </p>
+
+                          </div>
 
                         </div>
 
-                        <div>
+                      </td>
 
-                          <p className="text-lg font-bold text-slate-800">
+                      {/* CONTACTO */}
 
-                            {caja.nombre}
+                      <td className="px-6 py-5">
 
-                          </p>
+                        <div className="space-y-2">
 
-                          <p className="text-sm text-slate-500">
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
 
-                            {
+                            <Mail className="h-4 w-4 text-slate-400" />
 
-                              caja.descripcion ||
-                              "Sin descripción"
+                            <span className="max-w-[220px] truncate">
 
-                            }
+                              {persona.email ||
+                                "No registrado"}
 
-                          </p>
+                            </span>
+
+                          </div>
+
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+
+                            <Phone className="h-4 w-4 text-slate-400" />
+
+                            {persona.telefono ||
+                              "No registrado"}
+
+                          </div>
 
                         </div>
 
-                      </div>
+                      </td>
 
-                    </td>
+                      {/* ROL Y ALMACÉN */}
 
-                    {/* ESTADO */}
-                    <td className="px-6 py-5 text-center">
+                      <td className="px-6 py-5">
 
-                      {caja.estado ? (
+                        <div className="space-y-2">
 
-                        <span
-                          className="
-                            rounded-full
-                            bg-emerald-100
-                            px-3
-                            py-1
-                            text-xs
-                            font-semibold
-                            text-emerald-700
-                          "
-                        >
-                          Activo
-                        </span>
+                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
 
-                      ) : (
+                            <ShieldCheck className="h-4 w-4 text-fuchsia-600" />
 
-                        <span
-                          className="
-                            rounded-full
-                            bg-red-100
-                            px-3
-                            py-1
-                            text-xs
-                            font-semibold
-                            text-red-700
-                          "
-                        >
-                          Inactivo
-                        </span>
+                            {persona.rol?.nombre ||
+                              "Sin rol"}
 
-                      )}
+                          </div>
 
-                    </td>
+                          <div className="flex items-center gap-2 text-sm text-slate-500">
 
-                    {/* ACCIONES */}
-                    <td className="px-6 py-5">
+                            <Warehouse className="h-4 w-4" />
 
-                      <div className="flex items-center justify-center gap-3 flex-wrap">
-                        {/* APERTURA */}
-                        <Link
+                            {persona.almacen?.nombre ||
+                              "Sin almacén"}
 
-                          to={`/sucursal/${sucursalId}/caja/${caja._id}/apertura`}
+                          </div>
 
-                          className="
-        rounded-xl
-        bg-emerald-100
-        px-4
-        py-2
-        text-sm
-        font-semibold
-        text-emerald-700
-        transition
-        hover:bg-emerald-200
-      "
-                        >
+                        </div>
 
-                          Apertura
+                      </td>
 
-                        </Link>
+                      {/* ESTADO */}
 
-                        {/* CIERRE */}
-                        <Link
+                      <td className="px-6 py-5 text-center">
 
-                          to={`/sucursal/${sucursalId}/caja/${caja._id}/cierre`}
+                        <EstadoBadge
+                          estado={
+                            persona.estado
+                          }
+                        />
 
-                          className="
-        rounded-xl
-        bg-rose-100
-        px-4
-        py-2
-        text-sm
-        font-semibold
-        text-rose-700
-        transition
-        hover:bg-rose-200
-      "
-                        >
+                      </td>
 
-                          Cierre
+                      {/* ACCIONES */}
 
-                        </Link>
+                      <td className="px-6 py-5">
 
-                        {/* VER */}
-                        <Link
+                        <div className="flex items-center justify-center gap-3">
 
-                          to={`?detail=${caja._id}`}
+                          <Link
+                            to={`/sucursal/${sucursalId}/personal/${persona._id}`}
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition hover:scale-110 hover:bg-blue-200"
+                            title="Ver personal"
+                          >
 
-                          className="
-        flex
-        h-10
-        w-10
-        items-center
-        justify-center
-        rounded-xl
-        bg-blue-100
-        text-blue-600
-        transition
-        hover:scale-110
-      "
-                        >
+                            <Eye className="h-5 w-5" />
 
-                          <Eye className="h-5 w-5" />
+                          </Link>
 
-                        </Link>
+                          <Link
+                            to={`/sucursal/${sucursalId}/personal/${persona._id}/edit`}
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 transition hover:scale-110 hover:bg-amber-200"
+                            title="Editar personal"
+                          >
 
-                        {/* EDITAR */}
-                        <Link
+                            <Pencil className="h-5 w-5" />
 
-                          to={`/sucursal/${sucursalId}/caja/${caja._id}/edit`}
+                          </Link>
 
-                          className="
-        flex
-        h-10
-        w-10
-        items-center
-        justify-center
-        rounded-xl
-        bg-amber-100
-        text-amber-600
-        transition
-        hover:scale-110
-      "
-                        >
+                        </div>
 
-                          <Pencil className="h-5 w-5" />
+                      </td>
 
-                        </Link>
+                    </tr>
 
-
-
-                        {/* DELETE */}
-                        <button
-
-                          type="button"
-
-                          onClick={async () => {
-
-                            const result =
-                              await Swal.fire({
-
-                                title:
-                                  "¿Eliminar Caja?",
-
-                                text:
-                                  "La caja será desactivada",
-
-                                icon:
-                                  "warning",
-
-                                showCancelButton: true,
-
-                                confirmButtonColor:
-                                  "#d33",
-
-                                cancelButtonColor:
-                                  "#64748b",
-
-                                confirmButtonText:
-                                  "Sí, eliminar",
-
-                                cancelButtonText:
-                                  "Cancelar",
-
-                              });
-
-                            if (
-                              result.isConfirmed
-                            ) {
-
-                              mutate({
-
-                                id: caja._id!,
-
-                                eliminadoPor:
-                                  "admin",
-
-                              });
-
-                            }
-
-                          }}
-
-                          className="
-        flex
-        h-10
-        w-10
-        items-center
-        justify-center
-        rounded-xl
-        bg-red-100
-        text-red-600
-        transition
-        hover:scale-110
-      "
-                        >
-
-                          <Trash2 className="h-5 w-5" />
-
-                        </button>
-
-                      </div>
-
-                    </td>
-                  </tr>
-
-                ))}
+                  )
+                )}
 
               </tbody>
 
@@ -715,12 +739,33 @@ export default function CajaDetailView() {
 
           </div>
 
+          {/* SIN REGISTROS */}
+
+          {personalFiltrado.length === 0 && (
+
+            <div className="p-12 text-center">
+
+              <UserRoundX className="mx-auto h-16 w-16 text-slate-300" />
+
+              <h2 className="mt-4 text-xl font-black text-slate-800">
+
+                No se encontró personal
+
+              </h2>
+
+              <p className="mt-2 text-sm text-slate-500">
+
+                No existen registros que coincidan con la búsqueda o el filtro seleccionado.
+
+              </p>
+
+            </div>
+
+          )}
+
         </div>
 
       </main>
-
-      {/* MODAL */}
-      <CajaDetailModal />
 
     </div>
 
@@ -728,4 +773,98 @@ export default function CajaDetailView() {
 
 }
 
+/* =========================
+    FILTRO
+========================= */
 
+function FiltroButton({
+  activo,
+  onClick,
+  children,
+}: {
+  activo: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+
+  return (
+
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg px-4 py-2 text-xs font-bold transition sm:text-sm ${
+        activo
+          ? "bg-white text-slate-950 shadow-sm"
+          : "text-slate-500 hover:text-slate-950"
+      }`}
+    >
+
+      {children}
+
+    </button>
+
+  );
+
+}
+
+/* =========================
+    ESTADO
+========================= */
+
+function EstadoBadge({
+  estado,
+}: {
+  estado: boolean;
+}) {
+
+  return estado ? (
+
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+
+      <CheckCircle2 className="h-3.5 w-3.5" />
+
+      Activo
+
+    </span>
+
+  ) : (
+
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+
+      <XCircle className="h-3.5 w-3.5" />
+
+      Inactivo
+
+    </span>
+
+  );
+
+}
+
+/* =========================
+    INICIALES
+========================= */
+
+function obtenerIniciales(
+  nombres: string,
+  apellidos: string
+) {
+
+  const inicialNombre =
+    nombres
+      ?.trim()
+      .charAt(0)
+      .toUpperCase() || "";
+
+  const inicialApellido =
+    apellidos
+      ?.trim()
+      .charAt(0)
+      .toUpperCase() || "";
+
+  return (
+    `${inicialNombre}${inicialApellido}` ||
+    "US"
+  );
+
+}

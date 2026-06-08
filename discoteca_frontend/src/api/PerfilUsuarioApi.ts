@@ -1,7 +1,680 @@
 
+// import api from "@/lib/axios";
+
+// import { isAxiosError } from "axios";
+
+// import {
+
+//   PerfilUsuarioArraySchema,
+
+//   PerfilUsuarioSchema,
+
+//   UsuarioSchema,
+
+//   LoginResponseSchema,
+
+//   type PerfilUsuarioForm,
+
+//   type PerfilUsuarioType,
+
+//   type UsuarioLoginForm,
+
+//   type LoginForm,
+
+// } from "@/types/PerfilUsuarioType";
+
+// /* =========================
+//     CREAR PERFIL USUARIO
+// ========================= */
+// export async function createPerfilUsuario(
+//   formData: PerfilUsuarioForm
+// ) {
+
+//   try {
+
+//     const { data } =
+//       await api.post(
+
+//         "/perfilusuario",
+
+//         formData
+
+//       );
+
+//     return data;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error creando perfil usuario"
+//     );
+
+//   }
+
+// }
+
+// /* =========================
+//     OBTENER TODOS
+// ========================= */
+// export async function getPerfilUsuarios() {
+
+//   try {
+
+//     const { data } =
+//       await api(
+//         "/perfilusuario"
+//       );
+
+//       console.log(data)
+//       const response =
+//       PerfilUsuarioArraySchema.safeParse(
+//         data
+//       );
+      
+      
+//     /* =========================
+//         VALIDACION
+//     ========================= */
+//     if (!response.success) {
+
+//       console.log(
+//         response.error.format()
+//       );
+
+//       throw new Error(
+//         "Error validando perfiles usuario"
+//       );
+
+//     }
+
+//     return response.data;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error obteniendo perfiles usuario"
+//     );
+
+//   }
+
+// }
+
+// /* =========================
+//     OBTENER POR ID
+// ========================= */
+// export async function getPerfilUsuarioById(
+//   id: PerfilUsuarioType["_id"]
+// ) {
+
+//   try {
+
+//     const { data } =
+//       await api(
+//         `/perfilusuario/${id}`
+//       );
+      
+//       const response =
+//       PerfilUsuarioSchema.safeParse(
+//         data
+//       );
+      
+
+//     if (!response.success) {
+
+//       console.log(
+//         response.error.format()
+//       );
+
+//       throw new Error(
+//         "Error validando perfil usuario"
+//       );
+
+//     }
+
+//     return response.data;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error obteniendo perfil usuario"
+//     );
+
+//   }
+
+// }
+
+// /* =========================
+//     ACTUALIZAR
+// ========================= */
+// type PerfilUsuarioApiType = {
+
+//   formData:
+//     PerfilUsuarioForm;
+
+//   perfilUsuarioId:
+//     PerfilUsuarioType["_id"];
+
+// };
+
+// export async function updatePerfilUsuario({
+
+//   formData,
+
+//   perfilUsuarioId,
+
+// }: PerfilUsuarioApiType) {
+
+//   try {
+
+//     const { data } =
+//       await api.put<string>(
+
+//         `/perfilusuario/${perfilUsuarioId}`,
+
+//         formData
+
+//       );
+
+//     return data;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error actualizando perfil usuario"
+//     );
+
+//   }
+
+// }
+
+// /* =========================
+//     ELIMINAR LOGICO
+// ========================= */
+// type DeletePerfilUsuarioType = {
+
+//   id:
+//     PerfilUsuarioType["_id"];
+
+//   eliminadoPor:
+//     string;
+
+// };
+
+// export async function deletePerfilUsuarioById({
+
+//   id,
+
+//   eliminadoPor,
+
+// }: DeletePerfilUsuarioType) {
+
+//   try {
+
+//     const { data } =
+//       await api.delete<string>(
+
+//         `/perfilusuario/${id}`,
+
+//         {
+
+//           data: {
+//             eliminadoPor,
+//           },
+
+//         }
+
+//       );
+
+//     return data;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error eliminando perfil usuario"
+//     );
+
+//   }
+
+// }
+
+// /* =========================
+//     LOGIN
+// ========================= */
+// export async function loginPerfilUsuario(
+//   formData: LoginForm
+// ) {
+
+//   try {
+
+//     const { data } =
+//       await api.post(
+
+//         "/perfilusuario/login",
+
+//         formData
+
+//       );
+
+//     const response =
+//       LoginResponseSchema.safeParse(
+//         data
+//       );
+
+//     /* =========================
+//         VALIDACION
+//     ========================= */
+//     if (!response.success) {
+
+//       console.log(
+//         response.error.format()
+//       );
+
+//       throw new Error(
+//         "Error validando login"
+//       );
+
+//     }
+
+//     /* =========================
+//         GUARDAR TOKEN
+//     ========================= */
+//     localStorage.setItem(
+
+//       "AUTH_TOKEN",
+
+//       response.data.tokenjwt
+
+//     );
+
+//     /* =========================
+//         GUARDAR USER
+//     ========================= */
+//     localStorage.setItem(
+
+//       "USER",
+
+//       JSON.stringify(
+//         response.data.usuario
+//       )
+
+//     );
+
+//     return response.data.usuario;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error iniciando sesión"
+//     );
+
+//   }
+
+// }
+
+// /* =========================
+//     ACTUALIZAR PASSWORD
+// ========================= */
+// type UpdatePasswordType = {
+
+//   id:
+//     string;
+
+//   passwordActual:
+//     string;
+
+//   passwordNueva:
+//     string;
+
+//   actualizadoPor?:
+//     string;
+
+// };
+
+// export async function updatePasswordPerfilUsuario({
+
+//   id,
+
+//   passwordActual,
+
+//   passwordNueva,
+
+//   actualizadoPor,
+
+// }: UpdatePasswordType) {
+
+//   try {
+
+//     const { data } =
+//       await api.put(
+
+//         `/perfilusuario/password/${id}`,
+
+//         {
+
+//           passwordActual,
+
+//           passwordNueva,
+
+//           actualizadoPor,
+
+//         }
+
+//       );
+
+//     return data;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error actualizando password"
+//     );
+
+//   }
+
+// }
+
+// /* =========================
+//     AUTH USUARIO
+// ========================= */
+// export async function autenticacionUsuario(
+//   formData: UsuarioLoginForm
+// ) {
+
+//   try {
+
+//     const { data } =
+//       await api.post(
+
+//         "/perfilusuario/login",
+
+//         formData
+
+//       );
+
+//     const response =
+//       LoginResponseSchema.safeParse(
+//         data
+//       );
+
+//     if (!response.success) {
+
+//       console.log(
+//         response.error.format()
+//       );
+
+//       throw new Error(
+//         "Error validando autenticación"
+//       );
+
+//     }
+
+//     /* =========================
+//         TOKEN
+//     ========================= */
+//     localStorage.setItem(
+
+//       "AUTH_TOKEN",
+
+//       response.data.tokenjwt
+
+//     );
+
+//     /* =========================
+//         USER
+//     ========================= */
+//     localStorage.setItem(
+
+//       "USER",
+
+//       JSON.stringify(
+//         response.data.usuario
+//       )
+
+//     );
+
+//     return response.data.usuario;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error autenticando usuario"
+//     );
+
+//   }
+
+// }
+
+// /* =========================
+//     OBTENER USER
+// ========================= */
+// export async function getUser() {
+
+//   try {
+
+//     const { data } =
+//       await api(
+//         "/perfilusuario/usuario"
+//       );
+
+//     const response =
+//       UsuarioSchema.safeParse(
+//         data
+//       );
+
+//     if (!response.success) {
+
+//       console.log(
+//         response.error.format()
+//       );
+
+//       throw new Error(
+//         "Error validando usuario"
+//       );
+
+//     }
+
+//     return response.data;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error obteniendo usuario"
+//     );
+
+//   }
+
+  
+
+// }
+// /* =========================
+//     ACTUALIZAR PERFIL PERSONAL
+// ========================= */
+
+// export type PerfilPersonalForm = {
+
+//   nombres:
+//     string;
+
+//   apellidos?:
+//     string | null;
+
+//   edad?:
+//     number | null;
+
+//   sexo?:
+//     string | null;
+
+//   ci?:
+//     string | null;
+
+//   telefono?:
+//     string | null;
+
+//   email?:
+//     string | null;
+
+//   actualizadoPor?:
+//     string | null;
+
+// };
+
+// type UpdatePerfilPersonalType = {
+
+//   perfilUsuarioId:
+//     string;
+
+//   formData:
+//     PerfilPersonalForm;
+
+// };
+
+// export async function updatePerfilPersonal({
+
+//   perfilUsuarioId,
+
+//   formData,
+
+// }: UpdatePerfilPersonalType) {
+
+//   try {
+
+//     const { data } =
+//       await api.put(
+
+//         `/perfilusuario/${perfilUsuarioId}`,
+
+//         formData
+
+//       );
+
+//     return data;
+
+//   } catch (error) {
+
+//     if (
+//       isAxiosError(error) &&
+//       error.response
+//     ) {
+
+//       throw new Error(
+//         error.response.data.error
+//       );
+
+//     }
+
+//     throw new Error(
+//       "Error actualizando perfil personal"
+//     );
+
+//   }
+
+// }
+
+
 import api from "@/lib/axios";
 
-import { isAxiosError } from "axios";
+import {
+  isAxiosError,
+} from "axios";
 
 import {
 
@@ -13,6 +686,8 @@ import {
 
   LoginResponseSchema,
 
+  PersonalPorSucursalResponseSchema,
+
   type PerfilUsuarioForm,
 
   type PerfilUsuarioType,
@@ -21,11 +696,60 @@ import {
 
   type LoginForm,
 
+  type PerfilPersonalForm,
+
+  type PersonalPorSucursalResponse,
+
 } from "@/types/PerfilUsuarioType";
 
-/* =========================
+/* =========================================
+    OBTENER MENSAJE DE ERROR
+========================================= */
+
+function getErrorMessage(
+  error: unknown,
+  defaultMessage: string
+): string {
+
+  if (
+    isAxiosError(error) &&
+    error.response
+  ) {
+
+    const apiError =
+      error.response.data?.error;
+
+    const apiMessage =
+      error.response.data?.message;
+
+    if (
+      typeof apiError === "string"
+    ) {
+      return apiError;
+    }
+
+    if (
+      typeof apiMessage === "string"
+    ) {
+      return apiMessage;
+    }
+
+  }
+
+  if (
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return defaultMessage;
+
+}
+
+/* =========================================
     CREAR PERFIL USUARIO
-========================= */
+========================================= */
+
 export async function createPerfilUsuario(
   formData: PerfilUsuarioForm
 ) {
@@ -45,55 +769,49 @@ export async function createPerfilUsuario(
 
   } catch (error) {
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
     throw new Error(
-      "Error creando perfil usuario"
+      getErrorMessage(
+        error,
+        "Error creando perfil usuario"
+      )
     );
 
   }
 
 }
 
-/* =========================
-    OBTENER TODOS
-========================= */
+/* =========================================
+    OBTENER TODOS LOS PERFILES
+========================================= */
+
 export async function getPerfilUsuarios() {
 
   try {
 
     const { data } =
-      await api(
+      await api.get(
         "/perfilusuario"
       );
 
-      console.log(data)
-      const response =
+    const response =
       PerfilUsuarioArraySchema.safeParse(
         data
       );
-      
-      
-    /* =========================
-        VALIDACION
-    ========================= */
+
     if (!response.success) {
 
-      console.log(
+      console.error(
+        "Error Zod al validar perfiles:",
         response.error.format()
       );
 
+      console.error(
+        "Datos recibidos:",
+        data
+      );
+
       throw new Error(
-        "Error validando perfiles usuario"
+        "La respuesta de perfiles no tiene el formato esperado"
       );
 
     }
@@ -102,53 +820,57 @@ export async function getPerfilUsuarios() {
 
   } catch (error) {
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
     throw new Error(
-      "Error obteniendo perfiles usuario"
+      getErrorMessage(
+        error,
+        "Error obteniendo perfiles usuario"
+      )
     );
 
   }
 
 }
 
-/* =========================
-    OBTENER POR ID
-========================= */
+/* =========================================
+    OBTENER PERFIL POR ID
+========================================= */
+
 export async function getPerfilUsuarioById(
-  id: PerfilUsuarioType["_id"]
+  id: string
 ) {
 
   try {
 
+    if (!id) {
+      throw new Error(
+        "El ID del perfil es obligatorio"
+      );
+    }
+
     const { data } =
-      await api(
+      await api.get(
         `/perfilusuario/${id}`
       );
-      
-      const response =
+
+    const response =
       PerfilUsuarioSchema.safeParse(
         data
       );
-      
 
     if (!response.success) {
 
-      console.log(
+      console.error(
+        "Error Zod al validar perfil:",
         response.error.format()
       );
 
+      console.error(
+        "Datos recibidos:",
+        data
+      );
+
       throw new Error(
-        "Error validando perfil usuario"
+        "La respuesta del perfil no tiene el formato esperado"
       );
 
     }
@@ -157,35 +879,28 @@ export async function getPerfilUsuarioById(
 
   } catch (error) {
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
     throw new Error(
-      "Error obteniendo perfil usuario"
+      getErrorMessage(
+        error,
+        "Error obteniendo perfil usuario"
+      )
     );
 
   }
 
 }
 
-/* =========================
-    ACTUALIZAR
-========================= */
-type PerfilUsuarioApiType = {
+/* =========================================
+    ACTUALIZAR PERFIL USUARIO
+========================================= */
+
+type UpdatePerfilUsuarioType = {
 
   formData:
     PerfilUsuarioForm;
 
   perfilUsuarioId:
-    PerfilUsuarioType["_id"];
+    string;
 
 };
 
@@ -195,9 +910,15 @@ export async function updatePerfilUsuario({
 
   perfilUsuarioId,
 
-}: PerfilUsuarioApiType) {
+}: UpdatePerfilUsuarioType) {
 
   try {
+
+    if (!perfilUsuarioId) {
+      throw new Error(
+        "El ID del perfil es obligatorio"
+      );
+    }
 
     const { data } =
       await api.put<string>(
@@ -212,32 +933,25 @@ export async function updatePerfilUsuario({
 
   } catch (error) {
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
     throw new Error(
-      "Error actualizando perfil usuario"
+      getErrorMessage(
+        error,
+        "Error actualizando perfil usuario"
+      )
     );
 
   }
 
 }
 
-/* =========================
-    ELIMINAR LOGICO
-========================= */
+/* =========================================
+    ELIMINAR PERFIL LÓGICAMENTE
+========================================= */
+
 type DeletePerfilUsuarioType = {
 
   id:
-    PerfilUsuarioType["_id"];
+    string;
 
   eliminadoPor:
     string;
@@ -253,6 +967,12 @@ export async function deletePerfilUsuarioById({
 }: DeletePerfilUsuarioType) {
 
   try {
+
+    if (!id) {
+      throw new Error(
+        "El ID del perfil es obligatorio"
+      );
+    }
 
     const { data } =
       await api.delete<string>(
@@ -273,28 +993,21 @@ export async function deletePerfilUsuarioById({
 
   } catch (error) {
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
     throw new Error(
-      "Error eliminando perfil usuario"
+      getErrorMessage(
+        error,
+        "Error eliminando perfil usuario"
+      )
     );
 
   }
 
 }
 
-/* =========================
+/* =========================================
     LOGIN
-========================= */
+========================================= */
+
 export async function loginPerfilUsuario(
   formData: LoginForm
 ) {
@@ -315,24 +1028,24 @@ export async function loginPerfilUsuario(
         data
       );
 
-    /* =========================
-        VALIDACION
-    ========================= */
     if (!response.success) {
 
-      console.log(
+      console.error(
+        "Error Zod al validar login:",
         response.error.format()
       );
 
+      console.error(
+        "Datos recibidos:",
+        data
+      );
+
       throw new Error(
-        "Error validando login"
+        "La respuesta del login no tiene el formato esperado"
       );
 
     }
 
-    /* =========================
-        GUARDAR TOKEN
-    ========================= */
     localStorage.setItem(
 
       "AUTH_TOKEN",
@@ -341,9 +1054,6 @@ export async function loginPerfilUsuario(
 
     );
 
-    /* =========================
-        GUARDAR USER
-    ========================= */
     localStorage.setItem(
 
       "USER",
@@ -358,28 +1068,96 @@ export async function loginPerfilUsuario(
 
   } catch (error) {
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
     throw new Error(
-      "Error iniciando sesión"
+      getErrorMessage(
+        error,
+        "Error iniciando sesión"
+      )
     );
 
   }
 
 }
 
-/* =========================
-    ACTUALIZAR PASSWORD
-========================= */
+/* =========================================
+    AUTENTICACIÓN USUARIO
+========================================= */
+
+export async function autenticacionUsuario(
+  formData: UsuarioLoginForm
+) {
+
+  try {
+
+    const { data } =
+      await api.post(
+
+        "/perfilusuario/login",
+
+        formData
+
+      );
+
+    const response =
+      LoginResponseSchema.safeParse(
+        data
+      );
+
+    if (!response.success) {
+
+      console.error(
+        "Error Zod al validar autenticación:",
+        response.error.format()
+      );
+
+      console.error(
+        "Datos recibidos:",
+        data
+      );
+
+      throw new Error(
+        "La respuesta de autenticación no tiene el formato esperado"
+      );
+
+    }
+
+    localStorage.setItem(
+
+      "AUTH_TOKEN",
+
+      response.data.tokenjwt
+
+    );
+
+    localStorage.setItem(
+
+      "USER",
+
+      JSON.stringify(
+        response.data.usuario
+      )
+
+    );
+
+    return response.data.usuario;
+
+  } catch (error) {
+
+    throw new Error(
+      getErrorMessage(
+        error,
+        "Error autenticando usuario"
+      )
+    );
+
+  }
+
+}
+
+/* =========================================
+    ACTUALIZAR CONTRASEÑA
+========================================= */
+
 type UpdatePasswordType = {
 
   id:
@@ -410,6 +1188,12 @@ export async function updatePasswordPerfilUsuario({
 
   try {
 
+    if (!id) {
+      throw new Error(
+        "El ID del usuario es obligatorio"
+      );
+    }
+
     const { data } =
       await api.put(
 
@@ -431,116 +1215,27 @@ export async function updatePasswordPerfilUsuario({
 
   } catch (error) {
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
     throw new Error(
-      "Error actualizando password"
-    );
-
-  }
-
-}
-
-/* =========================
-    AUTH USUARIO
-========================= */
-export async function autenticacionUsuario(
-  formData: UsuarioLoginForm
-) {
-
-  try {
-
-    const { data } =
-      await api.post(
-
-        "/perfilusuario/login",
-
-        formData
-
-      );
-
-    const response =
-      LoginResponseSchema.safeParse(
-        data
-      );
-
-    if (!response.success) {
-
-      console.log(
-        response.error.format()
-      );
-
-      throw new Error(
-        "Error validando autenticación"
-      );
-
-    }
-
-    /* =========================
-        TOKEN
-    ========================= */
-    localStorage.setItem(
-
-      "AUTH_TOKEN",
-
-      response.data.tokenjwt
-
-    );
-
-    /* =========================
-        USER
-    ========================= */
-    localStorage.setItem(
-
-      "USER",
-
-      JSON.stringify(
-        response.data.usuario
+      getErrorMessage(
+        error,
+        "Error actualizando contraseña"
       )
-
-    );
-
-    return response.data.usuario;
-
-  } catch (error) {
-
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
-    throw new Error(
-      "Error autenticando usuario"
     );
 
   }
 
 }
 
-/* =========================
-    OBTENER USER
-========================= */
+/* =========================================
+    OBTENER USUARIO AUTENTICADO
+========================================= */
+
 export async function getUser() {
 
   try {
 
     const { data } =
-      await api(
+      await api.get(
         "/perfilusuario/usuario"
       );
 
@@ -551,12 +1246,18 @@ export async function getUser() {
 
     if (!response.success) {
 
-      console.log(
+      console.error(
+        "Error Zod al validar usuario:",
         response.error.format()
       );
 
+      console.error(
+        "Datos recibidos:",
+        data
+      );
+
       throw new Error(
-        "Error validando usuario"
+        "La respuesta del usuario no tiene el formato esperado"
       );
 
     }
@@ -565,57 +1266,20 @@ export async function getUser() {
 
   } catch (error) {
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
-
-      throw new Error(
-        error.response.data.error
-      );
-
-    }
-
     throw new Error(
-      "Error obteniendo usuario"
+      getErrorMessage(
+        error,
+        "Error obteniendo usuario"
+      )
     );
 
   }
 
-  
-
 }
-/* =========================
+
+/* =========================================
     ACTUALIZAR PERFIL PERSONAL
-========================= */
-
-export type PerfilPersonalForm = {
-
-  nombres:
-    string;
-
-  apellidos?:
-    string | null;
-
-  edad?:
-    number | null;
-
-  sexo?:
-    string | null;
-
-  ci?:
-    string | null;
-
-  telefono?:
-    string | null;
-
-  email?:
-    string | null;
-
-  actualizadoPor?:
-    string | null;
-
-};
+========================================= */
 
 type UpdatePerfilPersonalType = {
 
@@ -637,6 +1301,12 @@ export async function updatePerfilPersonal({
 
   try {
 
+    if (!perfilUsuarioId) {
+      throw new Error(
+        "El ID del perfil es obligatorio"
+      );
+    }
+
     const { data } =
       await api.put(
 
@@ -650,19 +1320,72 @@ export async function updatePerfilPersonal({
 
   } catch (error) {
 
-    if (
-      isAxiosError(error) &&
-      error.response
-    ) {
+    throw new Error(
+      getErrorMessage(
+        error,
+        "Error actualizando perfil personal"
+      )
+    );
+
+  }
+
+}
+
+/* =========================================
+    OBTENER PERSONAL DE UNA SUCURSAL
+========================================= */
+
+export async function getPersonalBySucursal(
+  idSucursal: string
+): Promise<PersonalPorSucursalResponse> {
+
+  try {
+
+    if (!idSucursal) {
+      throw new Error(
+        "El ID de la sucursal es obligatorio"
+      );
+    }
+
+    const { data } =
+      await api.get(
+
+        `/perfilusuario/sucursal/${idSucursal}/personal`
+
+      );
+
+    const response =
+      PersonalPorSucursalResponseSchema.safeParse(
+        data
+      );
+
+    if (!response.success) {
+
+      console.error(
+        "Error Zod al validar personal por sucursal:",
+        response.error.format()
+      );
+
+      console.error(
+        "Datos recibidos:",
+        data
+      );
 
       throw new Error(
-        error.response.data.error
+        "La respuesta del personal no tiene el formato esperado"
       );
 
     }
 
+    return response.data;
+
+  } catch (error) {
+
     throw new Error(
-      "Error actualizando perfil personal"
+      getErrorMessage(
+        error,
+        "Error obteniendo el personal de la sucursal"
+      )
     );
 
   }

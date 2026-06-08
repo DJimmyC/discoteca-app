@@ -1,4 +1,3 @@
-
 // import { z } from "zod";
 
 // /* =========================
@@ -11,9 +10,9 @@
 //       z.string().optional(),
 
 //     username:
-//       z.string(),
+//       z.string().optional(),
 
-//   });
+//   }).passthrough();
 
 // /* =========================
 //     ROL POPULATE
@@ -25,9 +24,18 @@
 //       z.string().optional(),
 
 //     nombre:
-//       z.string(),
+//       z.string().optional(),
 
-//   });
+//     nombreRol:
+//       z.string().optional(),
+
+//     descripcion:
+//       z.string().optional(),
+
+//     estado:
+//       z.boolean().optional(),
+
+//   }).passthrough();
 
 // /* =========================
 //     SUCURSAL POPULATE
@@ -39,9 +47,87 @@
 //       z.string().optional(),
 
 //     nombreSucursal:
-//       z.string(),
+//       z.string().optional(),
 
-//   });
+//     nombre:
+//       z.string().optional(),
+
+//     ubicacionSucursal:
+//       z.string().optional(),
+
+//     estado:
+//       z.boolean().optional(),
+
+//   }).passthrough();
+
+// /* =========================
+//     ALMACEN POPULATE
+// ========================= */
+// export const AlmacenPopulateSchema =
+//   z.object({
+
+//     _id:
+//       z.string().optional(),
+
+//     nombre:
+//       z.string().optional(),
+
+//     tipo:
+//       z.string().optional(),
+
+//     descripcion:
+//       z.string().optional(),
+
+//     ubicacionSucursal:
+//       z.string().optional(),
+
+//     estado:
+//       z.boolean().optional(),
+
+//   }).passthrough();
+
+// /* =========================
+//     ID ROL FLEXIBLE
+// ========================= */
+// export const IdRolSchema =
+//   z.union([
+
+//     z.string(),
+
+//     RolPopulateSchema,
+
+//     z.null(),
+
+//   ]).optional();
+
+// /* =========================
+//     ID SUCURSAL FLEXIBLE
+// ========================= */
+// export const IdSucursalSchema =
+//   z.union([
+
+//     z.string(),
+
+//     SucursalPopulateSchema,
+
+//     z.null(),
+
+//   ]).optional();
+
+// /* =========================
+//     ID ALMACEN FLEXIBLE
+// ========================= */
+// export const IdAlmacenSchema =
+//   z.union([
+
+//     z.string(),
+
+//     AlmacenPopulateSchema,
+
+//     z.null(),
+
+//   ]).optional();
+
 // /* =========================
 //     PERFIL USUARIO SCHEMA
 // ========================= */
@@ -57,34 +143,18 @@
 //     /* =========================
 //         RELACIONES
 //     ========================= */
-
-     
 //     idRol:
-//       z.union([
-
-//         z.string(),
-
-//         RolPopulateSchema,
-
-//         z.null(),
-
-//       ]),
+//       IdRolSchema,
 
 //     idSucursal:
-//       z.union([
+//       IdSucursalSchema,
 
-//         z.string(),
-
-//         SucursalPopulateSchema,
-
-//         z.null(),
-
-//       ]),
+//     idAlmacen:
+//       IdAlmacenSchema,
 
 //     /* =========================
 //         DATOS PERSONALES
 //     ========================= */
-
 //     nombres:
 //       z.string().min(
 //         1,
@@ -98,16 +168,16 @@
 //       ),
 
 //     edad:
-//       z.number().optional(),
+//       z.coerce.number().optional(),
 
 //     sexo:
-//       z.string().optional(),
+//       z.string().nullable().optional(),
 
 //     ci:
-//       z.string().optional(),
+//       z.string().nullable().optional(),
 
 //     telefono:
-//       z.string().optional(),
+//       z.string().nullable().optional(),
 
 //     email:
 //       z.union([
@@ -120,13 +190,10 @@
 
 //         z.undefined(),
 
-//       ]),
+//       ]).optional(),
 
 //     password:
-//       z.string().min(
-//         6,
-//         "Mínimo 6 caracteres"
-//       ),
+//       z.string().optional(),
 
 //     estado:
 //       z.boolean().optional(),
@@ -134,15 +201,14 @@
 //     /* =========================
 //         AUDITORIA
 //     ========================= */
-
 //     creadoPor:
-//       z.string().optional(),
+//       z.string().nullable().optional(),
 
 //     actualizadoPor:
-//       z.string().optional(),
+//       z.string().nullable().optional(),
 
 //     eliminadoPor:
-//       z.string().optional(),
+//       z.string().nullable().optional(),
 
 //     fechaCreacion:
 //       z.string()
@@ -159,7 +225,7 @@
 //         .nullable()
 //         .optional(),
 
-//   });
+//   }).passthrough();
 
 // /* =========================
 //     SCHEMA PARA LISTADO
@@ -187,7 +253,7 @@
 
 //         z.undefined(),
 
-//       ]),
+//       ]).optional(),
 
 //     estado:
 //       z.boolean().optional(),
@@ -200,32 +266,16 @@
 //     /* =========================
 //         RELACIONES
 //     ========================= */
-
-     
-
 //     idRol:
-//       z.union([
-
-//         z.string(),
-
-//         RolPopulateSchema,
-
-//         z.null(),
-
-//       ]),
+//       IdRolSchema,
 
 //     idSucursal:
-//       z.union([
+//       IdSucursalSchema,
 
-//         z.string(),
+//     idAlmacen:
+//       IdAlmacenSchema,
 
-//         SucursalPopulateSchema,
-
-//         z.null(),
-
-//       ]),
-
-//   });
+//   }).passthrough();
 
 // /* =========================
 //     ARRAY PARA LISTADO
@@ -253,27 +303,54 @@
 //     typeof PerfilUsuarioSchema
 //   >;
 
-// export type PerfilUsuarioForm =
-//   Pick<
+// /* =========================
+//     FORMULARIO CREAR / EDITAR
+// ========================= */
+// export type PerfilUsuarioForm = {
 
-//     PerfilUsuarioType,
+//   idRol:
+//     string;
 
-    
-//     | "idRol"
-//     | "idSucursal"
-//     | "nombres"
-//     | "apellidos"
-//     | "edad"
-//     | "sexo"
-//     | "ci"
-//     | "telefono"
-//     | "email"
-//     | "password"
-//     | "estado"
-//     | "creadoPor"
-//     | "actualizadoPor"
+//   idSucursal:
+//     string;
 
-//   >;
+//   idAlmacen:
+//     string;
+
+//   nombres:
+//     string;
+
+//   apellidos:
+//     string;
+
+//   edad?:
+//     number;
+
+//   sexo?:
+//     string | null;
+
+//   ci?:
+//     string | null;
+
+//   telefono?:
+//     string | null;
+
+//   email?:
+//     string | null;
+
+//   password?:
+//     string;
+
+//   estado?:
+//     boolean;
+
+//   creadoPor?:
+//     string;
+
+//   actualizadoPor?:
+//     string;
+
+// };
 
 // /* =========================
 //     LOGIN
@@ -330,11 +407,14 @@
 
 // export type UsuarioLoginForm =
 //   Pick<
-//     Auth,
+//     LoginForm,
 //     "email" | "password"
 //   >;
 
-//   const ObjectIdStringSchema =
+// /* =========================
+//     OBJECT ID STRING
+// ========================= */
+// const ObjectIdStringSchema =
 //   z.preprocess(
 //     (val) => {
 
@@ -352,6 +432,9 @@
 //     z.string()
 //   );
 
+// /* =========================
+//     AUTH SUCURSAL
+// ========================= */
 // const SucursalAuthSchema =
 //   z.object({
 
@@ -366,8 +449,19 @@
 //       z.string()
 //         .optional(),
 
+//     ubicacionSucursal:
+//       z.string()
+//         .optional(),
+
+//     estado:
+//       z.boolean()
+//         .optional(),
+
 //   }).passthrough();
 
+// /* =========================
+//     AUTH ROL
+// ========================= */
 // const RolAuthSchema =
 //   z.object({
 
@@ -382,9 +476,20 @@
 //       z.string()
 //         .optional(),
 
+//     descripcion:
+//       z.string()
+//         .optional(),
+
+//     estado:
+//       z.boolean()
+//         .optional(),
+
 //   }).passthrough();
 
-// const UsuarioAuthPopulateSchema =
+// /* =========================
+//     AUTH ALMACEN
+// ========================= */
+// const AlmacenAuthSchema =
 //   z.object({
 
 //     _id:
@@ -394,26 +499,41 @@
 //       z.string()
 //         .optional(),
 
-//     nombres:
+//     tipo:
 //       z.string()
 //         .optional(),
 
-//     email:
+//     descripcion:
 //       z.string()
-//         .nullable()
+//         .optional(),
+
+//     ubicacionSucursal:
+//       z.string()
+//         .optional(),
+
+//     estado:
+//       z.boolean()
 //         .optional(),
 
 //   }).passthrough();
 
+// /* =========================
+//     USUARIO AUTH
+// ========================= */
 // export const UsuarioSchema =
-//   PerfilUsuarioSchema.pick({
-
-//     nombres: true,
-
-//   }).extend({
+//   z.object({
 
 //     _id:
 //       ObjectIdStringSchema,
+
+//     nombres:
+//       z.string()
+//         .optional(),
+
+//     apellidos:
+//       z.string()
+//         .nullable()
+//         .optional(),
 
 //     email:
 //       z.string()
@@ -442,13 +562,19 @@
 
 //       ]).optional(),
 
-//     apellidos:
-//       z.string()
-//         .nullable()
-//         .optional(),
+//     idAlmacen:
+//       z.union([
+
+//         AlmacenAuthSchema,
+
+//         ObjectIdStringSchema,
+
+//         z.null(),
+
+//       ]).optional(),
 
 //     edad:
-//       z.number()
+//       z.coerce.number()
 //         .nullable()
 //         .optional(),
 
@@ -501,12 +627,40 @@
 //         .nullable()
 //         .optional(),
 
-//   });
+//   }).passthrough();
+
 import { z } from "zod";
 
-/* =========================
+/* =========================================
+    OBJECT ID STRING
+========================================= */
+
+export const ObjectIdStringSchema =
+  z.preprocess(
+    (value) => {
+
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "_id" in value
+      ) {
+        return (
+          value as {
+            _id: unknown;
+          }
+        )._id;
+      }
+
+      return value;
+
+    },
+    z.string()
+  );
+
+/* =========================================
     USUARIO POPULATE
-========================= */
+========================================= */
+
 export const UsuarioPopulateSchema =
   z.object({
 
@@ -514,13 +668,16 @@ export const UsuarioPopulateSchema =
       z.string().optional(),
 
     username:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
   }).passthrough();
 
-/* =========================
+/* =========================================
     ROL POPULATE
-========================= */
+========================================= */
+
 export const RolPopulateSchema =
   z.object({
 
@@ -528,22 +685,30 @@ export const RolPopulateSchema =
       z.string().optional(),
 
     nombre:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     nombreRol:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     descripcion:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     estado:
-      z.boolean().optional(),
+      z.boolean()
+        .optional(),
 
   }).passthrough();
 
-/* =========================
+/* =========================================
     SUCURSAL POPULATE
-========================= */
+========================================= */
+
 export const SucursalPopulateSchema =
   z.object({
 
@@ -551,22 +716,35 @@ export const SucursalPopulateSchema =
       z.string().optional(),
 
     nombreSucursal:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     nombre:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     ubicacionSucursal:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
+
+    direccion:
+      z.string()
+        .nullable()
+        .optional(),
 
     estado:
-      z.boolean().optional(),
+      z.boolean()
+        .optional(),
 
   }).passthrough();
 
-/* =========================
-    ALMACEN POPULATE
-========================= */
+/* =========================================
+    ALMACÉN POPULATE
+========================================= */
+
 export const AlmacenPopulateSchema =
   z.object({
 
@@ -574,25 +752,40 @@ export const AlmacenPopulateSchema =
       z.string().optional(),
 
     nombre:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
+
+    nombreAlmacen:
+      z.string()
+        .nullable()
+        .optional(),
 
     tipo:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     descripcion:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     ubicacionSucursal:
-      z.string().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     estado:
-      z.boolean().optional(),
+      z.boolean()
+        .optional(),
 
   }).passthrough();
 
-/* =========================
+/* =========================================
     ID ROL FLEXIBLE
-========================= */
+========================================= */
+
 export const IdRolSchema =
   z.union([
 
@@ -604,9 +797,10 @@ export const IdRolSchema =
 
   ]).optional();
 
-/* =========================
+/* =========================================
     ID SUCURSAL FLEXIBLE
-========================= */
+========================================= */
+
 export const IdSucursalSchema =
   z.union([
 
@@ -618,9 +812,10 @@ export const IdSucursalSchema =
 
   ]).optional();
 
-/* =========================
-    ID ALMACEN FLEXIBLE
-========================= */
+/* =========================================
+    ID ALMACÉN FLEXIBLE
+========================================= */
+
 export const IdAlmacenSchema =
   z.union([
 
@@ -632,9 +827,10 @@ export const IdAlmacenSchema =
 
   ]).optional();
 
-/* =========================
-    PERFIL USUARIO SCHEMA
-========================= */
+/* =========================================
+    PERFIL USUARIO
+========================================= */
+
 export const PerfilUsuarioSchema =
   z.object({
 
@@ -644,9 +840,10 @@ export const PerfilUsuarioSchema =
     tokenjwt:
       z.string().optional(),
 
-    /* =========================
+    /* =====================================
         RELACIONES
-    ========================= */
+    ===================================== */
+
     idRol:
       IdRolSchema,
 
@@ -656,32 +853,43 @@ export const PerfilUsuarioSchema =
     idAlmacen:
       IdAlmacenSchema,
 
-    /* =========================
+    /* =====================================
         DATOS PERSONALES
-    ========================= */
+    ===================================== */
+
     nombres:
-      z.string().min(
-        1,
-        "Nombre obligatorio"
-      ),
+      z.string()
+        .min(
+          1,
+          "Nombre obligatorio"
+        ),
 
     apellidos:
-      z.string().min(
-        1,
-        "Apellido obligatorio"
-      ),
+      z.string()
+        .min(
+          1,
+          "Apellido obligatorio"
+        ),
 
     edad:
-      z.coerce.number().optional(),
+      z.coerce.number()
+        .nullable()
+        .optional(),
 
     sexo:
-      z.string().nullable().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     ci:
-      z.string().nullable().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     telefono:
-      z.string().nullable().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     email:
       z.union([
@@ -697,22 +905,31 @@ export const PerfilUsuarioSchema =
       ]).optional(),
 
     password:
-      z.string().optional(),
+      z.string()
+        .optional(),
 
     estado:
-      z.boolean().optional(),
+      z.boolean()
+        .optional(),
 
-    /* =========================
-        AUDITORIA
-    ========================= */
+    /* =====================================
+        AUDITORÍA
+    ===================================== */
+
     creadoPor:
-      z.string().nullable().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     actualizadoPor:
-      z.string().nullable().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     eliminadoPor:
-      z.string().nullable().optional(),
+      z.string()
+        .nullable()
+        .optional(),
 
     fechaCreacion:
       z.string()
@@ -729,22 +946,53 @@ export const PerfilUsuarioSchema =
         .nullable()
         .optional(),
 
+    createdAt:
+      z.string()
+        .nullable()
+        .optional(),
+
+    updatedAt:
+      z.string()
+        .nullable()
+        .optional(),
+
   }).passthrough();
 
-/* =========================
-    SCHEMA PARA LISTADO
-========================= */
+/* =========================================
+    PERFIL USUARIO PARA LISTADO
+========================================= */
+
 export const PerfilUsuarioListSchema =
   z.object({
 
     _id:
-      z.string().optional(),
+      z.string(),
 
     nombres:
       z.string(),
 
     apellidos:
       z.string(),
+
+    edad:
+      z.coerce.number()
+        .nullable()
+        .optional(),
+
+    sexo:
+      z.string()
+        .nullable()
+        .optional(),
+
+    ci:
+      z.string()
+        .nullable()
+        .optional(),
+
+    telefono:
+      z.string()
+        .nullable()
+        .optional(),
 
     email:
       z.union([
@@ -760,16 +1008,23 @@ export const PerfilUsuarioListSchema =
       ]).optional(),
 
     estado:
-      z.boolean().optional(),
+      z.boolean()
+        .optional(),
 
     fechaCreacion:
       z.string()
         .nullable()
         .optional(),
 
-    /* =========================
+    fechaActualizacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    /* =====================================
         RELACIONES
-    ========================= */
+    ===================================== */
+
     idRol:
       IdRolSchema,
 
@@ -781,17 +1036,19 @@ export const PerfilUsuarioListSchema =
 
   }).passthrough();
 
-/* =========================
-    ARRAY PARA LISTADO
-========================= */
+/* =========================================
+    ARRAY DE PERFILES
+========================================= */
+
 export const PerfilUsuarioArraySchema =
   z.array(
     PerfilUsuarioListSchema
   );
 
-/* =========================
-    VERSION SEGURA
-========================= */
+/* =========================================
+    PERFIL SEGURO SIN PASSWORD
+========================================= */
+
 export const PerfilUsuarioSafeSchema =
   PerfilUsuarioSchema.omit({
 
@@ -799,89 +1056,33 @@ export const PerfilUsuarioSafeSchema =
 
   });
 
-/* =========================
-    TYPES
-========================= */
-export type PerfilUsuarioType =
-  z.infer<
-    typeof PerfilUsuarioSchema
-  >;
-
-/* =========================
-    FORMULARIO CREAR / EDITAR
-========================= */
-export type PerfilUsuarioForm = {
-
-  idRol:
-    string;
-
-  idSucursal:
-    string;
-
-  idAlmacen:
-    string;
-
-  nombres:
-    string;
-
-  apellidos:
-    string;
-
-  edad?:
-    number;
-
-  sexo?:
-    string | null;
-
-  ci?:
-    string | null;
-
-  telefono?:
-    string | null;
-
-  email?:
-    string | null;
-
-  password?:
-    string;
-
-  estado?:
-    boolean;
-
-  creadoPor?:
-    string;
-
-  actualizadoPor?:
-    string;
-
-};
-
-/* =========================
+/* =========================================
     LOGIN
-========================= */
+========================================= */
+
 export const LoginSchema =
   z.object({
 
     email:
-      z.string(),
+      z.string()
+        .min(
+          1,
+          "El correo es obligatorio"
+        ),
 
     password:
       z.string()
         .min(
           1,
-          "Password requerido"
+          "La contraseña es obligatoria"
         ),
 
   });
 
-export type LoginForm =
-  z.infer<
-    typeof LoginSchema
-  >;
+/* =========================================
+    RESPUESTA LOGIN
+========================================= */
 
-/* =========================
-    RESPONSE LOGIN
-========================= */
 export const LoginResponseSchema =
   z.object({
 
@@ -894,52 +1095,13 @@ export const LoginResponseSchema =
     usuario:
       PerfilUsuarioSchema,
 
-  });
+  }).passthrough();
 
-export type LoginResponse =
-  z.infer<
-    typeof LoginResponseSchema
-  >;
-
-/* =========================
-    AUTH
-========================= */
-export type Auth =
-  z.infer<
-    typeof PerfilUsuarioSchema
-  >;
-
-export type UsuarioLoginForm =
-  Pick<
-    LoginForm,
-    "email" | "password"
-  >;
-
-/* =========================
-    OBJECT ID STRING
-========================= */
-const ObjectIdStringSchema =
-  z.preprocess(
-    (val) => {
-
-      if (
-        typeof val === "object" &&
-        val !== null &&
-        "_id" in val
-      ) {
-        return (val as { _id: unknown })._id;
-      }
-
-      return val;
-
-    },
-    z.string()
-  );
-
-/* =========================
+/* =========================================
     AUTH SUCURSAL
-========================= */
-const SucursalAuthSchema =
+========================================= */
+
+export const SucursalAuthSchema =
   z.object({
 
     _id:
@@ -947,14 +1109,22 @@ const SucursalAuthSchema =
 
     nombreSucursal:
       z.string()
+        .nullable()
         .optional(),
 
     nombre:
       z.string()
+        .nullable()
         .optional(),
 
     ubicacionSucursal:
       z.string()
+        .nullable()
+        .optional(),
+
+    direccion:
+      z.string()
+        .nullable()
         .optional(),
 
     estado:
@@ -963,10 +1133,11 @@ const SucursalAuthSchema =
 
   }).passthrough();
 
-/* =========================
+/* =========================================
     AUTH ROL
-========================= */
-const RolAuthSchema =
+========================================= */
+
+export const RolAuthSchema =
   z.object({
 
     _id:
@@ -974,14 +1145,17 @@ const RolAuthSchema =
 
     nombre:
       z.string()
+        .nullable()
         .optional(),
 
     nombreRol:
       z.string()
+        .nullable()
         .optional(),
 
     descripcion:
       z.string()
+        .nullable()
         .optional(),
 
     estado:
@@ -990,10 +1164,11 @@ const RolAuthSchema =
 
   }).passthrough();
 
-/* =========================
-    AUTH ALMACEN
-========================= */
-const AlmacenAuthSchema =
+/* =========================================
+    AUTH ALMACÉN
+========================================= */
+
+export const AlmacenAuthSchema =
   z.object({
 
     _id:
@@ -1001,18 +1176,27 @@ const AlmacenAuthSchema =
 
     nombre:
       z.string()
+        .nullable()
+        .optional(),
+
+    nombreAlmacen:
+      z.string()
+        .nullable()
         .optional(),
 
     tipo:
       z.string()
+        .nullable()
         .optional(),
 
     descripcion:
       z.string()
+        .nullable()
         .optional(),
 
     ubicacionSucursal:
       z.string()
+        .nullable()
         .optional(),
 
     estado:
@@ -1021,9 +1205,10 @@ const AlmacenAuthSchema =
 
   }).passthrough();
 
-/* =========================
-    USUARIO AUTH
-========================= */
+/* =========================================
+    USUARIO AUTENTICADO
+========================================= */
+
 export const UsuarioSchema =
   z.object({
 
@@ -1132,3 +1317,349 @@ export const UsuarioSchema =
         .optional(),
 
   }).passthrough();
+
+/* =========================================
+    SUCURSAL RESUMEN PARA PERSONAL
+========================================= */
+
+export const SucursalPersonalSchema =
+  z.object({
+
+    _id:
+      z.string(),
+
+    nombre:
+      z.string(),
+
+    ubicacion:
+      z.string()
+        .nullable()
+        .optional()
+        .default(""),
+
+    estado:
+      z.boolean()
+        .optional(),
+
+  }).passthrough();
+
+/* =========================================
+    ROL DEL PERSONAL
+========================================= */
+
+export const RolPersonalSchema =
+  z.object({
+
+    _id:
+      z.string(),
+
+    nombre:
+      z.string(),
+
+    descripcion:
+      z.string()
+        .nullable()
+        .optional()
+        .default(""),
+
+    estado:
+      z.boolean()
+        .optional(),
+
+  }).passthrough();
+
+/* =========================================
+    ALMACÉN DEL PERSONAL
+========================================= */
+
+export const AlmacenPersonalSchema =
+  z.object({
+
+    _id:
+      z.string(),
+
+    nombre:
+      z.string(),
+
+    tipo:
+      z.string()
+        .nullable()
+        .optional()
+        .default("Sin tipo"),
+
+    descripcion:
+      z.string()
+        .nullable()
+        .optional()
+        .default(""),
+
+    estado:
+      z.boolean()
+        .optional(),
+
+  }).passthrough();
+
+/* =========================================
+    PERSONAL DE SUCURSAL
+========================================= */
+
+export const PersonalSucursalSchema =
+  z.object({
+
+    _id:
+      z.string(),
+
+    nombres:
+      z.string(),
+
+    apellidos:
+      z.string(),
+
+    nombreCompleto:
+      z.string(),
+
+    edad:
+      z.coerce.number()
+        .nullable()
+        .optional(),
+
+    sexo:
+      z.string()
+        .nullable()
+        .optional(),
+
+    ci:
+      z.string()
+        .nullable()
+        .optional(),
+
+    telefono:
+      z.string()
+        .nullable()
+        .optional(),
+
+    email:
+      z.union([
+
+        z.string(),
+
+        z.literal(""),
+
+        z.null(),
+
+        z.undefined(),
+
+      ]).optional(),
+
+    estado:
+      z.boolean(),
+
+    rol:
+      RolPersonalSchema
+        .nullable()
+        .optional(),
+
+    almacen:
+      AlmacenPersonalSchema
+        .nullable()
+        .optional(),
+
+    fechaCreacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    fechaActualizacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+  }).passthrough();
+
+/* =========================================
+    ARRAY PERSONAL DE SUCURSAL
+========================================= */
+
+export const PersonalSucursalArraySchema =
+  z.array(
+    PersonalSucursalSchema
+  );
+
+/* =========================================
+    RESPUESTA PERSONAL POR SUCURSAL
+========================================= */
+
+export const PersonalPorSucursalResponseSchema =
+  z.object({
+
+    message:
+      z.string(),
+
+    sucursal:
+      SucursalPersonalSchema
+        .nullable(),
+
+    cantidadPersonal:
+      z.coerce.number(),
+
+    cantidadActivos:
+      z.coerce.number(),
+
+    cantidadInactivos:
+      z.coerce.number(),
+
+    personal:
+      PersonalSucursalArraySchema,
+
+  }).passthrough();
+
+/* =========================================
+    TYPES GENERALES
+========================================= */
+
+export type PerfilUsuarioType =
+  z.infer<
+    typeof PerfilUsuarioSchema
+  >;
+
+export type PerfilUsuarioListType =
+  z.infer<
+    typeof PerfilUsuarioListSchema
+  >;
+
+export type PerfilUsuarioSafeType =
+  z.infer<
+    typeof PerfilUsuarioSafeSchema
+  >;
+
+export type LoginForm =
+  z.infer<
+    typeof LoginSchema
+  >;
+
+export type LoginResponse =
+  z.infer<
+    typeof LoginResponseSchema
+  >;
+
+export type Auth =
+  z.infer<
+    typeof UsuarioSchema
+  >;
+
+export type UsuarioLoginForm =
+  Pick<
+    LoginForm,
+    "email" | "password"
+  >;
+
+/* =========================================
+    TYPES PERSONAL SUCURSAL
+========================================= */
+
+export type SucursalPersonalType =
+  z.infer<
+    typeof SucursalPersonalSchema
+  >;
+
+export type RolPersonalType =
+  z.infer<
+    typeof RolPersonalSchema
+  >;
+
+export type AlmacenPersonalType =
+  z.infer<
+    typeof AlmacenPersonalSchema
+  >;
+
+export type PersonalSucursalType =
+  z.infer<
+    typeof PersonalSucursalSchema
+  >;
+
+export type PersonalPorSucursalResponse =
+  z.infer<
+    typeof PersonalPorSucursalResponseSchema
+  >;
+
+/* =========================================
+    FORMULARIO CREAR Y EDITAR
+========================================= */
+
+export type PerfilUsuarioForm = {
+
+  idRol:
+    string;
+
+  idSucursal:
+    string;
+
+  idAlmacen:
+    string;
+
+  nombres:
+    string;
+
+  apellidos:
+    string;
+
+  edad?:
+    number | null;
+
+  sexo?:
+    string | null;
+
+  ci?:
+    string | null;
+
+  telefono?:
+    string | null;
+
+  email?:
+    string | null;
+
+  password?:
+    string;
+
+  estado?:
+    boolean;
+
+  creadoPor?:
+    string;
+
+  actualizadoPor?:
+    string;
+
+};
+
+/* =========================================
+    FORMULARIO PERFIL PERSONAL
+========================================= */
+
+export type PerfilPersonalForm = {
+
+  nombres:
+    string;
+
+  apellidos?:
+    string | null;
+
+  edad?:
+    number | null;
+
+  sexo?:
+    string | null;
+
+  ci?:
+    string | null;
+
+  telefono?:
+    string | null;
+
+  email?:
+    string | null;
+
+  actualizadoPor?:
+    string | null;
+
+};

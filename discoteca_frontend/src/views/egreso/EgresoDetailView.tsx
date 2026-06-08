@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import {
+  Navigate,
   useNavigate,
   useParams,
 } from "react-router-dom";
@@ -16,27 +17,36 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import Swal from "sweetalert2";
+
 import {
+  AlertTriangle,
   Banknote,
-  CheckCircle,
+  CheckCircle2,
   ClipboardList,
   DollarSign,
   Eye,
-  LogOut,
-  Menu,
+  LoaderCircle,
+  MapPin,
   Package,
   Pencil,
   Plus,
   ReceiptText,
+  RefreshCcw,
   Search,
   Trash2,
-  Wallet,
+  WalletCards,
+  X,
   XCircle,
 } from "lucide-react";
 
-import Swal from "sweetalert2";
+import {
+  motion,
+} from "framer-motion";
 
-import { useAuth } from "@/hooks/useAuth";
+import {
+  useAuth,
+} from "@/hooks/useAuth";
 
 import MenuList from "@/components/MenuList";
 
@@ -45,572 +55,904 @@ import {
   getEgresosConDetallesPorSucursal,
 } from "@/api/EgresoApi";
 
+/* =====================================================
+   UTILIDADES
+===================================================== */
+
+function esModoOscuro(): boolean {
+  return document.documentElement.classList.contains(
+    "dark"
+  );
+}
+
+function obtenerMensajeError(
+  error: unknown
+): string {
+  return error instanceof Error
+    ? error.message
+    : "Ocurrió un error inesperado.";
+}
+
+function normalizarTexto(
+  valor: unknown
+): string {
+  return String(valor ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+function formatearFecha(
+  fecha?: string | null
+): string {
+  if (!fecha) {
+    return "Sin fecha";
+  }
+
+  const valor =
+    new Date(fecha);
+
+  if (
+    Number.isNaN(
+      valor.getTime()
+    )
+  ) {
+    return "Fecha inválida";
+  }
+
+  return valor.toLocaleString(
+    "es-BO",
+    {
+      dateStyle: "short",
+      timeStyle: "short",
+    }
+  );
+}
+
+function formatearMetodoPago(
+  metodo?: string | null
+): string {
+  const metodos: Record<
+    string,
+    string
+  > = {
+    efectivo: "Efectivo",
+    qr: "QR",
+    tarjeta: "Tarjeta",
+    transferencia:
+      "Transferencia",
+    mixto: "Mixto",
+  };
+
+  if (!metodo) {
+    return "Sin método";
+  }
+
+  return (
+    metodos[metodo] ??
+    metodo
+  );
+}
+
+function formatearTipoEgreso(
+  tipo?: string | null
+): string {
+  const tipos: Record<
+    string,
+    string
+  > = {
+    compra: "Compra",
+    servicio: "Servicio",
+    mantenimiento:
+      "Mantenimiento",
+    otro: "Otro",
+  };
+
+  if (!tipo) {
+    return "Sin tipo";
+  }
+
+  return (
+    tipos[tipo] ??
+    tipo
+  );
+}
+
+function formatearMoneda(
+  valor: unknown
+): string {
+  const numero =
+    Number(valor ?? 0);
+
+  return new Intl.NumberFormat(
+    "es-BO",
+    {
+      style: "currency",
+      currency: "BOB",
+      minimumFractionDigits: 2,
+    }
+  ).format(
+    Number.isFinite(numero)
+      ? numero
+      : 0
+  );
+}
+
+function getEstadoStyle(
+  estado?: string | null
+) {
+  if (
+    estado === "anulado" ||
+    estado === "eliminado"
+  ) {
+    return {
+      texto: "Anulado",
+      className:
+        "border-red-200 bg-red-100 text-red-700 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-400",
+      icon:
+        XCircle,
+    };
+  }
+
+  if (
+    estado === "activo" ||
+    estado === "registrado" ||
+    estado === "cerrado"
+  ) {
+    return {
+      texto:
+        estado === "cerrado"
+          ? "Cerrado"
+          : "Registrado",
+      className:
+        "border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-400",
+      icon:
+        CheckCircle2,
+    };
+  }
+
+  return {
+    texto:
+      estado ||
+      "Registrado",
+    className:
+      "border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/50 dark:text-blue-400",
+    icon:
+      ReceiptText,
+  };
+}
+
+/* =====================================================
+   SKELETON
+===================================================== */
+
+function EgresosSkeleton() {
+  return (
+    <div className="animate-pulse space-y-5">
+      <div className="h-36 rounded-2xl bg-slate-200 sm:h-40 sm:rounded-3xl dark:bg-slate-800" />
+
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        {Array.from({
+          length: 3,
+        }).map(
+          (_, index) => (
+            <div
+              key={index}
+              className="h-24 rounded-xl bg-slate-200 sm:h-28 sm:rounded-2xl dark:bg-slate-800"
+            />
+          )
+        )}
+      </div>
+
+      <div className="h-16 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+
+      <div className="grid gap-4">
+        {Array.from({
+          length: 3,
+        }).map(
+          (_, index) => (
+            <div
+              key={index}
+              className="h-72 rounded-2xl bg-slate-200 dark:bg-slate-800"
+            />
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* =====================================================
+   VISTA PRINCIPAL
+===================================================== */
+
 export default function EgresoDetailView() {
+  const navigate =
+    useNavigate();
 
-  const navigate = useNavigate();
-
-  const queryClient = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
   const {
     data: perfil,
-    isLoading: loadingAuth,
+    isLoading:
+      loadingAuth,
+    isError:
+      errorAuth,
   } = useAuth();
+
+  const {
+    sucursalId,
+  } = useParams<{
+    sucursalId: string;
+  }>();
 
   const [
     search,
     setSearch,
   ] = useState("");
 
-  /* =========================
-      ID SUCURSAL DESDE AUTH
-  ========================= */
-
-  const params = useParams()
-  const idSucursal = params.sucursalId!
-  
-
-  /* =========================
-      GET EGRESOS CON DETALLES
-  ========================= */
+  /* =====================================================
+     CONSULTAR EGRESOS
+  ===================================================== */
 
   const {
     data,
     isLoading,
     isError,
+    error,
+    refetch,
+    isFetching,
   } = useQuery({
-
     queryKey: [
       "egresos-con-detalles",
-      idSucursal,
+      sucursalId,
     ],
 
     queryFn: () =>
       getEgresosConDetallesPorSucursal(
-        idSucursal!
+        sucursalId!
       ),
 
     enabled:
-      !!idSucursal,
+      Boolean(
+        sucursalId
+      ),
 
+    staleTime:
+      1000 * 60 * 2,
+
+    refetchOnWindowFocus:
+      false,
   });
 
-  /* =========================
-      ANULAR EGRESO
-  ========================= */
+  /* =====================================================
+     ANULAR EGRESO
+  ===================================================== */
 
   const {
-    mutate: anularEgreso,
-    isPending: anulandoEgreso,
-  } = useMutation({
+    mutate:
+      anularEgreso,
 
+    isPending:
+      anulandoEgreso,
+  } = useMutation({
     mutationFn:
       deleteEgresoById,
 
-    onSuccess: () => {
+    onSuccess:
+      async () => {
+        await queryClient.invalidateQueries({
+          queryKey: [
+            "egresos-con-detalles",
+            sucursalId,
+          ],
+        });
 
-      Swal.fire({
-        icon: "success",
-        title: "Egreso anulado",
-        text: "El egreso fue anulado correctamente",
-      });
+        await Swal.fire({
+          icon:
+            "success",
 
-      queryClient.invalidateQueries({
-        queryKey: [
-          "egresos-con-detalles",
-          idSucursal,
-        ],
-      });
+          title:
+            "Egreso anulado",
 
-    },
+          text:
+            "El egreso fue anulado correctamente.",
 
-    onError: (error) => {
+          timer:
+            1800,
 
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Error al anular el egreso",
-      });
+          showConfirmButton:
+            false,
 
-    },
+          background:
+            esModoOscuro()
+              ? "#0f172a"
+              : "#ffffff",
 
+          color:
+            esModoOscuro()
+              ? "#f8fafc"
+              : "#0f172a",
+        });
+      },
+
+    onError:
+      async (
+        mutationError
+      ) => {
+        await Swal.fire({
+          icon:
+            "error",
+
+          title:
+            "No se pudo anular",
+
+          text:
+            obtenerMensajeError(
+              mutationError
+            ),
+
+          confirmButtonText:
+            "Aceptar",
+
+          confirmButtonColor:
+            "#dc2626",
+
+          background:
+            esModoOscuro()
+              ? "#0f172a"
+              : "#ffffff",
+
+          color:
+            esModoOscuro()
+              ? "#f8fafc"
+              : "#0f172a",
+        });
+      },
   });
 
-  /* =========================
-      HANDLE ANULAR
-  ========================= */
+  const handleAnularEgreso =
+    async (
+      egresoId?: string
+    ) => {
+      if (!egresoId) {
+        await Swal.fire({
+          icon:
+            "error",
 
-  const handleAnularEgreso = async (
-    egresoId?: string
-  ) => {
+          title:
+            "Egreso no encontrado",
 
-    if (!egresoId) {
+          text:
+            "No se encontró el identificador del egreso.",
+        });
 
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se encontró el ID del egreso",
-      });
-
-      return;
-
-    }
-
-    const result =
-      await Swal.fire({
-        icon: "warning",
-        title: "¿Anular egreso?",
-        text: "Esta acción cambiará el estado del egreso a anulado.",
-        showCancelButton: true,
-        confirmButtonText: "Sí, anular",
-        cancelButtonText: "Cancelar",
-        confirmButtonColor: "#dc2626",
-      });
-
-    if (!result.isConfirmed) {
-      return;
-    }
-
-    anularEgreso({
-
-      id:
-        egresoId,
-
-      eliminadoPor:
-        perfil?.nombres || "sistema",
-
-    });
-
-  };
-
-  /* =========================
-      HELPERS
-  ========================= */
-
-  const formatearFecha = (
-    fecha?: string | null
-  ) => {
-
-    if (!fecha) {
-      return "Sin fecha";
-    }
-
-    return new Date(fecha).toLocaleString(
-      "es-BO",
-      {
-        dateStyle: "short",
-        timeStyle: "short",
+        return;
       }
-    );
 
-  };
+      const result =
+        await Swal.fire({
+          icon:
+            "warning",
 
-  const formatearMetodoPago = (
-    metodo?: string | null
-  ) => {
+          title:
+            "¿Anular egreso?",
 
-    if (!metodo) {
-      return "Sin método";
-    }
+          text:
+            "Esta acción cambiará el estado del egreso a anulado.",
 
-    if (metodo === "efectivo") return "Efectivo";
-    if (metodo === "qr") return "QR";
-    if (metodo === "tarjeta") return "Tarjeta";
-    if (metodo === "transferencia") return "Transferencia";
-    if (metodo === "mixto") return "Mixto";
+          showCancelButton:
+            true,
 
-    return metodo;
+          confirmButtonText:
+            "Sí, anular",
 
-  };
+          cancelButtonText:
+            "Cancelar",
 
-  const formatearTipoEgreso = (
-    tipo?: string | null
-  ) => {
+          confirmButtonColor:
+            "#dc2626",
 
-    if (!tipo) {
-      return "Sin tipo";
-    }
+          cancelButtonColor:
+            "#475569",
 
-    if (tipo === "compra") return "Compra";
-    if (tipo === "servicio") return "Servicio";
-    if (tipo === "mantenimiento") return "Mantenimiento";
-    if (tipo === "otro") return "Otro";
+          reverseButtons:
+            true,
 
-    return tipo;
+          background:
+            esModoOscuro()
+              ? "#0f172a"
+              : "#ffffff",
 
-  };
+          color:
+            esModoOscuro()
+              ? "#f8fafc"
+              : "#0f172a",
+        });
 
-  const getEstadoStyle = (
-    estado: string
-  ) => {
+      if (
+        !result.isConfirmed
+      ) {
+        return;
+      }
 
-    if (
-      estado === "anulado" ||
-      estado === "eliminado"
-    ) {
-      return {
-        texto: "Anulado",
-        className:
-          "bg-red-100 text-red-600 border-red-200",
-        icon: XCircle,
-      };
-    }
+      anularEgreso({
+        id:
+          egresoId,
 
-    if (
-      estado === "activo" ||
-      estado === "registrado" ||
-      estado === "cerrado"
-    ) {
-      return {
-        texto: estado,
-        className:
-          "bg-emerald-100 text-emerald-700 border-emerald-200",
-        icon: CheckCircle,
-      };
-    }
-
-    return {
-      texto: estado || "Registrado",
-      className:
-        "bg-blue-100 text-blue-700 border-blue-200",
-      icon: ReceiptText,
+        eliminadoPor:
+          perfil?._id ||
+          perfil?.nombres ||
+          "sistema",
+      });
     };
 
-  };
+  /* =====================================================
+     FILTRADO
+  ===================================================== */
 
-  /* =========================
-      BUSCADOR
-  ========================= */
+  const egresos =
+    data?.egresos ??
+    [];
 
-  const egresosFiltrados = useMemo(() => {
+  const egresosFiltrados =
+    useMemo(() => {
+      const textoBusqueda =
+        normalizarTexto(
+          search
+        );
 
-    const egresos =
-      data?.egresos || [];
+      if (
+        !textoBusqueda
+      ) {
+        return egresos;
+      }
 
-    const searchValue =
-      search.trim().toLowerCase();
+      return egresos.filter(
+        (egreso) => {
+          const detallesTexto =
+            (
+              egreso.detalles ??
+              []
+            )
+              .map(
+                (detalle) =>
+                  [
+                    detalle.producto
+                      ?.nombre,
+                    detalle.producto
+                      ?.marca,
+                    detalle.producto
+                      ?.descripcion,
+                    detalle.almacen
+                      ?.nombre,
+                    detalle.almacen
+                      ?.tipo,
+                    detalle.descripcion,
+                    detalle.tipoItem,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+              )
+              .join(" ");
 
-    if (!searchValue) {
-      return egresos;
-    }
+          const contenido = [
+            egreso.numeroEgreso,
+            egreso.tipoEgreso,
+            egreso.metodoPago,
+            egreso.estado,
+            egreso.observacion,
+            egreso.total,
+            egreso.caja?.nombre,
+            egreso.caja
+              ?.descripcion,
+            egreso.perfil?.nombres,
+            egreso.perfil
+              ?.apellidos,
+            detallesTexto,
+          ]
+            .map(
+              normalizarTexto
+            )
+            .join(" ");
 
-    return egresos.filter((egreso) => {
-
-      const detallesTexto =
-        egreso.detalles
-          .map((detalle) =>
-            `
-              ${detalle.producto?.nombre || ""}
-              ${detalle.producto?.marca || ""}
-              ${detalle.producto?.descripcion || ""}
-              ${detalle.almacen?.nombre || ""}
-              ${detalle.almacen?.tipo || ""}
-              ${detalle.descripcion || ""}
-              ${detalle.tipoItem || ""}
-            `
-          )
-          .join(" ");
-
-      const texto = `
-        ${egreso.numeroEgreso || ""}
-        ${egreso.tipoEgreso || ""}
-        ${egreso.metodoPago || ""}
-        ${egreso.estado || ""}
-        ${egreso.observacion || ""}
-        ${egreso.total || ""}
-        ${egreso.caja?.nombre || ""}
-        ${egreso.caja?.descripcion || ""}
-        ${egreso.perfil?.nombres || ""}
-        ${detallesTexto}
-      `.toLowerCase();
-
-      return texto.includes(
-        searchValue
+          return contenido.includes(
+            textoBusqueda
+          );
+        }
       );
+    }, [
+      egresos,
+      search,
+    ]);
 
-    });
+  /* =====================================================
+     RESUMEN
+  ===================================================== */
 
-  }, [data, search]);
+  const resumen =
+    useMemo(() => {
+      const egresosValidos =
+        egresos.filter(
+          (egreso) =>
+            egreso.estado !==
+              "anulado" &&
+            egreso.estado !==
+              "eliminado"
+        );
 
-  /* =========================
-      RESUMEN
-  ========================= */
+      return {
+        cantidad:
+          egresos.length,
 
-  const resumen = useMemo(() => {
+        cantidadValidos:
+          egresosValidos.length,
 
-    const egresos =
-      data?.egresos || [];
+        totalEgresos:
+          egresosValidos.reduce(
+            (
+              acumulado,
+              egreso
+            ) =>
+              acumulado +
+              Number(
+                egreso.total ??
+                  egreso.totalDetalles ??
+                  0
+              ),
+            0
+          ),
+      };
+    }, [
+      egresos,
+    ]);
 
-    const egresosValidos =
-      egresos.filter(
-        (egreso) =>
-          egreso.estado !== "anulado" &&
-          egreso.estado !== "eliminado"
-      );
+  /* =====================================================
+     ESTADOS GENERALES
+  ===================================================== */
 
-    const totalEgresos =
-      egresosValidos.reduce(
-        (acc, egreso) =>
-          acc + Number(egreso.total || 0),
-        0
-      );
-
-    const totalDetalles =
-      egresosValidos.reduce(
-        (acc, egreso) =>
-          acc + Number(egreso.totalDetalles || 0),
-        0
-      );
-
-    return {
-      cantidad:
-        egresos.length,
-
-      cantidadValidos:
-        egresosValidos.length,
-
-      totalEgresos,
-
-      totalDetalles,
-    };
-
-  }, [data]);
-
-  /* =========================
-      CERRAR SESION
-  ========================= */
-
-  const cerrarSesion = () => {
-
-    localStorage.removeItem(
-      "AUTH_TOKEN"
+  if (
+    errorAuth ||
+    (
+      !loadingAuth &&
+      !perfil
+    )
+  ) {
+    return (
+      <Navigate
+        to="/auth/login"
+        replace
+      />
     );
+  }
 
-    navigate("/auth/login");
-
-  };
-
-  /* =========================
-      LOADING
-  ========================= */
+  if (
+    !sucursalId
+  ) {
+    return (
+      <Navigate
+        to="/404"
+        replace
+      />
+    );
+  }
 
   if (
     loadingAuth ||
     isLoading
   ) {
-
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-900">
-        <p className="text-lg font-bold">
-          Cargando egresos...
-        </p>
+      <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950">
+        <MenuList />
+
+        <main className="min-w-0 flex-1 overflow-x-hidden px-3 pb-6 pt-20 sm:px-5 sm:pt-20 lg:p-8 lg:pt-8">
+          <EgresosSkeleton />
+        </main>
       </div>
     );
-
   }
-
-  /* =========================
-      ERROR
-  ========================= */
 
   if (isError) {
-
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-900">
-        <p className="text-lg font-bold text-red-500">
-          Error al cargar egresos
-        </p>
-      </div>
-    );
-
-  }
-
-  return (
-
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-
-
-      {/* SIDEBAR */}
-      <aside className="fixed left-0 top-20 z-40 h-[calc(100vh-5rem)] w-72 border-r border-slate-200 bg-white">
+      <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950">
         <MenuList />
-      </aside>
 
-      {/* MAIN */}
-      <main className="ml-72 pt-20">
+        <main className="min-w-0 flex-1 overflow-x-hidden px-3 pb-6 pt-20 sm:px-5 sm:pt-20 lg:p-8 lg:pt-8">
+          <div className="mx-auto max-w-3xl rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-950/30">
+            <div className="flex items-start gap-3">
+              <AlertTriangle
+                size={22}
+                className="mt-0.5 shrink-0 text-red-700 dark:text-red-400"
+              />
 
-        <div className="p-8">
+              <div className="min-w-0 flex-1">
+                <h1 className="font-bold text-red-800 dark:text-red-300">
+                  No se pudieron cargar los egresos
+                </h1>
 
-          {/* CARD PRINCIPAL */}
-          <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-
-            {/* CABECERA */}
-            <div className="mb-8 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-
-              <div>
-
-                <div className="mb-3 flex items-center gap-2 text-sm text-slate-500">
-
-                  <ClipboardList className="h-4 w-4" />
-
-                  <span>
-                    {data?.sucursal?.nombreSucursal ||
-                      "Sucursal"}
-                  </span>
-
-                  <span>/</span>
-
-                  <span className="font-bold text-red-500">
-                    Egresos
-                  </span>
-
-                </div>
-
-                <h2 className="text-4xl font-black text-slate-900">
-                  Egresos Registrados
-                </h2>
-
-                <p className="mt-2 text-slate-500">
-                  Gestión de salidas de dinero y gastos de la sucursal
+                <p className="mt-2 break-words text-sm text-red-700 dark:text-red-400">
+                  {obtenerMensajeError(
+                    error
+                  )}
                 </p>
 
+                <button
+                  type="button"
+                  onClick={() =>
+                    refetch()
+                  }
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
+                >
+                  <RefreshCcw
+                    size={17}
+                  />
+
+                  Intentar nuevamente
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  /* =====================================================
+     CONTENIDO
+  ===================================================== */
+
+  return (
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <MenuList />
+
+      <main className="min-w-0 flex-1 overflow-x-hidden px-3 pb-6 pt-20 sm:px-5 sm:pt-20 lg:p-8 lg:pt-8">
+        <div className="mx-auto w-full min-w-0 max-w-7xl space-y-5 sm:space-y-6">
+          {/* ENCABEZADO */}
+
+          <motion.header
+            initial={{
+              opacity: 0,
+              y: -12,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.3,
+            }}
+            className="relative min-w-0 overflow-hidden rounded-2xl bg-slate-900 p-4 text-white shadow-lg sm:rounded-3xl sm:p-6 dark:border dark:border-slate-800"
+          >
+            <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-white/5" />
+
+            <div className="relative z-10 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                  <Banknote
+                    size={22}
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 sm:text-xs">
+                    Gestión financiera
+                  </p>
+
+                  <h1 className="mt-1 truncate text-xl font-bold sm:text-3xl">
+                    Egresos registrados
+                  </h1>
+
+                  <div className="mt-2 flex min-w-0 items-center gap-2 text-sm text-slate-300">
+                    <MapPin
+                      size={15}
+                      className="shrink-0"
+                    />
+
+                    <span className="truncate">
+                      {data?.sucursal
+                        ?.nombreSucursal ||
+                        "Sucursal"}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex w-full flex-col gap-4 md:w-auto md:flex-row md:items-center">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    refetch()
+                  }
+                  disabled={
+                    isFetching
+                  }
+                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
+                >
+                  <RefreshCcw
+                    size={16}
+                    className={
+                      isFetching
+                        ? "animate-spin"
+                        : ""
+                    }
+                  />
 
-                {/* BOTÓN CREAR */}
+                  <span className="truncate">
+                    Actualizar
+                  </span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() =>
                     navigate(
-                      `/sucursal/${idSucursal}/egreso/create`
+                      `/sucursal/${sucursalId}/egreso/create`
                     )
                   }
-                  title="Crear egreso"
-                  aria-label="Crear egreso"
-                  className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500 text-white shadow-lg shadow-red-500/20 transition hover:bg-red-600"
+                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100"
                 >
-                  <Plus className="h-6 w-6" />
+                  <Plus size={17} />
+                  <span className="truncate">
+                    Nuevo
+                  </span>
                 </button>
+              </div>
+            </div>
+          </motion.header>
 
-                {/* BUSCADOR */}
-                <div className="relative w-full md:w-96">
+          {/* RESUMEN */}
 
-                  <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+          <section className="grid grid-cols-3 gap-2 sm:gap-4">
+            <article className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+              <p className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:text-xs">
+                Total
+              </p>
 
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) =>
-                      setSearch(e.target.value)
+              <p className="mt-1 truncate text-xl font-bold sm:mt-2 sm:text-3xl">
+                {resumen.cantidad}
+              </p>
+
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block dark:text-slate-400">
+                Registrados
+              </p>
+            </article>
+
+            <article className="min-w-0 rounded-xl border border-emerald-200 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-5 dark:border-emerald-900/50 dark:bg-slate-900">
+              <p className="truncate text-[10px] font-bold uppercase tracking-wide text-emerald-600 sm:text-xs dark:text-emerald-400">
+                Válidos
+              </p>
+
+              <p className="mt-1 truncate text-xl font-bold text-emerald-700 sm:mt-2 sm:text-3xl dark:text-emerald-400">
+                {resumen.cantidadValidos}
+              </p>
+
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block dark:text-slate-400">
+                Activos
+              </p>
+            </article>
+
+            <article className="min-w-0 rounded-xl border border-red-200 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-5 dark:border-red-900/50 dark:bg-slate-900">
+              <p className="truncate text-[10px] font-bold uppercase tracking-wide text-red-600 sm:text-xs dark:text-red-400">
+                Monto
+              </p>
+
+              <p className="mt-1 truncate text-lg font-bold text-red-700 sm:mt-2 sm:text-2xl dark:text-red-400">
+                {formatearMoneda(
+                  resumen.totalEgresos
+                )}
+              </p>
+
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block dark:text-slate-400">
+                Total egresado
+              </p>
+            </article>
+          </section>
+
+          {/* BUSCADOR */}
+
+          <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4 dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative min-w-0 flex-1 sm:max-w-xl">
+                <Search
+                  size={18}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+
+                <input
+                  type="text"
+                  value={
+                    search
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setSearch(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Buscar por número, caja, tipo, producto o usuario..."
+                  className="w-full min-w-0 rounded-xl border border-slate-300 bg-slate-50 py-3 pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:bg-white focus:ring-4 focus:ring-slate-200/60 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-slate-700/40"
+                />
+
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSearch("")
                     }
-                    placeholder="Buscar egreso..."
-                    className="w-full rounded-2xl border border-slate-300 bg-white py-4 pl-12 pr-4 text-slate-700 outline-none transition focus:border-red-400 focus:ring-4 focus:ring-red-100"
-                  />
-
-                </div>
-
+                    aria-label="Limpiar búsqueda"
+                    className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
               </div>
 
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Mostrando{" "}
+                <strong className="text-slate-900 dark:text-white">
+                  {
+                    egresosFiltrados.length
+                  }
+                </strong>{" "}
+                egresos
+              </p>
             </div>
+          </section>
 
-            {/* RESUMEN */}
-            <div className="mb-8 grid gap-5 md:grid-cols-3">
+          {/* LISTA */}
 
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-
-                <div className="flex items-center justify-between">
-
-                  <div>
-
-                    <p className="text-sm font-semibold uppercase text-slate-500">
-                      Egresos
-                    </p>
-
-                    <p className="mt-2 text-4xl font-black text-slate-900">
-                      {resumen.cantidad}
-                    </p>
-
-                  </div>
-
-                  <div className="rounded-2xl bg-red-100 p-4 text-red-500">
-
-                    <ReceiptText className="h-8 w-8" />
-
-                  </div>
-
-                </div>
-
+          {egresosFiltrados.length ===
+          0 ? (
+            <section className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center sm:p-8 dark:border-slate-700 dark:bg-slate-900">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                <ReceiptText
+                  size={30}
+                />
               </div>
 
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+              <h2 className="mt-5 text-lg font-bold">
+                No se encontraron egresos
+              </h2>
 
-                <div className="flex items-center justify-between">
+              <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
+                {search
+                  ? "Prueba con otro número, producto, caja, método de pago o usuario."
+                  : "Registra el primer egreso para comenzar el control financiero de la sucursal."}
+              </p>
 
-                  <div>
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSearch("")
+                    }
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold dark:border-slate-700"
+                  >
+                    <Search size={17} />
+                    Limpiar búsqueda
+                  </button>
+                )}
 
-                    <p className="text-sm font-semibold uppercase text-slate-500">
-                      Egresos válidos
-                    </p>
-
-                    <p className="mt-2 text-4xl font-black text-emerald-600">
-                      {resumen.cantidadValidos}
-                    </p>
-
-                  </div>
-
-                  <div className="rounded-2xl bg-emerald-100 p-4 text-emerald-600">
-
-                    <CheckCircle className="h-8 w-8" />
-
-                  </div>
-
-                </div>
-
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(
+                      `/sucursal/${sucursalId}/egreso/create`
+                    )
+                  }
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white dark:bg-white dark:text-slate-950"
+                >
+                  <Plus size={17} />
+                  Nuevo egreso
+                </button>
               </div>
-
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-
-                <div className="flex items-center justify-between">
-
-                  <div>
-
-                    <p className="text-sm font-semibold uppercase text-slate-500">
-                      Total egresos
-                    </p>
-
-                    <p className="mt-2 text-4xl font-black text-red-500">
-                      Bs. {resumen.totalEgresos.toFixed(2)}
-                    </p>
-
-                  </div>
-
-                  <div className="rounded-2xl bg-red-100 p-4 text-red-500">
-
-                    <DollarSign className="h-8 w-8" />
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* LISTA */}
-            {egresosFiltrados.length === 0 ? (
-
-              <div className="flex h-72 items-center justify-center rounded-3xl border border-dashed border-slate-300 text-slate-500">
-                No hay egresos registrados
-              </div>
-
-            ) : (
-
-              <div className="space-y-6">
-
-                {egresosFiltrados.map((egreso) => {
-
+            </section>
+          ) : (
+            <section className="space-y-4">
+              {egresosFiltrados.map(
+                (egreso) => {
                   const estadoInfo =
                     getEstadoStyle(
                       egreso.estado
@@ -619,214 +961,293 @@ export default function EgresoDetailView() {
                   const EstadoIcon =
                     estadoInfo.icon;
 
+                  const detalles =
+                    egreso.detalles ??
+                    [];
+
+                  const totalEgreso =
+                    Number(
+                      egreso.total ??
+                        egreso.totalDetalles ??
+                        0
+                    );
+
                   return (
-
-                    <article
-                      key={egreso._id}
-                      className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
+                    <motion.article
+                      key={
+                        egreso._id
+                      }
+                      initial={{
+                        opacity: 0,
+                        y: 12,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
                     >
+                      {/* CABECERA DEL EGRESO */}
 
-                      {/* CABECERA EGRESO */}
-                      <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50 p-6 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="border-b border-slate-200 bg-slate-50 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/50">
+                        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex min-w-0 items-start gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400">
+                              <Banknote
+                                size={22}
+                              />
+                            </div>
 
-                        <div className="flex items-start gap-4">
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                                Egreso
+                              </p>
 
-                          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-100 text-red-500">
+                              <h2 className="mt-1 truncate text-lg font-bold text-slate-900 sm:text-xl dark:text-white">
+                                {egreso.numeroEgreso ||
+                                  "Sin número"}
+                              </h2>
 
-                            <Banknote className="h-8 w-8" />
+                              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                <span>
+                                  {formatearTipoEgreso(
+                                    egreso.tipoEgreso
+                                  )}
+                                </span>
 
+                                <span className="text-slate-300 dark:text-slate-700">
+                                  •
+                                </span>
+
+                                <span>
+                                  {formatearFecha(
+                                    egreso.fechaCreacion ||
+                                      egreso.fechaEgreso
+                                  )}
+                                </span>
+                              </div>
+                            </div>
                           </div>
 
-                          <div>
-
-                            <h3 className="text-2xl font-black text-slate-900">
-                              Egreso{" "}
-                              {egreso.numeroEgreso ||
-                                "Sin número"}
-                            </h3>
-
-                            <p className="mt-1 text-sm text-slate-500">
-                              Tipo:{" "}
-                              <span className="font-bold text-slate-700">
-                                {formatearTipoEgreso(
-                                  egreso.tipoEgreso
-                                )}
-                              </span>
-                            </p>
-
-                            <p className="mt-1 text-sm text-slate-400">
-                              {formatearFecha(
-                                egreso.fechaCreacion ||
-                                egreso.fechaEgreso
-                              )}
-                            </p>
-
-                          </div>
-
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3">
-
-                          {/* ESTADO */}
-                          <span
-                            className={`
-                              inline-flex
-                              items-center
-                              gap-2
-                              rounded-2xl
-                              border
-                              px-4
-                              py-2
-                              text-sm
-                              font-black
-                              ${estadoInfo.className}
-                            `}
-                          >
-                            <EstadoIcon className="h-4 w-4" />
-                            {estadoInfo.texto}
-                          </span>
-
-                          {/* ACCIONES */}
-                          <div className="flex items-center gap-2">
-
-                            {/* VER */}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                navigate(
-                                  `/sucursal/${idSucursal}/egresos/${egreso._id}`
-                                )
-                              }
-                              title="Ver egreso"
-                              aria-label="Ver egreso"
-                              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 transition hover:bg-blue-200"
+                          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                            <span
+                              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold ${estadoInfo.className}`}
                             >
-                              <Eye className="h-5 w-5" />
-                            </button>
+                              <EstadoIcon
+                                size={15}
+                              />
 
-                          
-                               <button
-                                  type="button"
-                                  onClick={() =>
-                                    navigate(
-                                      `/sucursal/${idSucursal}/egreso/${egreso._id}/edit`
-                                    )
-                                  }
-                                  title="Editar egreso"
-                                  aria-label="Editar egreso"
-                                  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-600 transition hover:bg-yellow-200"
-                                >
-                                  <Pencil className="h-5 w-5" />
-                                </button>
+                              {estadoInfo.texto}
+                            </span>
 
-                            {/* ELIMINAR / ANULAR */}
-                            {egreso.estado !== "anulado" &&
-                              egreso.estado !== "eliminado" && (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  navigate(
+                                    `/sucursal/${sucursalId}/egresos/${egreso._id}`
+                                  )
+                                }
+                                title="Ver egreso"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400"
+                              >
+                                <Eye size={18} />
+                              </button>
 
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleAnularEgreso(
-                                      egreso._id
-                                    )
-                                  }
-                                  disabled={
-                                    anulandoEgreso
-                                  }
-                                  title="Anular egreso"
-                                  aria-label="Anular egreso"
-                                  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100 text-red-600 transition hover:bg-red-200 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  navigate(
+                                    `/sucursal/${sucursalId}/egreso/${egreso._id}/edit`
+                                  )
+                                }
+                                title="Editar egreso"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700 transition hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400"
+                              >
+                                <Pencil
+                                  size={18}
+                                />
+                              </button>
 
-                              )}
-
+                              {egreso.estado !==
+                                "anulado" &&
+                                egreso.estado !==
+                                  "eliminado" && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleAnularEgreso(
+                                        egreso._id
+                                      )
+                                    }
+                                    disabled={
+                                      anulandoEgreso
+                                    }
+                                    title="Anular egreso"
+                                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-950/40 dark:text-red-400"
+                                  >
+                                    <Trash2
+                                      size={18}
+                                    />
+                                  </button>
+                                )}
+                            </div>
                           </div>
-
                         </div>
-
                       </div>
 
-                      {/* INFO */}
-                      <div className="grid gap-4 border-b border-slate-200 p-6 md:grid-cols-4">
+                      {/* INFORMACIÓN GENERAL */}
 
-                        <div className="rounded-2xl bg-slate-50 p-4">
-
-                          <p className="text-xs font-semibold uppercase text-slate-400">
+                      <div className="grid gap-3 border-b border-slate-200 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-4 dark:border-slate-800">
+                        <div className="min-w-0 rounded-xl bg-slate-50 p-4 dark:bg-slate-950/60">
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                             Caja
                           </p>
 
-                          <p className="mt-1 font-black text-slate-900">
+                          <p className="mt-1 truncate font-semibold text-slate-900 dark:text-white">
                             {egreso.caja?.nombre ||
                               egreso.caja?.descripcion ||
                               "Sin caja"}
                           </p>
-
                         </div>
 
-                        <div className="rounded-2xl bg-slate-50 p-4">
-
-                          <p className="text-xs font-semibold uppercase text-slate-400">
+                        <div className="min-w-0 rounded-xl bg-slate-50 p-4 dark:bg-slate-950/60">
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                             Método de pago
                           </p>
 
-                          <p className="mt-1 font-black text-slate-900">
+                          <p className="mt-1 truncate font-semibold text-slate-900 dark:text-white">
                             {formatearMetodoPago(
                               egreso.metodoPago
                             )}
                           </p>
-
                         </div>
 
-                        <div className="rounded-2xl bg-slate-50 p-4">
-
-                          <p className="text-xs font-semibold uppercase text-slate-400">
+                        <div className="min-w-0 rounded-xl bg-slate-50 p-4 dark:bg-slate-950/60">
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                             Registrado por
                           </p>
 
-                          <p className="mt-1 font-black text-slate-900">
-                            {egreso.perfil?.nombres ||
+                          <p className="mt-1 truncate font-semibold text-slate-900 dark:text-white">
+                            {[
+                              egreso.perfil
+                                ?.nombres,
+                              egreso.perfil
+                                ?.apellidos,
+                            ]
+                              .filter(Boolean)
+                              .join(" ") ||
                               egreso.creadoPor ||
                               "Sin usuario"}
                           </p>
-
                         </div>
 
-                        <div className="rounded-2xl bg-slate-50 p-4">
-
-                          <p className="text-xs font-semibold uppercase text-slate-400">
+                        <div className="min-w-0 rounded-xl bg-slate-50 p-4 dark:bg-slate-950/60">
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                             Observación
                           </p>
 
-                          <p className="mt-1 font-black text-slate-900">
+                          <p className="mt-1 line-clamp-2 font-semibold text-slate-900 dark:text-white">
                             {egreso.observacion ||
                               "Sin observación"}
                           </p>
-
                         </div>
-
                       </div>
 
-                      {/* DETALLES */}
-                      <div className="p-6">
+                      {/* DETALLES MÓVILES */}
 
-                        {egreso.detalles.length === 0 ? (
+                      {detalles.length > 0 && (
+                        <div className="grid gap-3 p-4 md:hidden">
+                          {detalles.map(
+                            (detalle) => (
+                              <div
+                                key={
+                                  detalle._id
+                                }
+                                className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/60"
+                              >
+                                <div className="flex min-w-0 items-start gap-3">
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400">
+                                    <Package
+                                      size={18}
+                                    />
+                                  </div>
 
-                          <div className="rounded-2xl border border-dashed border-slate-300 p-5 text-center text-slate-500">
-                            Este egreso no tiene detalles registrados
-                          </div>
+                                  <div className="min-w-0 flex-1">
+                                    <h3 className="truncate font-bold text-slate-900 dark:text-white">
+                                      {detalle.producto?.nombre ||
+                                        detalle.descripcion ||
+                                        "Ítem sin nombre"}
+                                    </h3>
 
-                        ) : (
+                                    <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">
+                                      {detalle.producto?.marca ||
+                                        detalle.tipoItem ||
+                                        "Sin tipo"}
+                                    </p>
+                                  </div>
+                                </div>
 
+                                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                  <div>
+                                    <dt className="text-xs font-semibold text-slate-400">
+                                      Almacén
+                                    </dt>
+
+                                    <dd className="mt-1 truncate font-semibold">
+                                      {detalle.almacen?.nombre ||
+                                        "Sin almacén"}
+                                    </dd>
+                                  </div>
+
+                                  <div>
+                                    <dt className="text-xs font-semibold text-slate-400">
+                                      Cantidad
+                                    </dt>
+
+                                    <dd className="mt-1 font-semibold">
+                                      {detalle.cantidad}
+                                    </dd>
+                                  </div>
+
+                                  <div>
+                                    <dt className="text-xs font-semibold text-slate-400">
+                                      Costo
+                                    </dt>
+
+                                    <dd className="mt-1 font-semibold">
+                                      {formatearMoneda(
+                                        detalle.costoUnitario
+                                      )}
+                                    </dd>
+                                  </div>
+
+                                  <div>
+                                    <dt className="text-xs font-semibold text-slate-400">
+                                      Subtotal
+                                    </dt>
+
+                                    <dd className="mt-1 font-bold text-red-700 dark:text-red-400">
+                                      {formatearMoneda(
+                                        detalle.subtotal
+                                      )}
+                                    </dd>
+                                  </div>
+                                </dl>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
+
+                      {/* TABLA ESCRITORIO */}
+
+                      {detalles.length > 0 && (
+                        <div className="hidden p-5 md:block">
                           <div className="overflow-x-auto">
-
-                            <table className="w-full border-collapse">
-
+                            <table className="w-full min-w-[760px]">
                               <thead>
-
-                                <tr className="border-b border-slate-200 text-left text-sm uppercase text-slate-500">
-
+                                <tr className="border-b border-slate-200 text-left text-xs font-bold uppercase tracking-wide text-slate-500 dark:border-slate-800">
                                   <th className="pb-4">
                                     Ítem
                                   </th>
@@ -835,148 +1256,138 @@ export default function EgresoDetailView() {
                                     Almacén
                                   </th>
 
-                                  <th className="pb-4">
+                                  <th className="pb-4 text-center">
                                     Cantidad
                                   </th>
 
-                                  <th className="pb-4">
+                                  <th className="pb-4 text-right">
                                     Costo
                                   </th>
 
                                   <th className="pb-4 text-right">
                                     Subtotal
                                   </th>
-
                                 </tr>
-
                               </thead>
 
-                              <tbody>
+                              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {detalles.map(
+                                  (detalle) => (
+                                    <tr
+                                      key={
+                                        detalle._id
+                                      }
+                                    >
+                                      <td className="py-4">
+                                        <div className="flex min-w-0 items-center gap-3">
+                                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400">
+                                            <Package
+                                              size={18}
+                                            />
+                                          </div>
 
-                                {egreso.detalles.map((detalle) => (
+                                          <div className="min-w-0">
+                                            <p className="max-w-64 truncate font-bold text-slate-900 dark:text-white">
+                                              {detalle.producto?.nombre ||
+                                                detalle.descripcion ||
+                                                "Ítem sin nombre"}
+                                            </p>
 
-                                  <tr
-                                    key={detalle._id}
-                                    className="border-b border-slate-100 text-sm"
-                                  >
-
-                                    <td className="py-5">
-
-                                      <div className="flex items-start gap-3">
-
-                                        <div className="rounded-xl bg-red-100 p-3 text-red-500">
-
-                                          <Package className="h-5 w-5" />
-
+                                            <p className="mt-1 max-w-64 truncate text-xs text-slate-500 dark:text-slate-400">
+                                              {detalle.producto?.marca ||
+                                                detalle.tipoItem ||
+                                                "Sin tipo"}
+                                            </p>
+                                          </div>
                                         </div>
+                                      </td>
 
-                                        <div>
+                                      <td className="py-4">
+                                        <span className="block max-w-48 truncate font-medium">
+                                          {detalle.almacen?.nombre ||
+                                            "Sin almacén"}
+                                        </span>
+                                      </td>
 
-                                          <p className="font-black text-slate-900">
-                                            {detalle.producto?.nombre ||
-                                              detalle.descripcion ||
-                                              "Ítem sin nombre"}
-                                          </p>
+                                      <td className="py-4 text-center font-semibold">
+                                        {detalle.cantidad}
+                                      </td>
 
-                                          <p className="text-xs text-slate-500">
-                                            {detalle.producto?.marca ||
-                                              detalle.tipoItem ||
-                                              "Sin tipo"}
-                                          </p>
+                                      <td className="py-4 text-right font-semibold">
+                                        {formatearMoneda(
+                                          detalle.costoUnitario
+                                        )}
+                                      </td>
 
-                                        </div>
-
-                                      </div>
-
-                                    </td>
-
-                                    <td className="py-5 font-bold text-slate-700">
-                                      {detalle.almacen?.nombre ||
-                                        "Sin almacén"}
-                                    </td>
-
-                                    <td className="py-5 font-bold text-slate-700">
-                                      {detalle.cantidad}
-                                    </td>
-
-                                    <td className="py-5 font-bold text-slate-700">
-                                      Bs.{" "}
-                                      {Number(
-                                        detalle.costoUnitario
-                                      ).toFixed(2)}
-                                    </td>
-
-                                    <td className="py-5 text-right font-black text-red-500">
-                                      Bs.{" "}
-                                      {Number(
-                                        detalle.subtotal
-                                      ).toFixed(2)}
-                                    </td>
-
-                                  </tr>
-
-                                ))}
-
+                                      <td className="py-4 text-right font-bold text-red-700 dark:text-red-400">
+                                        {formatearMoneda(
+                                          detalle.subtotal
+                                        )}
+                                      </td>
+                                    </tr>
+                                  )
+                                )}
                               </tbody>
-
                             </table>
-
                           </div>
+                        </div>
+                      )}
 
-                        )}
-
-                      </div>
+                      {detalles.length === 0 && (
+                        <div className="p-4 sm:p-5">
+                          <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                            Este egreso no tiene detalles registrados.
+                          </div>
+                        </div>
+                      )}
 
                       {/* TOTAL */}
-                      <div className="grid gap-4 border-t border-slate-200 bg-slate-50 px-6 py-5 md:grid-cols-2">
 
-                        <div>
-
-                          <p className="text-sm text-slate-500">
-                            Total Detalles
+                      <div className="grid gap-3 border-t border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 sm:p-5 dark:border-slate-800 dark:bg-slate-950/50">
+                        <div className="rounded-xl bg-white p-4 dark:bg-slate-900">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            Total detalles
                           </p>
 
-                          <p className="text-2xl font-black text-slate-900">
-                            Bs.{" "}
-                            {Number(
-                              egreso.totalDetalles || 0
-                            ).toFixed(2)}
+                          <p className="mt-1 text-xl font-bold">
+                            {formatearMoneda(
+                              egreso.totalDetalles ??
+                                0
+                            )}
                           </p>
-
                         </div>
 
-                        <div className="text-left md:text-right">
-
-                          <p className="text-sm text-slate-500">
-                            Total Egreso
+                        <div className="rounded-xl bg-red-50 p-4 sm:text-right dark:bg-red-950/30">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-red-500">
+                            Total egreso
                           </p>
 
-                          <p className="text-4xl font-black text-red-500">
-                            Bs. {Number(egreso.totalDetalles).toFixed(2)}
+                          <p className="mt-1 text-2xl font-bold text-red-700 dark:text-red-400">
+                            {formatearMoneda(
+                              totalEgreso
+                            )}
                           </p>
-
-                        </div>__
-
+                        </div>
                       </div>
-
-                    </article>
-
+                    </motion.article>
                   );
-
-                })}
-
-              </div>
-
-            )}
-
-          </section>
-
+                }
+              )}
+            </section>
+          )}
         </div>
-
       </main>
 
+      {anulandoEgreso && (
+        <div className="fixed bottom-4 left-4 right-4 z-[90] flex items-center justify-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl sm:left-auto sm:right-5 sm:w-auto dark:border dark:border-slate-700">
+          <LoaderCircle
+            size={17}
+            className="animate-spin"
+          />
+
+          Anulando egreso...
+        </div>
+      )}
     </div>
-
   );
-
 }

@@ -42,6 +42,7 @@ import EditRolView from './views/rol/EditRolView'
 
 
 import PerfilUsuarioDetailView from './views/perfilUsuario/PerfilUsuarioDetailView'
+import PersonalSucursalView from './views/perfilUsuario/PersonalSucursalView'
 import CreatePerfilUsuarioView from './views/perfilUsuario/CreatePerfilUsuarioView'
 import EditPerfilUsuarioView from './views/perfilUsuario/EditPerfilUsuarioView'
 
@@ -111,6 +112,9 @@ export default function Router() {
                         <Route path='/sucursal/:sucursalId/edit' element={<EditSucursalView />} />
 
                         {/* <Route path="/sucursal/:sucursalId/almacen" /> */}
+                        <Route path='/sucursal/:sucursalId/personal' element={<PersonalSucursalView />} />
+
+
                         <Route path='/sucursal/:sucursalId/almacen' element={<AlmacenDetailView />} />
                         <Route path='/sucursal/:sucursalId/almacen/create' element={<CreateAlmacenView />} />
                         <Route path='/sucursal/:sucursalId/almacen/:almacenId/edit' element={<EditAlmacenView />} />

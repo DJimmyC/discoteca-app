@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import {
+  Navigate,
   useNavigate,
 } from "react-router-dom";
 
@@ -16,15 +17,19 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import Swal from "sweetalert2";
+
 import {
+  AlertTriangle,
   ArrowLeft,
   ClipboardList,
-  LogOut,
-  Search,
-  Wallet,
+  LoaderCircle,
+  MapPin,
+  PackageSearch,
+  RefreshCcw,
+  Send,
+  Warehouse,
 } from "lucide-react";
-
-import Swal from "sweetalert2";
 
 import {
   useAuth,
@@ -64,9 +69,24 @@ import type {
   MovimientoForm,
 } from "@/types/MovimientoType";
 
-/* =========================
-    OBTENER ID
-========================= */
+/* =====================================================
+   TIPOS
+===================================================== */
+
+type TipoSolicitud =
+  | "reposicion_interna"
+  | "compra_externa";
+
+type EstadoSolicitud =
+  | "pendiente"
+  | "aprobada"
+  | "rechazada"
+  | "atendida"
+  | "anulada";
+
+/* =====================================================
+   UTILIDADES
+===================================================== */
 
 function obtenerIdRelacion(
   relacion:
@@ -77,7 +97,6 @@ function obtenerIdRelacion(
     | null
     | undefined
 ): string {
-
   if (
     typeof relacion ===
     "string"
@@ -85,16 +104,76 @@ function obtenerIdRelacion(
     return relacion;
   }
 
-  return relacion?._id || "";
-
+  return relacion?._id ?? "";
 }
 
-/* =========================
-    COMPONENTE
-========================= */
+function obtenerMensajeError(
+  error: unknown
+): string {
+  if (
+    error instanceof Error
+  ) {
+    return error.message;
+  }
+
+  return "Ocurrió un error inesperado.";
+}
+
+function esModoOscuro(): boolean {
+  return document.documentElement.classList.contains(
+    "dark"
+  );
+}
+
+/* =====================================================
+   DETALLE INICIAL
+===================================================== */
+
+function crearDetalleInicial(): DetalleSolicitudItem {
+  return {
+    idProducto: "",
+    cantidadSolicitada: 1,
+    cantidadAprobada: null,
+    cantidadAtendida: null,
+    unidad: "unidades",
+    observacion: "",
+    estado: "pendiente",
+    esNuevo: true,
+  };
+}
+
+/* =====================================================
+   SKELETON
+===================================================== */
+
+function CreateSolicitudSkeleton() {
+  return (
+    <div className="animate-pulse space-y-5">
+      <div className="h-36 rounded-2xl bg-slate-200 sm:h-40 sm:rounded-3xl dark:bg-slate-800" />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {Array.from({
+          length: 3,
+        }).map(
+          (_, index) => (
+            <div
+              key={index}
+              className="h-24 rounded-2xl bg-slate-200 dark:bg-slate-800"
+            />
+          )
+        )}
+      </div>
+
+      <div className="h-[560px] rounded-2xl bg-slate-200 dark:bg-slate-800" />
+    </div>
+  );
+}
+
+/* =====================================================
+   VISTA PRINCIPAL
+===================================================== */
 
 export default function CreateSolicitudView() {
-
   const navigate =
     useNavigate();
 
@@ -102,17 +181,15 @@ export default function CreateSolicitudView() {
     useQueryClient();
 
   const {
-    data:
-      perfil,
-
-    isLoading:
-      loadingAuth,
+    data: perfil,
+    isLoading: loadingAuth,
+    isError: errorAuth,
   } = useAuth();
 
   const [
     tipoSolicitud,
     setTipoSolicitud,
-  ] = useState(
+  ] = useState<TipoSolicitud>(
     "reposicion_interna"
   );
 
@@ -129,7 +206,7 @@ export default function CreateSolicitudView() {
   const [
     estado,
     setEstado,
-  ] = useState(
+  ] = useState<EstadoSolicitud>(
     "pendiente"
   );
 
@@ -141,42 +218,15 @@ export default function CreateSolicitudView() {
   const [
     detalles,
     setDetalles,
-  ] =
-    useState<
-      DetalleSolicitudItem[]
-    >([
+  ] = useState<
+    DetalleSolicitudItem[]
+  >([
+    crearDetalleInicial(),
+  ]);
 
-      {
-        idProducto:
-          "",
-
-        cantidadSolicitada:
-          1,
-
-        cantidadAprobada:
-          null,
-
-        cantidadAtendida:
-          null,
-
-        unidad:
-          "unidades",
-
-        observacion:
-          "",
-
-        estado:
-          "pendiente",
-
-        esNuevo:
-          true,
-      },
-
-    ]);
-
-  /* =========================
-      DATOS PERFIL
-  ========================= */
+  /* =====================================================
+     DATOS DEL PERFIL
+  ===================================================== */
 
   const idPerfil =
     obtenerIdRelacion(
@@ -196,25 +246,37 @@ export default function CreateSolicitudView() {
         "Sucursal"
       : "Sucursal";
 
+  const ubicacionSucursal =
+    typeof perfil?.idSucursal ===
+      "object"
+      ? perfil.idSucursal
+          ?.ubicacionSucursal ||
+        ""
+      : "";
+
   const nombreUsuario =
-    perfil?.nombres ||
+    [
+      perfil?.nombres,
+      perfil?.apellidos,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
     "sistema";
 
-  /* =========================
-      ALMACENES
-  ========================= */
+  /* =====================================================
+     CONSULTAR ALMACENES
+  ===================================================== */
 
   const {
-    data:
-      dataAlmacenes,
-
-    isLoading:
-      loadingAlmacenes,
-
-    isError:
-      errorAlmacenes,
+    data: dataAlmacenes,
+    isLoading: loadingAlmacenes,
+    isError: errorAlmacenes,
+    error: almacenesError,
+    refetch: recargarAlmacenes,
+    isFetching:
+      actualizandoAlmacenes,
   } = useQuery({
-
     queryKey: [
       "almacenes-sucursal",
       idSucursal,
@@ -226,20 +288,22 @@ export default function CreateSolicitudView() {
       ),
 
     enabled:
-      Boolean(
-        idSucursal
-      ),
+      Boolean(idSucursal),
 
+    staleTime:
+      1000 * 60 * 3,
+
+    refetchOnWindowFocus:
+      false,
   });
 
   const almacenes =
-    dataAlmacenes
-      ?.almacenes ||
+    dataAlmacenes?.almacenes ??
     [];
 
-  /* =========================
-      INVENTARIO PRINCIPAL
-  ========================= */
+  /* =====================================================
+     CONSULTAR INVENTARIO PRINCIPAL
+  ===================================================== */
 
   const {
     data:
@@ -250,8 +314,16 @@ export default function CreateSolicitudView() {
 
     isError:
       errorProductos,
-  } = useQuery({
 
+    error:
+      productosError,
+
+    refetch:
+      recargarProductos,
+
+    isFetching:
+      actualizandoProductos,
+  } = useQuery({
     queryKey: [
       "inventario-principal",
       idSucursal,
@@ -263,52 +335,62 @@ export default function CreateSolicitudView() {
       ),
 
     enabled:
-      Boolean(
-        idSucursal
-      ),
+      Boolean(idSucursal),
 
+    staleTime:
+      1000 * 60 * 2,
+
+    refetchOnWindowFocus:
+      false,
   });
 
   const productos =
     useMemo(() => {
-
       return (
         inventarioPrincipal
-          ?.inventarios || []
+          ?.inventarios ?? []
       )
         .filter(
           (inventario) =>
-            inventario.estado !== false &&
-            inventario.cantidad > 0 &&
-            typeof inventario.idProducto === "object" &&
-            inventario.idProducto !== null &&
+            inventario.estado !==
+              false &&
+            Number(
+              inventario.cantidad
+            ) > 0 &&
+            typeof inventario.idProducto ===
+              "object" &&
+            inventario.idProducto !==
+              null &&
             Boolean(
-              inventario.idProducto._id
+              inventario.idProducto
+                ._id
             )
         )
         .map(
           (inventario) => {
-
             const producto =
-              typeof inventario.idProducto === "object" &&
-              inventario.idProducto !== null
+              typeof inventario.idProducto ===
+                "object" &&
+              inventario.idProducto !==
+                null
                 ? inventario.idProducto
                 : null;
 
             return {
               _id:
-                producto?._id || "",
+                producto?._id ??
+                "",
 
               nombre:
-                producto?.nombre ||
+                producto?.nombre ??
                 "Producto",
 
               descripcion:
-                producto?.descripcion ||
+                producto?.descripcion ??
                 "",
 
               marca:
-                producto?.marca ||
+                producto?.marca ??
                 "",
 
               estado:
@@ -317,18 +399,21 @@ export default function CreateSolicitudView() {
 
               stockDisponible:
                 Number(
-                  inventario.cantidad || 0
+                  inventario.cantidad ??
+                    0
                 ),
             };
           }
         );
-
     }, [
       inventarioPrincipal,
     ]);
 
-  useEffect(() => {
+  /* =====================================================
+     DEFINIR ALMACÉN ORIGEN
+  ===================================================== */
 
+  useEffect(() => {
     if (
       tipoSolicitud ===
       "compra_externa"
@@ -339,22 +424,44 @@ export default function CreateSolicitudView() {
 
     const idPrincipal =
       inventarioPrincipal
-        ?.almacen
-        ?._id ||
+        ?.almacen?._id ??
       "";
 
     setIdAlmacenOrigen(
       idPrincipal
     );
-
   }, [
     inventarioPrincipal,
     tipoSolicitud,
   ]);
 
-  /* =========================
-      MUTATION
-  ========================= */
+  /* =====================================================
+     LIMPIAR DESTINO INVÁLIDO
+  ===================================================== */
+
+  useEffect(() => {
+    if (!idAlmacenDestino) {
+      return;
+    }
+
+    const destinoExiste =
+      almacenes.some(
+        (almacen) =>
+          almacen._id ===
+          idAlmacenDestino
+      );
+
+    if (!destinoExiste) {
+      setIdAlmacenDestino("");
+    }
+  }, [
+    almacenes,
+    idAlmacenDestino,
+  ]);
+
+  /* =====================================================
+     CREAR SOLICITUD
+  ===================================================== */
 
   const {
     mutate:
@@ -362,38 +469,26 @@ export default function CreateSolicitudView() {
 
     isPending,
   } = useMutation({
-
     mutationFn:
       async () => {
-
-        /* =========================
-            VALIDACIONES
-        ========================= */
-
         if (!idPerfil) {
-
           throw new Error(
-            "No se encontró el perfil del usuario"
+            "No se encontró el perfil del usuario."
           );
-
         }
 
         if (!idSucursal) {
-
           throw new Error(
-            "No se encontró la sucursal del usuario"
+            "No se encontró la sucursal del usuario."
           );
-
         }
 
         if (
           !idAlmacenDestino
         ) {
-
           throw new Error(
-            "Debe seleccionar el almacén destino"
+            "Debe seleccionar el almacén destino."
           );
-
         }
 
         if (
@@ -401,11 +496,9 @@ export default function CreateSolicitudView() {
             "reposicion_interna" &&
           !idAlmacenOrigen
         ) {
-
           throw new Error(
-            "Debe seleccionar el almacén origen"
+            "No se encontró el almacén principal de origen."
           );
-
         }
 
         if (
@@ -414,18 +507,14 @@ export default function CreateSolicitudView() {
           idAlmacenOrigen ===
             idAlmacenDestino
         ) {
-
           throw new Error(
-            "El almacén origen y destino no pueden ser iguales"
+            "El almacén origen y destino no pueden ser iguales."
           );
-
         }
 
         const detallesValidos =
           detalles.filter(
-            (
-              detalle
-            ) =>
+            (detalle) =>
               Boolean(
                 detalle.idProducto
               ) &&
@@ -439,47 +528,9 @@ export default function CreateSolicitudView() {
           detallesValidos.length ===
           0
         ) {
-
           throw new Error(
-            "Debe agregar al menos un producto válido"
+            "Debe agregar al menos un producto válido."
           );
-
-        }
-
-        for (
-          const detalle
-          of detallesValidos
-        ) {
-
-          const producto =
-            productos.find(
-              (item) =>
-                item._id ===
-                detalle.idProducto
-            );
-
-          const stockDisponible =
-            Number(
-              producto
-                ?.stockDisponible ||
-              0
-            );
-
-          if (
-            Number(
-              detalle
-                .cantidadSolicitada
-            ) >
-            stockDisponible
-          ) {
-
-            throw new Error(
-              `La cantidad solicitada de ${
-                producto?.nombre ||
-                "un producto"
-              } supera el stock disponible (${stockDisponible})`
-            );
-          }
         }
 
         const productosDuplicados =
@@ -490,9 +541,7 @@ export default function CreateSolicitudView() {
               array
             ) =>
               array.findIndex(
-                (
-                  item
-                ) =>
+                (item) =>
                   item.idProducto ===
                   detalle.idProducto
               ) !== index
@@ -501,22 +550,55 @@ export default function CreateSolicitudView() {
         if (
           productosDuplicados
         ) {
-
           throw new Error(
-            "No puede repetir el mismo producto dentro de la solicitud"
+            "No puede repetir el mismo producto dentro de la solicitud."
           );
-
         }
 
-        /* =========================
-            1. CREAR SOLICITUD
-        ========================= */
+        if (
+          tipoSolicitud ===
+          "reposicion_interna"
+        ) {
+          for (
+            const detalle
+            of detallesValidos
+          ) {
+            const producto =
+              productos.find(
+                (item) =>
+                  item._id ===
+                  detalle.idProducto
+              );
+
+            const stockDisponible =
+              Number(
+                producto
+                  ?.stockDisponible ??
+                  0
+              );
+
+            if (
+              Number(
+                detalle
+                  .cantidadSolicitada
+              ) >
+              stockDisponible
+            ) {
+              throw new Error(
+                `La cantidad solicitada de ${
+                  producto?.nombre ??
+                  "un producto"
+                } supera el stock disponible (${stockDisponible}).`
+              );
+            }
+          }
+        }
+
+        /* 1. CREAR SOLICITUD */
 
         const respuestaSolicitud =
           await createSolicitud({
-
             idPerfil,
-
             idSucursal,
 
             idAlmacenOrigen:
@@ -531,10 +613,6 @@ export default function CreateSolicitudView() {
               new Date()
                 .toISOString(),
 
-            /*
-              Toda solicitud nueva
-              comienza pendiente.
-            */
             estado:
               "pendiente",
 
@@ -544,35 +622,26 @@ export default function CreateSolicitudView() {
 
             creadoPor:
               nombreUsuario,
-
           });
 
         const idSolicitudCreada =
           respuestaSolicitud
-            .solicitud
-            ._id;
+            .solicitud?._id;
 
         if (
           !idSolicitudCreada
         ) {
-
           throw new Error(
-            "El backend no devolvió el ID de la solicitud creada"
+            "El backend no devolvió el ID de la solicitud creada."
           );
-
         }
 
-        /* =========================
-            2. PREPARAR DETALLES
-        ========================= */
+        /* 2. PREPARAR DETALLES */
 
         const detallesPayload:
           DetalleSolicitudForm[] =
           detallesValidos.map(
-            (
-              detalle
-            ) => ({
-
+            (detalle) => ({
               idSolicitud:
                 idSolicitudCreada,
 
@@ -585,10 +654,6 @@ export default function CreateSolicitudView() {
                     .cantidadSolicitada
                 ),
 
-              /*
-                Una solicitud nueva todavía
-                no está aprobada ni atendida.
-              */
               cantidadAprobada:
                 0,
 
@@ -601,7 +666,7 @@ export default function CreateSolicitudView() {
 
               observacion:
                 detalle
-                  .observacion ||
+                  .observacion ??
                 "",
 
               estado:
@@ -609,25 +674,20 @@ export default function CreateSolicitudView() {
 
               creadoPor:
                 nombreUsuario,
-
             })
           );
 
-        /* =========================
-            3. CREAR DETALLES
-        ========================= */
+        /* 3. CREAR DETALLES */
 
         const detallesCreados =
           await createManyDetalleSolicitud(
             detallesPayload
           );
 
-        /* =========================
-            4. MOVIMIENTO GENERAL
-        ========================= */
+        /* 4. MOVIMIENTO GENERAL */
 
         const totalSolicitado =
-          detallesPayload.reduce<number>(
+          detallesPayload.reduce(
             (
               total,
               detalle
@@ -642,7 +702,6 @@ export default function CreateSolicitudView() {
 
         const movimientoSolicitud:
           MovimientoForm = {
-
           fecha:
             new Date()
               .toISOString(),
@@ -660,7 +719,6 @@ export default function CreateSolicitudView() {
             idSolicitudCreada,
 
           idSucursal,
-
           idPerfil,
 
           idAlmacenOrigen:
@@ -694,121 +752,109 @@ export default function CreateSolicitudView() {
 
           creadoPor:
             nombreUsuario,
-
         };
 
         await createMovimiento(
           movimientoSolicitud
         );
 
-        /* =========================
-            5. MOVIMIENTO POR PRODUCTO
-        ========================= */
+        /* 5. MOVIMIENTOS POR PRODUCTO */
 
-        for (
-          const detalle
-          of detallesPayload
-        ) {
-
-          const producto =
-            productos.find(
-              (
-                item
-              ) =>
-                item._id ===
-                detalle.idProducto
-            );
-
-          const movimientoDetalle:
-            MovimientoForm = {
-
-            fecha:
-              new Date()
-                .toISOString(),
-
-            tipoMovimiento:
-              "solicitud",
-
-            origenMovimiento:
-              "solicitud",
-
-            modulo:
-              "solicitud",
-
-            idSolicitud:
-              idSolicitudCreada,
-
-            idSucursal,
-
-            idPerfil,
-
-            idAlmacenOrigen:
-              tipoSolicitud ===
-              "compra_externa"
-                ? undefined
-                : idAlmacenOrigen,
-
-            idAlmacenDestino,
-
-            idProducto:
-              detalle.idProducto,
-
-            cantidad:
+        await Promise.all(
+          detallesPayload.map(
+            async (
               detalle
-                .cantidadSolicitada,
+            ) => {
+              const producto =
+                productos.find(
+                  (item) =>
+                    item._id ===
+                    detalle.idProducto
+                );
 
-            estado:
-              "pendiente",
+              const movimientoDetalle:
+                MovimientoForm = {
+                fecha:
+                  new Date()
+                    .toISOString(),
 
-            referenciaId:
-              idSolicitudCreada,
+                tipoMovimiento:
+                  "solicitud",
 
-            referenciaModelo:
-              "DetalleSolicitud",
+                origenMovimiento:
+                  "solicitud",
 
-            observacion:
-              `Producto solicitado: ${
-                producto?.nombre ||
-                "Producto"
-              }`,
+                modulo:
+                  "solicitud",
 
-            creadoPor:
-              nombreUsuario,
+                idSolicitud:
+                  idSolicitudCreada,
 
-          };
+                idSucursal,
+                idPerfil,
 
-          await createMovimiento(
-            movimientoDetalle
-          );
+                idAlmacenOrigen:
+                  tipoSolicitud ===
+                  "compra_externa"
+                    ? undefined
+                    : idAlmacenOrigen,
 
-        }
+                idAlmacenDestino,
+
+                idProducto:
+                  detalle.idProducto,
+
+                cantidad:
+                  detalle
+                    .cantidadSolicitada,
+
+                estado:
+                  "pendiente",
+
+                referenciaId:
+                  idSolicitudCreada,
+
+                referenciaModelo:
+                  "DetalleSolicitud",
+
+                observacion:
+                  `Producto solicitado: ${
+                    producto?.nombre ??
+                    "Producto"
+                  }`,
+
+                creadoPor:
+                  nombreUsuario,
+              };
+
+              await createMovimiento(
+                movimientoDetalle
+              );
+            }
+          )
+        );
 
         return {
-
           solicitud:
             respuestaSolicitud
               .solicitud,
 
           cantidadDetalles:
-            detallesCreados.length,
+            Array.isArray(
+              detallesCreados
+            )
+              ? detallesCreados.length
+              : detallesPayload.length,
 
           totalSolicitado,
-
         };
-
       },
-
-    /* =========================
-        SUCCESS
-    ========================= */
 
     onSuccess:
       async (
         resultado
       ) => {
-
         await Swal.fire({
-
           icon:
             "success",
 
@@ -816,13 +862,11 @@ export default function CreateSolicitudView() {
             "Solicitud creada",
 
           html: `
-            <p>La solicitud, sus detalles y movimientos fueron registrados.</p>
-
+            <p>La solicitud, sus detalles y movimientos fueron registrados correctamente.</p>
             <p style="margin-top:8px;">
               <strong>Productos:</strong>
               ${resultado.cantidadDetalles}
             </p>
-
             <p>
               <strong>Total solicitado:</strong>
               ${resultado.totalSolicitado} unidades
@@ -835,42 +879,47 @@ export default function CreateSolicitudView() {
           showConfirmButton:
             false,
 
+          background:
+            esModoOscuro()
+              ? "#0f172a"
+              : "#ffffff",
+
+          color:
+            esModoOscuro()
+              ? "#f8fafc"
+              : "#0f172a",
         });
 
-        await queryClient
-          .invalidateQueries({
-
+        await Promise.all([
+          queryClient.invalidateQueries({
             queryKey: [
               "solicitudes-sucursal",
               idSucursal,
             ],
+          }),
 
-          });
-
-        await queryClient
-          .invalidateQueries({
-
+          queryClient.invalidateQueries({
             queryKey: [
               "movimientos",
             ],
+          }),
 
-          });
+          queryClient.invalidateQueries({
+            queryKey: [
+              "inventario-principal",
+              idSucursal,
+            ],
+          }),
+        ]);
 
         navigate(-1);
-
       },
-
-    /* =========================
-        ERROR
-    ========================= */
 
     onError:
       async (
         error
       ) => {
-
         await Swal.fire({
-
           icon:
             "error",
 
@@ -878,238 +927,397 @@ export default function CreateSolicitudView() {
             "Error al crear solicitud",
 
           text:
-            error instanceof Error
-              ? error.message
-              : "Error desconocido al crear la solicitud",
+            obtenerMensajeError(
+              error
+            ),
 
+          confirmButtonText:
+            "Aceptar",
+
+          confirmButtonColor:
+            "#dc2626",
+
+          background:
+            esModoOscuro()
+              ? "#0f172a"
+              : "#ffffff",
+
+          color:
+            esModoOscuro()
+              ? "#f8fafc"
+              : "#0f172a",
         });
-
       },
-
   });
 
-  /* =========================
-      CERRAR SESIÓN
-  ========================= */
+  /* =====================================================
+     ACTUALIZAR DATOS
+  ===================================================== */
 
-  const cerrarSesion = () => {
+  const actualizarDatos =
+    async () => {
+      await Promise.all([
+        recargarAlmacenes(),
+        recargarProductos(),
+      ]);
+    };
 
-    localStorage.removeItem(
-      "AUTH_TOKEN"
+  const actualizandoDatos =
+    actualizandoAlmacenes ||
+    actualizandoProductos;
+
+  /* =====================================================
+     ESTADOS GENERALES
+  ===================================================== */
+
+  if (
+    errorAuth ||
+    (
+      !loadingAuth &&
+      !perfil
+    )
+  ) {
+    return (
+      <Navigate
+        to="/auth/login"
+        replace
+      />
     );
-
-    navigate(
-      "/auth/login"
-    );
-
-  };
-
-  /* =========================
-      LOADING
-  ========================= */
+  }
 
   if (
     loadingAuth ||
     loadingAlmacenes ||
     loadingProductos
   ) {
-
     return (
+      <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950">
+        <MenuList />
 
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-900">
-
-        <p className="text-lg font-bold">
-
-          Cargando formulario...
-
-        </p>
-
+        <main className="min-w-0 flex-1 overflow-x-hidden px-3 pb-6 pt-20 sm:px-5 sm:pt-20 lg:p-8 lg:pt-8">
+          <CreateSolicitudSkeleton />
+        </main>
       </div>
-
     );
-
   }
-
-  /* =========================
-      ERROR
-  ========================= */
 
   if (
     errorAlmacenes ||
     errorProductos
   ) {
-
     return (
-
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-900">
-
-        <p className="text-lg font-bold text-red-500">
-
-          Error al cargar almacenes o productos
-
-        </p>
-
-      </div>
-
-    );
-
-  }
-
-  return (
-
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-
-      {/* TOP BAR */}
-
-
-      {/* SIDEBAR */}
-
-      <aside className="fixed left-0 top-20 z-40 h-[calc(100vh-5rem)] w-72 border-r border-slate-200 bg-white">
-
+      <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50 dark:bg-slate-950">
         <MenuList />
 
-      </aside>
+        <main className="min-w-0 flex-1 overflow-x-hidden px-3 pb-6 pt-20 sm:px-5 sm:pt-20 lg:p-8 lg:pt-8">
+          <div className="mx-auto max-w-3xl rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-950/30">
+            <div className="flex items-start gap-3">
+              <AlertTriangle
+                size={22}
+                className="mt-0.5 shrink-0 text-red-700 dark:text-red-400"
+              />
 
-      {/* MAIN */}
-
-      <main className="ml-72 pt-20">
-
-        <div className="p-8">
-
-          <section className="mb-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
-              <div>
-
-                <div className="mb-3 flex items-center gap-2 text-sm text-slate-500">
-
-                  <ClipboardList className="h-4 w-4" />
-
-                  <span>
-
-                    {nombreSucursal}
-
-                  </span>
-
-                  <span>/</span>
-
-                  <span className="font-bold text-purple-600">
-
-                    Nueva Solicitud
-
-                  </span>
-
-                </div>
-
-                <h1 className="text-4xl font-black text-slate-900">
-
-                  Crear Solicitud
-
+              <div className="min-w-0 flex-1">
+                <h1 className="font-bold text-red-800 dark:text-red-300">
+                  No se pudo cargar el formulario
                 </h1>
 
-                <p className="mt-2 text-slate-500">
-
-                  Registra una solicitud de productos para reposición o compra.
-
+                <p className="mt-2 break-words text-sm text-red-700 dark:text-red-400">
+                  {errorAlmacenes
+                    ? obtenerMensajeError(
+                        almacenesError
+                      )
+                    : obtenerMensajeError(
+                        productosError
+                      )}
                 </p>
 
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={
+                      actualizarDatos
+                    }
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800"
+                  >
+                    <RefreshCcw size={17} />
+                    Intentar nuevamente
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate(-1)
+                    }
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-700 dark:border-red-800 dark:text-red-300"
+                  >
+                    <ArrowLeft size={17} />
+                    Volver
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  /* =====================================================
+     CONTENIDO
+  ===================================================== */
+
+  return (
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <MenuList />
+
+      <main className="min-w-0 flex-1 overflow-x-hidden px-3 pb-6 pt-20 sm:px-5 sm:pt-20 lg:p-8 lg:pt-8">
+        <div className="mx-auto w-full min-w-0 max-w-7xl space-y-5 sm:space-y-6">
+          {/* ENCABEZADO */}
+
+          <header className="relative min-w-0 overflow-hidden rounded-2xl bg-slate-900 p-4 text-white shadow-lg sm:rounded-3xl sm:p-6 dark:border dark:border-slate-800">
+            <div className="absolute -right-16 -top-20 h-52 w-52 rounded-full bg-white/5" />
+
+            <div className="relative z-10 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                  <ClipboardList
+                    size={22}
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 sm:text-xs">
+                    Gestión de solicitudes
+                  </p>
+
+                  <h1 className="mt-1 truncate text-xl font-bold sm:text-3xl">
+                    Crear solicitud
+                  </h1>
+
+                  <div className="mt-2 flex min-w-0 flex-col gap-1 text-sm text-slate-300 sm:flex-row sm:items-center sm:gap-4">
+                    <span className="inline-flex min-w-0 items-center gap-2">
+                      <Warehouse
+                        size={15}
+                        className="shrink-0"
+                      />
+
+                      <span className="truncate">
+                        {nombreSucursal}
+                      </span>
+                    </span>
+
+                    {ubicacionSucursal && (
+                      <span className="inline-flex min-w-0 items-center gap-2">
+                        <MapPin
+                          size={15}
+                          className="shrink-0"
+                        />
+
+                        <span className="truncate">
+                          {ubicacionSucursal}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  navigate(-1)
-                }
-                title="Volver"
-                aria-label="Volver"
-                className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 transition hover:bg-slate-200"
-              >
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+                <button
+                  type="button"
+                  onClick={
+                    actualizarDatos
+                  }
+                  disabled={
+                    actualizandoDatos
+                  }
+                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 disabled:opacity-50"
+                >
+                  <RefreshCcw
+                    size={16}
+                    className={
+                      actualizandoDatos
+                        ? "animate-spin"
+                        : ""
+                    }
+                  />
 
-                <ArrowLeft className="h-6 w-6" />
+                  <span className="truncate">
+                    Actualizar
+                  </span>
+                </button>
 
-              </button>
-
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(-1)
+                  }
+                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100"
+                >
+                  <ArrowLeft size={17} />
+                  <span className="truncate">
+                    Volver
+                  </span>
+                </button>
+              </div>
             </div>
+          </header>
 
+          {/* RESUMEN */}
+
+          <section className="grid grid-cols-3 gap-2 sm:gap-4">
+            <article className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+              <p className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:text-xs">
+                Almacenes
+              </p>
+
+              <p className="mt-1 text-xl font-bold sm:mt-2 sm:text-3xl">
+                {almacenes.length}
+              </p>
+
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block dark:text-slate-400">
+                Disponibles
+              </p>
+            </article>
+
+            <article className="min-w-0 rounded-xl border border-blue-200 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-5 dark:border-blue-900/50 dark:bg-slate-900">
+              <p className="truncate text-[10px] font-bold uppercase tracking-wide text-blue-600 sm:text-xs dark:text-blue-400">
+                Productos
+              </p>
+
+              <p className="mt-1 text-xl font-bold text-blue-700 sm:mt-2 sm:text-3xl dark:text-blue-400">
+                {productos.length}
+              </p>
+
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block dark:text-slate-400">
+                Con stock
+              </p>
+            </article>
+
+            <article className="min-w-0 rounded-xl border border-violet-200 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-5 dark:border-violet-900/50 dark:bg-slate-900">
+              <p className="truncate text-[10px] font-bold uppercase tracking-wide text-violet-600 sm:text-xs dark:text-violet-400">
+                Detalles
+              </p>
+
+              <p className="mt-1 text-xl font-bold text-violet-700 sm:mt-2 sm:text-3xl dark:text-violet-400">
+                {detalles.length}
+              </p>
+
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block dark:text-slate-400">
+                En la solicitud
+              </p>
+            </article>
           </section>
 
-          <SolicitudForm
+          {/* FORMULARIO */}
 
-            almacenes={
-              almacenes
-            }
+          <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="border-b border-slate-200 bg-slate-50 p-4 sm:p-5 dark:border-slate-800 dark:bg-slate-950/50">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400">
+                  <Send size={19} />
+                </div>
 
-            productos={
-              productos
-            }
+                <div className="min-w-0">
+                  <h2 className="font-bold text-slate-900 dark:text-white">
+                    Datos de la solicitud
+                  </h2>
 
-            tipoSolicitud={
-              tipoSolicitud
-            }
+                  <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    Selecciona el tipo, almacén destino y los productos que formarán parte de la solicitud.
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            setTipoSolicitud={
-              setTipoSolicitud
-            }
+            <div className="min-w-0 p-3 sm:p-5 lg:p-6">
+              <SolicitudForm
+                almacenes={
+                  almacenes
+                }
 
-            idAlmacenOrigen={
-              idAlmacenOrigen
-            }
+                productos={
+                  productos
+                }
 
-            setIdAlmacenOrigen={
-              setIdAlmacenOrigen
-            }
+                tipoSolicitud={
+                  tipoSolicitud
+                }
 
-            idAlmacenDestino={
-              idAlmacenDestino
-            }
+                setTipoSolicitud={(value) =>
+                  setTipoSolicitud(
+                    value as TipoSolicitud
+                  )
+                }
 
-            setIdAlmacenDestino={
-              setIdAlmacenDestino
-            }
+                idAlmacenOrigen={
+                  idAlmacenOrigen
+                }
 
-            estado={
-              estado
-            }
+                setIdAlmacenOrigen={
+                  setIdAlmacenOrigen
+                }
 
-            setEstado={
-              setEstado
-            }
+                idAlmacenDestino={
+                  idAlmacenDestino
+                }
 
-            observacion={
-              observacion
-            }
+                setIdAlmacenDestino={
+                  setIdAlmacenDestino
+                }
 
-            setObservacion={
-              setObservacion
-            }
+                estado={
+                  estado
+                }
 
-            detalles={
-              detalles
-            }
+                setEstado={(value) =>
+                  setEstado(
+                    value as EstadoSolicitud
+                  )
+                }
 
-            setDetalles={
-              setDetalles
-            }
+                observacion={
+                  observacion
+                }
 
-            isPending={
-              isPending
-            }
+                setObservacion={
+                  setObservacion
+                }
 
-            buttonText="Registrar solicitud"
+                detalles={
+                  detalles
+                }
 
-            onSubmit={() =>
-              guardarSolicitud()
-            }
+                setDetalles={
+                  setDetalles
+                }
 
-          />
+                isPending={
+                  isPending
+                }
 
+                buttonText="Registrar solicitud"
+
+                onSubmit={() =>
+                  guardarSolicitud()
+                }
+              />
+            </div>
+          </section>
         </div>
-
       </main>
 
+      {isPending && (
+        <div className="fixed bottom-4 left-4 right-4 z-[90] flex items-center justify-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl sm:left-auto sm:right-5 sm:w-auto dark:border dark:border-slate-700">
+          <LoaderCircle
+            size={17}
+            className="animate-spin"
+          />
+
+          Registrando solicitud...
+        </div>
+      )}
     </div>
-
   );
-
 }
