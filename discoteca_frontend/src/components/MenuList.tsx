@@ -147,11 +147,11 @@ export default function MenuList() {
             text: "Resumen de ventas",
             icon: TrendingUp,
           },
-          {
-            to: `${baseSucursal}/reportes/productos`,
-            text: "Productos más vendidos",
-            icon: PackageCheck,
-          },
+          // {
+          //   to: `${baseSucursal}/reportes/productos`,
+          //   text: "Productos más vendidos",
+          //   icon: PackageCheck,
+          // },
           {
             to: `${baseSucursal}/reportes/vendedores`,
             text: "Ventas por mesero",
