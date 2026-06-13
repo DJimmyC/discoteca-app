@@ -18,7 +18,7 @@ import Inventario from "../models/Inventario";
 import CierreCaja from "../models/CierreCaja";
 import AperturaCaja from "../models/AperturaCaja";
 import Solicitud from "../models/Solicitud";
-import mongoose from "mongoose";
+import mongoose,  {type PipelineStage} from "mongoose";
 
 
 
@@ -27,6 +27,8 @@ import {
   ReporteService,
   type ReporteFiltros,
 } from "../services/ReporteService";
+import Sucursal from "../models/Sucursal";
+import Producto from "../models/Producto";
 function obtenerString(
   valor: unknown
 ): string | undefined {
@@ -1781,141 +1783,195 @@ export class ReporteController {
       }
     };
 
-  /* =====================================================
-      7. PRODUCTOS MÁS VENDIDOS
-  ===================================================== */
+ /* =====================================================
+   7. PRODUCTOS MÁS VENDIDOS
 
-  static getProductosMasVendidos =
-    async (
-      req: Request,
-      res: Response
-    ) => {
+   Devuelve:
+   1. Productos más vendidos de toda la empresa.
+   2. Producto más vendido general.
+   3. Productos más vendidos de cada sucursal.
+   4. Producto más vendido de cada sucursal.
+===================================================== */
 
-      try {
+static getProductosMasVendidos =
+  async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+      const filtros =
+        obtenerFiltros(req);
 
-        const filtros =
-          obtenerFiltros(req);
+      const limite =
+        ReporteService.limite(
+          filtros.limite,
+          10,
+          100
+        );
 
-        const limite =
-          ReporteService.limite(
-            filtros.limite,
-            10,
-            100
-          );
+      /* =================================================
+         FILTRO PRINCIPAL DE VENTAS
+      ================================================= */
 
-        const matchVenta =
-          ReporteService
-            .construirMatch(
-              filtros,
-              "fechaVenta"
-            );
+      const matchVenta =
+        ReporteService.construirMatch(
+          filtros,
+          "fechaVenta"
+        );
 
-        matchVenta.estado =
-          filtros.estado ||
-          "pagado";
+      /*
+       * Por defecto solo se consideran ventas pagadas.
+       * También puede enviarse estado por query.
+       */
+      matchVenta.estado =
+        filtros.estado ||
+        "pagado";
 
-        const idProducto =
-          ReporteService.objectId(
-            filtros.idProducto
-          );
+      /* =================================================
+         FILTRO OPCIONAL DE PRODUCTO
+      ================================================= */
 
-        const matchDetalle:
-          Record<string, unknown> = {
-            estado:
-              "activo",
-          };
+      const idProducto =
+        ReporteService.objectId(
+          filtros.idProducto
+        );
 
-        if (idProducto) {
-          matchDetalle.idProducto =
-            idProducto;
-        }
+      const matchDetalle:
+        Record<string, unknown> = {
+          "detalle.estado":
+            "activo",
+      };
 
-        const resultado =
-          await DetalleVenta.aggregate([
+      if (idProducto) {
+        matchDetalle[
+          "detalle.idProducto"
+        ] =
+          idProducto;
+      }
+
+      /* =================================================
+         CONSULTAS EN PARALELO
+      ================================================= */
+
+      const [
+        rankingGeneral,
+        rankingPorSucursal,
+      ] =
+        await Promise.all([
+          /* =============================================
+             PRODUCTOS MÁS VENDIDOS DE TODAS LAS SUCURSALES
+          ============================================= */
+
+          Venta.aggregate([
+            /*
+             * Se consultan primero las ventas.
+             * Aquí se aplican fecha, sucursal, caja,
+             * vendedor, método de pago y estado.
+             */
+            {
+              $match:
+                matchVenta,
+            },
+
+            /*
+             * Se obtienen los detalles relacionados
+             * con cada venta.
+             */
+            {
+              $lookup: {
+                from:
+                  DetalleVenta
+                    .collection
+                    .name,
+
+                localField:
+                  "_id",
+
+                foreignField:
+                  "idVenta",
+
+                as:
+                  "detalle",
+              },
+            },
+
+            /*
+             * Cada detalle se convierte en un documento
+             * independiente.
+             */
+            {
+              $unwind:
+                "$detalle",
+            },
+
+            /*
+             * Solo detalles activos y, opcionalmente,
+             * un producto específico.
+             */
             {
               $match:
                 matchDetalle,
             },
-            {
-              $lookup: {
-                from:
-                  "ventas",
-                localField:
-                  "idVenta",
-                foreignField:
-                  "_id",
-                as:
-                  "venta",
-              },
-            },
-            {
-              $unwind:
-                "$venta",
-            },
-            {
-              $match: {
-                ...(matchVenta.fechaVenta
-                  ? {
-                      "venta.fechaVenta":
-                        matchVenta.fechaVenta,
-                    }
-                  : {}),
 
-                ...(matchVenta.idSucursal
-                  ? {
-                      "venta.idSucursal":
-                        matchVenta.idSucursal,
-                    }
-                  : {}),
-
-                ...(matchVenta.idCaja
-                  ? {
-                      "venta.idCaja":
-                        matchVenta.idCaja,
-                    }
-                  : {}),
-
-                ...(matchVenta.idPerfil
-                  ? {
-                      "venta.idPerfil":
-                        matchVenta.idPerfil,
-                    }
-                  : {}),
-
-                "venta.estado":
-                  matchVenta.estado,
-              },
-            },
+            /*
+             * Agrupación general por producto.
+             * No importa la sucursal.
+             */
             {
               $group: {
                 _id:
-                  "$idProducto",
+                  "$detalle.idProducto",
 
                 cantidadVendida: {
                   $sum:
-                    "$cantidad",
+                    "$detalle.cantidad",
                 },
 
                 totalVendido: {
                   $sum:
-                    "$subtotal",
+                    "$detalle.subtotal",
                 },
 
                 costoTotal: {
                   $sum: {
                     $multiply: [
-                      "$cantidad",
-                      "$costoUnitario",
+                      "$detalle.cantidad",
+                      {
+                        $ifNull: [
+                          "$detalle.costoUnitario",
+                          0,
+                        ],
+                      },
                     ],
                   },
                 },
 
                 precioPromedio: {
                   $avg:
-                    "$precioUnitario",
+                    "$detalle.precioUnitario",
+                },
+
+                cantidadDetalles: {
+                  $sum:
+                    1,
+                },
+
+                ventasRelacionadas: {
+                  $addToSet:
+                    "$_id",
+                },
+
+                sucursalesRelacionadas: {
+                  $addToSet:
+                    "$idSucursal",
                 },
               },
             },
+
+            /*
+             * Se calculan utilidad, cantidad de ventas
+             * y cantidad de sucursales.
+             */
             {
               $addFields: {
                 utilidad: {
@@ -1924,53 +1980,118 @@ export class ReporteController {
                     "$costoTotal",
                   ],
                 },
+
+                cantidadVentas: {
+                  $size:
+                    "$ventasRelacionadas",
+                },
+
+                cantidadSucursales: {
+                  $size:
+                    "$sucursalesRelacionadas",
+                },
               },
             },
-            ...ReporteService
-              .lookupProducto(
-                "_id",
-                "producto"
-              ),
+
+            /*
+             * Se obtiene la información del producto.
+             */
+            {
+              $lookup: {
+                from:
+                  Producto
+                    .collection
+                    .name,
+
+                localField:
+                  "_id",
+
+                foreignField:
+                  "_id",
+
+                as:
+                  "producto",
+              },
+            },
+
+            {
+              $unwind: {
+                path:
+                  "$producto",
+
+                preserveNullAndEmptyArrays:
+                  true,
+              },
+            },
+
+            /*
+             * Se prepara la respuesta.
+             */
             {
               $project: {
                 _id:
                   0,
+
                 idProducto:
                   "$_id",
+
                 nombre: {
                   $ifNull: [
                     "$producto.nombre",
-                    "Producto",
+                    "Producto sin nombre",
                   ],
                 },
+
                 marca: {
                   $ifNull: [
                     "$producto.marca",
                     "",
                   ],
                 },
+
+                descripcion: {
+                  $ifNull: [
+                    "$producto.descripcion",
+                    "",
+                  ],
+                },
+
                 idCategoria:
                   "$producto.idCategoria",
+
                 cantidadVendida:
                   1,
+
+                cantidadVentas:
+                  1,
+
+                cantidadDetalles:
+                  1,
+
+                cantidadSucursales:
+                  1,
+
                 totalVendido: {
                   $round: [
                     "$totalVendido",
                     2,
                   ],
                 },
+
                 costoTotal: {
                   $round: [
                     "$costoTotal",
                     2,
                   ],
                 },
+
                 utilidad: {
                   $round: [
                     "$utilidad",
                     2,
                   ],
                 },
+
                 precioPromedio: {
                   $round: [
                     "$precioPromedio",
@@ -1979,34 +2100,448 @@ export class ReporteController {
                 },
               },
             },
+
+            /*
+             * Primero se ordena por unidades vendidas.
+             * En caso de empate se usa total vendido.
+             */
             {
               $sort: {
                 cantidadVendida:
                   -1,
+
+                totalVendido:
+                  -1,
               },
             },
+
             {
               $limit:
                 limite,
             },
-          ]);
+          ]),
 
-        return res.json({
-          filtros,
-          limite,
-          data:
-            resultado,
-        });
+          /* =============================================
+             PRODUCTOS MÁS VENDIDOS DE CADA SUCURSAL
+          ============================================= */
 
-      } catch (error) {
+          Venta.aggregate([
+            {
+              $match:
+                matchVenta,
+            },
 
-        return responderError(
-          res,
-          error,
-          "Error generando productos más vendidos"
-        );
-      }
-    };
+            {
+              $lookup: {
+                from:
+                  DetalleVenta
+                    .collection
+                    .name,
+
+                localField:
+                  "_id",
+
+                foreignField:
+                  "idVenta",
+
+                as:
+                  "detalle",
+              },
+            },
+
+            {
+              $unwind:
+                "$detalle",
+            },
+
+            {
+              $match:
+                matchDetalle,
+            },
+
+            /*
+             * La agrupación se realiza por:
+             * - sucursal
+             * - producto
+             */
+            {
+              $group: {
+                _id: {
+                  idSucursal:
+                    "$idSucursal",
+
+                  idProducto:
+                    "$detalle.idProducto",
+                },
+
+                cantidadVendida: {
+                  $sum:
+                    "$detalle.cantidad",
+                },
+
+                totalVendido: {
+                  $sum:
+                    "$detalle.subtotal",
+                },
+
+                costoTotal: {
+                  $sum: {
+                    $multiply: [
+                      "$detalle.cantidad",
+                      {
+                        $ifNull: [
+                          "$detalle.costoUnitario",
+                          0,
+                        ],
+                      },
+                    ],
+                  },
+                },
+
+                precioPromedio: {
+                  $avg:
+                    "$detalle.precioUnitario",
+                },
+
+                ventasRelacionadas: {
+                  $addToSet:
+                    "$_id",
+                },
+
+                cantidadDetalles: {
+                  $sum:
+                    1,
+                },
+              },
+            },
+
+            {
+              $addFields: {
+                utilidad: {
+                  $subtract: [
+                    "$totalVendido",
+                    "$costoTotal",
+                  ],
+                },
+
+                cantidadVentas: {
+                  $size:
+                    "$ventasRelacionadas",
+                },
+              },
+            },
+
+            /*
+             * Obtener producto.
+             */
+            {
+              $lookup: {
+                from:
+                  Producto
+                    .collection
+                    .name,
+
+                localField:
+                  "_id.idProducto",
+
+                foreignField:
+                  "_id",
+
+                as:
+                  "producto",
+              },
+            },
+
+            {
+              $unwind: {
+                path:
+                  "$producto",
+
+                preserveNullAndEmptyArrays:
+                  true,
+              },
+            },
+
+            {
+              $project: {
+                _id:
+                  0,
+
+                idSucursal:
+                  "$_id.idSucursal",
+
+                idProducto:
+                  "$_id.idProducto",
+
+                nombre: {
+                  $ifNull: [
+                    "$producto.nombre",
+                    "Producto sin nombre",
+                  ],
+                },
+
+                marca: {
+                  $ifNull: [
+                    "$producto.marca",
+                    "",
+                  ],
+                },
+
+                descripcion: {
+                  $ifNull: [
+                    "$producto.descripcion",
+                    "",
+                  ],
+                },
+
+                idCategoria:
+                  "$producto.idCategoria",
+
+                cantidadVendida:
+                  1,
+
+                cantidadVentas:
+                  1,
+
+                cantidadDetalles:
+                  1,
+
+                totalVendido: {
+                  $round: [
+                    "$totalVendido",
+                    2,
+                  ],
+                },
+
+                costoTotal: {
+                  $round: [
+                    "$costoTotal",
+                    2,
+                  ],
+                },
+
+                utilidad: {
+                  $round: [
+                    "$utilidad",
+                    2,
+                  ],
+                },
+
+                precioPromedio: {
+                  $round: [
+                    "$precioPromedio",
+                    2,
+                  ],
+                },
+              },
+            },
+
+            /*
+             * Se ordenan los productos dentro
+             * de cada sucursal.
+             */
+            {
+              $sort: {
+                idSucursal:
+                  1,
+
+                cantidadVendida:
+                  -1,
+
+                totalVendido:
+                  -1,
+              },
+            },
+
+            /*
+             * Se agrupan todos los productos
+             * pertenecientes a cada sucursal.
+             */
+            {
+              $group: {
+                _id:
+                  "$idSucursal",
+
+                productos: {
+                  $push: {
+                    idProducto:
+                      "$idProducto",
+
+                    nombre:
+                      "$nombre",
+
+                    marca:
+                      "$marca",
+
+                    descripcion:
+                      "$descripcion",
+
+                    idCategoria:
+                      "$idCategoria",
+
+                    cantidadVendida:
+                      "$cantidadVendida",
+
+                    cantidadVentas:
+                      "$cantidadVentas",
+
+                    cantidadDetalles:
+                      "$cantidadDetalles",
+
+                    totalVendido:
+                      "$totalVendido",
+
+                    costoTotal:
+                      "$costoTotal",
+
+                    utilidad:
+                      "$utilidad",
+
+                    precioPromedio:
+                      "$precioPromedio",
+                  },
+                },
+              },
+            },
+
+            /*
+             * Obtener los datos de la sucursal.
+             */
+            {
+              $lookup: {
+                from:
+                  Sucursal
+                    .collection
+                    .name,
+
+                localField:
+                  "_id",
+
+                foreignField:
+                  "_id",
+
+                as:
+                  "sucursal",
+              },
+            },
+
+            {
+              $unwind: {
+                path:
+                  "$sucursal",
+
+                preserveNullAndEmptyArrays:
+                  true,
+              },
+            },
+
+            /*
+             * El primer producto del arreglo es
+             * el producto más vendido de la sucursal,
+             * porque ya fueron ordenados anteriormente.
+             */
+            {
+              $project: {
+                _id:
+                  0,
+
+                idSucursal:
+                  "$_id",
+
+                nombreSucursal: {
+                  $ifNull: [
+                    "$sucursal.nombreSucursal",
+                    {
+                      $ifNull: [
+                        "$sucursal.nombre",
+                        "Sucursal sin nombre",
+                      ],
+                    },
+                  ],
+                },
+
+                ubicacionSucursal: {
+                  $ifNull: [
+                    "$sucursal.ubicacionSucursal",
+                    "",
+                  ],
+                },
+
+                totalProductosDiferentes: {
+                  $size:
+                    "$productos",
+                },
+
+                productoMasVendido: {
+                  $arrayElemAt: [
+                    "$productos",
+                    0,
+                  ],
+                },
+
+                productosMasVendidos: {
+                  $slice: [
+                    "$productos",
+                    limite,
+                  ],
+                },
+              },
+            },
+
+            {
+              $sort: {
+                nombreSucursal:
+                  1,
+              },
+            },
+          ]),
+        ]);
+
+      /* =================================================
+         RESPUESTA
+      ================================================= */
+
+      return res.status(200).json({
+        filtros,
+
+        limite,
+
+        resumen: {
+          cantidadProductosRankingGeneral:
+            rankingGeneral.length,
+
+          cantidadSucursales:
+            rankingPorSucursal.length,
+        },
+
+        /*
+         * Primer producto del ranking general.
+         */
+        productoMasVendidoGeneral:
+          rankingGeneral[0] ||
+          null,
+
+        /*
+         * Ranking combinado de todas las sucursales.
+         */
+        productosMasVendidosGeneral:
+          rankingGeneral,
+
+        /*
+         * Ranking separado por sucursal.
+         */
+        sucursales:
+          rankingPorSucursal,
+      });
+
+    } catch (error) {
+      return responderError(
+        res,
+        error,
+        "Error generando productos más vendidos"
+      );
+    }
+  };
 
   /* =====================================================
       8. INVENTARIO GENERAL

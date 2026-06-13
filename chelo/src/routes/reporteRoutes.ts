@@ -969,15 +969,18 @@ router.get(
 /* =====================================================
     PRODUCTOS MÁS VENDIDOS
 ===================================================== */
-
 /**
  * @openapi
  * /api/reportes/ventas/productos-mas-vendidos:
  *   get:
  *     tags:
  *       - Reportes
- *     summary: Obtener productos más vendidos
- *     description: Retorna cantidad vendida, importe, costo y utilidad.
+ *     summary: Obtener productos más vendidos general y por sucursal
+ *     description: >
+ *       Retorna el ranking general de productos vendidos considerando todas
+ *       las sucursales y también el ranking separado para cada sucursal.
+ *       Incluye cantidad vendida, total vendido, costo, utilidad,
+ *       precio promedio y cantidad de ventas.
  *     parameters:
  *       - $ref: '#/components/parameters/FechaDesdeReporte'
  *       - $ref: '#/components/parameters/FechaHastaReporte'
@@ -989,7 +992,7 @@ router.get(
  *       - $ref: '#/components/parameters/LimiteReporte'
  *     responses:
  *       200:
- *         description: Productos más vendidos
+ *         description: Productos más vendidos general y por sucursal
  *         content:
  *           application/json:
  *             schema:
