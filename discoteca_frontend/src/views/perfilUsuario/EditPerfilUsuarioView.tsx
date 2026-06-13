@@ -49,6 +49,7 @@ import {
 import type {
   PerfilUsuarioForm as PerfilUsuarioFormType,
 } from "@/types/PerfilUsuarioType";
+import { useAuth } from "@/hooks/useAuth";
 
 /* =====================================================
    ESTADO INICIAL
@@ -123,6 +124,7 @@ function obtenerMensajeError(
 ===================================================== */
 
 export default function EditPerfilUsuarioView() {
+  const {data:perfil} =useAuth()
   const navigate =
     useNavigate();
 
@@ -341,10 +343,7 @@ export default function EditPerfilUsuarioView() {
         perfilUsuario.estado ??
         true,
 
-      creadoPor:
-        obtenerIdReferencia(
-          perfilUsuario.creadoPor
-        ),
+      actualizadoPor:perfil._id
     });
   }, [
     perfilUsuario,

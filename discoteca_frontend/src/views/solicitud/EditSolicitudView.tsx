@@ -282,8 +282,7 @@ export default function EditSolicitudView() {
 
   const nombreUsuario =
     [
-      perfil?.nombres,
-      perfil?.apellidos,
+      perfil._id!
     ]
       .filter(Boolean)
       .join(" ")

@@ -36,6 +36,7 @@ import {
   Package,
   Tag,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ProductoDetailView() {
 
@@ -45,6 +46,7 @@ export default function ProductoDetailView() {
   const [search, setSearch] =
     useState("");
 
+    const{data:perfil} = useAuth()
   /* =========================
       GET PRODUCTOS
   ========================= */
@@ -573,8 +575,7 @@ export default function ProductoDetailView() {
                                 id:
                                   producto._id!,
 
-                                eliminadoPor:
-                                  "admin",
+                                eliminadoPor:perfil._id,
 
                               });
 

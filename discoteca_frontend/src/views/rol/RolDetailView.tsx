@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { motion } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function RolDetailView() {
 
@@ -41,6 +42,7 @@ export default function RolDetailView() {
     queryFn: getRoles,
   });
 
+  const {data:perfil} = useAuth()
   /* =========================
       FILTRAR
   ========================= */
@@ -507,7 +509,7 @@ export default function RolDetailView() {
 
                                   mutate({
                                     id: rol._id!,
-                                    eliminadoPor: "admin"
+                                    eliminadoPor: perfil._id
                                   });
 
                                 }

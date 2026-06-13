@@ -65,5 +65,6 @@ export type CategoriaProductoFormData =
     | "descripcion"
     | "estado"
     | "creadoPor"
+    | "actualizadoPor"
 
   >;

@@ -435,7 +435,7 @@ export default function EditEgresoView() {
             observacion || "Sin observación",
 
           actualizadoPor:
-            perfil?.nombres || "sistema",
+            perfil?._id || "sistema",
 
         },
 
@@ -504,7 +504,7 @@ export default function EditEgresoView() {
                   detalle.tipoItem,
 
                 actualizadoPor:
-                  perfil?.nombres || "sistema",
+                  perfil?._id || "sistema",
 
               },
 
@@ -551,7 +551,7 @@ export default function EditEgresoView() {
               detalle.tipoItem,
 
             creadoPor:
-              perfil?.nombres || "sistema",
+              perfil?._id || "sistema",
 
           })
         );

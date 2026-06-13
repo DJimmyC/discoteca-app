@@ -482,7 +482,7 @@ export default function EgresoDetailView() {
 
         eliminadoPor:
           perfil?._id ||
-          perfil?.nombres ||
+         
           "sistema",
       });
     };

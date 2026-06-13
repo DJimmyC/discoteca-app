@@ -202,8 +202,7 @@ export default function CreateEgresoView() {
 
   const nombreUsuario =
     [
-      perfil?.nombres,
-      perfil?.apellidos,
+      perfil?._id,
     ]
       .filter(Boolean)
       .join(" ")

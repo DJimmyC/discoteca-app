@@ -636,8 +636,7 @@ export default function PerfilUsuarioDetailView() {
                                 id:
                                   perfil._id!,
 
-                                eliminadoPor:
-                                  "admin",
+                                eliminadoPor:perfil._id!,
 
                               });
 

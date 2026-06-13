@@ -36,11 +36,13 @@ import {
 import type {
   PerfilUsuarioForm as PerfilUsuarioFormType,
 } from "@/types/PerfilUsuarioType";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function CreatePerfilUsuarioView() {
 
   const navigate =
     useNavigate();
+    const {data:perfil} = useAuth()
 
   const [formData, setFormData] =
     useState<PerfilUsuarioFormType>({
@@ -69,7 +71,7 @@ export default function CreatePerfilUsuarioView() {
 
       estado: true,
 
-      creadoPor: "admin",
+      creadoPor: perfil._id,
 
     });
 

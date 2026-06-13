@@ -32,6 +32,7 @@ import {
 import type {
   CategoriaProductoFormData,
 } from "@/types/CategoriaProductoType";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function CreateCategoriaProductoView() {
 
@@ -40,7 +41,7 @@ export default function CreateCategoriaProductoView() {
 
   const queryClient =
     useQueryClient();
-
+const {data:perfil} = useAuth()
   const [formData, setFormData] =
     useState<CategoriaProductoFormData>({
 
@@ -50,7 +51,7 @@ export default function CreateCategoriaProductoView() {
 
       estado: true,
 
-      creadoPor: "admin",
+      creadoPor: perfil._id!,
 
     });
 

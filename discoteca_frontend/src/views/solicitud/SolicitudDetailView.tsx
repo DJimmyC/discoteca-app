@@ -578,7 +578,6 @@ export default function SolicitudDetailView() {
         id: solicitud._id,
         eliminadoPor:
           perfil?._id ||
-          perfil?.nombres ||
           "sistema",
       });
     };

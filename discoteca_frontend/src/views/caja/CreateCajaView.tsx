@@ -28,6 +28,7 @@ import {
 import type {
   CajaForm as CajaFormType,
 } from "@/types/CajaType";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function CreateCajaView() {
 
@@ -40,7 +41,7 @@ export default function CreateCajaView() {
   /* =========================
       FORM DATA
   ========================= */
-
+const {data:perfil} = useAuth()
   const [formData, setFormData] =
     useState<CajaFormType>({
 
@@ -53,7 +54,7 @@ export default function CreateCajaView() {
 
       estado: true,
 
-      creadoPor: "admin",
+      creadoPor: perfil._id!,
 
     });
 

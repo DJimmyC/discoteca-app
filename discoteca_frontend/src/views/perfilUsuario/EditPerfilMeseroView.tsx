@@ -208,8 +208,7 @@ export default function EditPerfilMeseroView() {
             Uso "sistema" para evitar el error de maxlength
             en actualizadoPor si tu modelo todavía tiene max: 10.
           */
-          actualizadoPor:
-            "sistema",
+          actualizadoPor:perfil._id,
 
         },
 

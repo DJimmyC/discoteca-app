@@ -141,7 +141,7 @@ export default function CreateCierreCajaView() {
       obtenerHoraLocal(),
     montoReal: 0,
     observacion: "",
-    creadoPor: "",
+    creadoPor: perfil._id!,
   });
 
   useEffect(() => {
@@ -156,7 +156,7 @@ export default function CreateCierreCajaView() {
         idPerfil:
           String(perfil._id),
         creadoPor:
-          perfil.nombres ||
+          perfil._id ||
           "sistema",
       })
     );

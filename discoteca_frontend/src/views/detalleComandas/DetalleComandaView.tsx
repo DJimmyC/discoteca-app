@@ -575,7 +575,7 @@ const idAlmacen: string =
           comandaId,
 
         eliminadoPor:
-          perfilAuth?.nombres ||
+          perfilAuth?._id ||
           "sistema",
 
       });
@@ -1051,7 +1051,7 @@ const idAlmacen: string =
                               Creado por:{" "}
 
                               {comanda.creadoPor ||
-                                perfilAuth?.nombres ||
+                                perfilAuth?._id ||
                                 "Sin usuario"}
 
                             </p>
@@ -1543,7 +1543,7 @@ const idAlmacen: string =
         }
 
         creadoPor={
-          perfilAuth?.nombres ||
+          perfilAuth?._id ||
           "sistema"
         }
 

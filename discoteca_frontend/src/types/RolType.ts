@@ -1,246 +1,124 @@
-// import { z } from "zod";
-
-// /* =========================
-//     ROL SCHEMA
-// ========================= */
-
-// export const RolSchema = z.object({
-
-//   _id: z.string().optional(),
-
-//   nombre: z.string(),
-
-//   descripcion: z.string(),
-
-//   estado: z.boolean(),
-
-//   ventas: z.boolean(),
-
-//   egresos: z.boolean(),
-
-//   inventario: z.boolean(),
-
-//   reportes: z.boolean(),
-
-//   usuarios: z.boolean(),
-
-//   configuracion: z.boolean(),
-
-//   creadoPor: z.string(),
-
-//   fechaCreacion:
-//     z.string().optional(),
-
-//   actualizadoPor:
-//     z.string().optional(),
-
-//   fechaActualizacion:
-//     z.string().optional(),
-
-//   eliminadoPor:
-//     z.string().optional(),
-
-//   fechaEliminado:
-//     z.string().optional(),
-
-// });
-
-// /* =========================
-//     ARRAY SCHEMA
-// ========================= */
-
-// export const RolArraySchema =
-//   z.array(RolSchema);
-
-// /* =========================
-//     TYPES
-// ========================= */
-
-// export type RolType = z.infer<
-//   typeof RolSchema
-// >;
-
-// export type RolFormData = Pick<
-//   RolType,
-//   | "nombre"
-//   | "descripcion"
-//   | "estado"
-//   | "ventas"
-//   | "egresos"
-//   | "inventario"
-//   | "reportes"
-//   | "usuarios"
-//   | "configuracion"
-//   | "creadoPor"
-// >;
-
-// src/types/RolType.ts
-
 import { z } from "zod";
 
 /* =========================
-    ROL SCHEMA
+   ROL SCHEMA
 ========================= */
 
-export const RolSchema =
-  z.object({
+export const RolSchema = z
+  .object({
+    _id: z.string().optional(),
 
-    _id:
-      z.string()
-        .optional(),
+    nombre: z.string().optional(),
 
-    nombre:
-      z.string()
-        .optional(),
+    descripcion: z
+      .string()
+      .nullable()
+      .optional(),
 
-    descripcion:
-      z.string()
-        .nullable()
-        .optional(),
+    estado: z.boolean().optional(),
 
-    estado:
-      z.boolean()
-        .optional(),
+    ventas: z.boolean().optional(),
 
-    ventas:
-      z.boolean()
-        .optional(),
+    egresos: z.boolean().optional(),
 
-    egresos:
-      z.boolean()
-        .optional(),
+    inventario: z.boolean().optional(),
 
-    inventario:
-      z.boolean()
-        .optional(),
+    reportes: z.boolean().optional(),
 
-    reportes:
-      z.boolean()
-        .optional(),
+    usuarios: z.boolean().optional(),
 
-    usuarios:
-      z.boolean()
-        .optional(),
+    configuracion: z.boolean().optional(),
 
-    configuracion:
-      z.boolean()
-        .optional(),
+    creadoPor: z
+      .string()
+      .nullable()
+      .optional(),
 
-    creadoPor:
-      z.string()
-        .nullable()
-        .optional(),
+    actualizadoPor: z
+      .string()
+      .nullable()
+      .optional(),
 
-    actualizadoPor:
-      z.string()
-        .nullable()
-        .optional(),
+    eliminadoPor: z
+      .string()
+      .nullable()
+      .optional(),
 
-    eliminadoPor:
-      z.string()
-        .nullable()
-        .optional(),
+    fechaCreacion: z
+      .string()
+      .nullable()
+      .optional(),
 
-    fechaCreacion:
-      z.string()
-        .nullable()
-        .optional(),
+    fechaActualizacion: z
+      .string()
+      .nullable()
+      .optional(),
 
-    fechaActualizacion:
-      z.string()
-        .nullable()
-        .optional(),
-
-    fechaEliminado:
-      z.string()
-        .nullable()
-        .optional(),
-
-  }).passthrough();
+    fechaEliminado: z
+      .string()
+      .nullable()
+      .optional(),
+  })
+  .passthrough();
 
 /* =========================
-    ARRAY
+   ARRAY
 ========================= */
 
 export const RolArraySchema =
-  z.array(
-    RolSchema
-  );
+  z.array(RolSchema);
 
 /* =========================
-    TYPES DE RESPUESTA
+   RESPUESTA
 ========================= */
 
 export type RolType =
-  z.infer<
-    typeof RolSchema
-  >;
+  z.infer<typeof RolSchema>;
 
 /* =========================
-    FORM DATA
-
-    Los campos son obligatorios
-    dentro del formulario.
+   FORMULARIO
 ========================= */
 
 export type RolFormData = {
+  nombre: string;
 
-  nombre:
-    string;
+  descripcion: string;
 
-  descripcion:
-    string;
+  estado: boolean;
 
-  estado:
-    boolean;
+  ventas: boolean;
 
-  ventas:
-    boolean;
+  egresos: boolean;
 
-  egresos:
-    boolean;
+  inventario: boolean;
 
-  inventario:
-    boolean;
+  reportes: boolean;
 
-  reportes:
-    boolean;
+  usuarios: boolean;
 
-  usuarios:
-    boolean;
+  configuracion: boolean;
 
-  configuracion:
-    boolean;
+  creadoPor?: string;
 
-  creadoPor:
-    string;
-
+  actualizadoPor?: string;
 };
 
 /* =========================
-    ACTUALIZAR ROL
+   ACTUALIZAR
 ========================= */
 
 export type UpdateRolType = {
+  rolId: string;
 
-  rolId:
-    string;
-
-  formData:
-    RolFormData;
-
+  formData: RolFormData;
 };
 
 /* =========================
-    ELIMINAR ROL
+   ELIMINAR
 ========================= */
 
 export type DeleteRolType = {
+  id: string;
 
-  id:
-    string;
-
-  eliminadoPor?:
-    string;
-
+  eliminadoPor?: string;
 };

@@ -54,7 +54,7 @@ export default function EditCierreCajaView() {
     setFormData,
   ] = useState<UpdateCierreCajaForm>({
     observacion: "",
-    actualizadoPor: "",
+    actualizadoPor: perfil._id!,
   });
 
   const {
@@ -87,7 +87,7 @@ export default function EditCierreCajaView() {
         cierre.observacion ||
         "",
       actualizadoPor:
-        perfil?.nombres ||
+        perfil?._id ||
         "sistema",
     });
 

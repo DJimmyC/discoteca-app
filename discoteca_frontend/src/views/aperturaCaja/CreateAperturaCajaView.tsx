@@ -76,7 +76,7 @@ export default function CreateAperturaCajaView() {
       obtenerFechaHoraLocal(),
     montoInicial: 0,
     observacion: "",
-    creadoPor: "",
+    creadoPor: perfil._id!,
   });
 
   useEffect(() => {

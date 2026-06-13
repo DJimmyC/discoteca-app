@@ -26,6 +26,7 @@ import type {
 import {
   ArrowLeft,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function EditRolView() {
 
@@ -34,7 +35,7 @@ export default function EditRolView() {
   const params = useParams();
   const id = params.rolId!
   
-
+const {data:perfil} = useAuth()
   const queryClient = useQueryClient();
 
   /* =========================
@@ -54,7 +55,7 @@ export default function EditRolView() {
       usuarios: false,
       configuracion: false,
 
-      creadoPor: "",
+      actualizadoPor:perfil._id,
 
     });
 

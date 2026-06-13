@@ -256,8 +256,8 @@ export default function CreateSolicitudView() {
 
   const nombreUsuario =
     [
-      perfil?.nombres,
-      perfil?.apellidos,
+      perfil?._id,
+      
     ]
       .filter(Boolean)
       .join(" ")

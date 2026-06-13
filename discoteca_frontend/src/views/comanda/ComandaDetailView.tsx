@@ -206,7 +206,7 @@ export default function ComandaDetailView() {
             observacion || "Sin observación",
 
           creadoPor:
-            perfil?.nombres || "sistema",
+            perfil._id! || "sistema",
 
           estado:
             "en_proceso",
@@ -264,7 +264,7 @@ export default function ComandaDetailView() {
             "",
 
           creadoPor:
-            perfil?.nombres ||
+            perfil?._id ||
             "sistema",
 
         }));

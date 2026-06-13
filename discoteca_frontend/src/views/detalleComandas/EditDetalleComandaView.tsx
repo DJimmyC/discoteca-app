@@ -49,8 +49,36 @@ import {
   updateDetalleComanda,
 } from "@/api/DetalleComandaApi";
 
+
+function obtenerId(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "_id" in value
+  ) {
+    const id = (value as { _id?: unknown })._id;
+    return typeof id === "string" ? id : "";
+  }
+
+  return "";
+}
+
+function obtenerTexto(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function obtenerNumero(value: unknown, fallback = 0): number {
+  const numero = Number(value);
+  return Number.isFinite(numero) ? numero : fallback;
+}
+
 type ProductoInventario = {
   idInventario: string;
+  idAlmacen: string;
   idProducto: string;
   nombre: string;
   descripcion: string;
@@ -62,6 +90,7 @@ type ProductoInventario = {
 type ItemDetalleEdit = {
   idDetalle?: string;
   idInventario?: string;
+  idAlmacen?: string;
   idProducto: string;
   nombre: string;
   descripcion?: string;
@@ -121,12 +150,10 @@ export default function EditDetalleComandaView() {
   ========================= */
 
   const idPerfil =
-    perfilAuth?._id;
+    obtenerId(perfilAuth?._id ?? perfilAuth?.id);
 
   const idSucursal =
-    typeof perfilAuth?.idSucursal === "object"
-      ? perfilAuth.idSucursal?._id
-      : perfilAuth?.idSucursal;
+    obtenerId(perfilAuth?.idSucursal);
 
   /* =========================
       GET COMANDAS DEL PERFIL
@@ -193,45 +220,50 @@ export default function EditDetalleComandaView() {
   ========================= */
 
   const productosInventario =
-    useMemo(() => {
+    useMemo<ProductoInventario[]>(() => {
 
-      return inventarioBarra.map((item) => {
+      return inventarioBarra.map(
+        (item): ProductoInventario => {
 
-        const producto =
-          typeof item.idProducto === "object" &&
-          item.idProducto !== null
-            ? item.idProducto
-            : null;
+          const producto =
+            typeof item.idProducto === "object" &&
+            item.idProducto !== null
+              ? item.idProducto
+              : null;
 
-        return {
+          return {
+            idInventario:
+              obtenerId(item._id),
 
-          idInventario:
-            item._id || "",
+            idAlmacen:
+              obtenerId(item.idAlmacen),
 
-          idProducto:
-            producto?._id || "",
+            idProducto:
+              obtenerId(item.idProducto),
 
-          nombre:
-            producto?.nombre ||
-            "Producto sin nombre",
+            nombre:
+              obtenerTexto(
+                producto?.nombre,
+                "Producto sin nombre"
+              ),
 
-          descripcion:
-            producto?.descripcion ||
-            "",
+            descripcion:
+              obtenerTexto(producto?.descripcion),
 
-          marca:
-            producto?.marca ||
-            "Sin marca",
+            marca:
+              obtenerTexto(
+                producto?.marca,
+                "Sin marca"
+              ),
 
-          precio:
-            item.precioVenta,
+            precio:
+              obtenerNumero(item.precioVenta),
 
-          stock:
-            item.cantidad,
-
-        };
-
-      });
+            stock:
+              obtenerNumero(item.cantidad),
+          };
+        }
+      );
 
     }, [inventarioBarra]);
 
@@ -274,8 +306,14 @@ export default function EditDetalleComandaView() {
             idInventario:
               productoInventario?.idInventario,
 
+            idAlmacen:
+              productoInventario?.idAlmacen ||
+              obtenerId(detalle.idAlmacen),
+
             idProducto:
-              producto?._id || "",
+              obtenerId(
+                producto ?? detalle.idProducto
+              ),
 
             nombre:
               producto?.nombre ||
@@ -393,6 +431,9 @@ export default function EditDetalleComandaView() {
         {
           idInventario:
             producto.idInventario,
+
+          idAlmacen:
+            producto.idAlmacen,
 
           idProducto:
             producto.idProducto,
@@ -606,7 +647,9 @@ export default function EditDetalleComandaView() {
             observacion || "Sin observación",
 
           actualizadoPor:
-            perfilAuth?.nombres || "sistema",
+            obtenerId(
+              perfilAuth?.id ?? perfilAuth?._id
+            ) || "sistema",
         },
 
       });
@@ -683,8 +726,21 @@ export default function EditDetalleComandaView() {
         );
 
       await Promise.all(
-        detallesNuevos.map((item) =>
-          createDetalleComanda({
+        detallesNuevos.map((item) => {
+
+          if (!item.idInventario) {
+            throw new Error(
+              `El producto ${item.nombre} no tiene inventario asignado`
+            );
+          }
+
+          if (!item.idAlmacen) {
+            throw new Error(
+              `El producto ${item.nombre} no tiene almacén asignado`
+            );
+          }
+
+          return createDetalleComanda({
 
             idComanda:
               comandaId,
@@ -708,12 +764,17 @@ export default function EditDetalleComandaView() {
               item.observacion || "",
 
             creadoPor:
-              perfilAuth?.nombres || "sistema",
+              obtenerId(
+                perfilAuth?._id ?? perfilAuth?.id
+              ) || "sistema",
 
             idInventario:
               item.idInventario,
-          })
-        )
+
+            idAlmacen:
+              item.idAlmacen,
+          });
+        })
       );
 
     },

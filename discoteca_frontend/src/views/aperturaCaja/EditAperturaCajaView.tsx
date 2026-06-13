@@ -55,7 +55,7 @@ export default function EditAperturaCajaView() {
   ] = useState<UpdateAperturaCajaForm>({
     montoInicial: 0,
     observacion: "",
-    actualizadoPor: "",
+    actualizadoPor: perfil._id!,
   });
 
   const {
@@ -90,7 +90,7 @@ export default function EditAperturaCajaView() {
         apertura.observacion ||
         "",
       actualizadoPor:
-        perfil?.nombres ||
+        perfil?._id ||
         "sistema",
     });
 

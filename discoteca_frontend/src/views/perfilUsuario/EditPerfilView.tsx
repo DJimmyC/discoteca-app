@@ -285,7 +285,7 @@ export default function EditPerfilView() {
               null,
 
             actualizadoPor:
-              perfil?.nombres ||
+              perfil?._id ||
               "sistema",
           },
         });

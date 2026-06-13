@@ -572,22 +572,9 @@ function SucursalCard({
             dark:bg-slate-950/60
           "
         >
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Responsable del registro
-          </p>
+          
 
-          <p
-            className="
-              mt-1 truncate text-sm
-              font-medium text-slate-700
-
-              dark:text-slate-300
-            "
-          >
-            {mostrarCreador(
-              sucursal.us_creado
-            )}
-          </p>
+          
         </div>
       </div>
 

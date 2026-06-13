@@ -111,7 +111,7 @@ export default function CreateInventarioView() {
   } = useAuth();
 
   const nombreUsuario =
-    perfil?.nombres ||
+    perfil?._id ||
     "admin";
 
   /* =========================
@@ -144,8 +144,7 @@ export default function CreateInventarioView() {
     estado:
       true,
 
-    creadoPor:
-      "admin",
+    creadoPor:nombreUsuario,
 
   });
 

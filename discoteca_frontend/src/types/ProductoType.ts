@@ -106,5 +106,6 @@ export type ProductoFormData =
     | "marca"
     | "estado"
     | "creadoPor"
+    | "actualizadoPor"
 
   >;

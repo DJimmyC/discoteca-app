@@ -39,6 +39,7 @@ import {
 import type {
   ProductoFormData,
 } from "@/types/ProductoType";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function EditProductoView() {
 
@@ -51,6 +52,7 @@ export default function EditProductoView() {
 
   const queryClient =
     useQueryClient();
+    const {data:perfil} = useAuth()
 
   const [formData, setFormData] =
     useState<ProductoFormData>({
@@ -65,7 +67,7 @@ export default function EditProductoView() {
 
       estado: true,
 
-      creadoPor: "",
+      actualizadoPor:perfil._id,
 
     });
 

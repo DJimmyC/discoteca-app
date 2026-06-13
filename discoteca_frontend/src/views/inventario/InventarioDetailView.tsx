@@ -137,10 +137,13 @@ export default function InventarioDetailView() {
     setSearch,
   ] = useState("");
 
-  const nombreUsuario =
-    perfil?.nombres ||
-    "admin";
+  // const nombreUsuario =
+  //   perfil.id;
 
+  const nombreUsuario =
+  obtenerTexto(
+    perfil?.id,
+  );
   /* =========================
       SUCURSAL
   ========================= */

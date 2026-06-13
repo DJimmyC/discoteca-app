@@ -126,8 +126,7 @@ export default function EditInventarioView() {
       estado:
         true,
 
-      actualizadoPor:
-        "",
+      actualizadoPor: perfil._id,
 
     });
 
@@ -186,7 +185,7 @@ export default function EditInventarioView() {
         true,
 
       actualizadoPor:
-        perfil?.nombres ||
+        perfil?._id ||
         "admin",
 
     });
@@ -226,7 +225,7 @@ export default function EditInventarioView() {
             ),
 
           actualizadoPor:
-            perfil?.nombres ||
+            perfil?._id ||
             "admin",
 
         },

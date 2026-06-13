@@ -12,13 +12,14 @@ import { createRol } from "@/api/RolApi";
 import {
   ArrowLeft,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function RolCreateView() {
 
   const navigate = useNavigate();
 
   const queryClient = useQueryClient();
-
+ const {data:perfil} = useAuth()
   const [formData, setFormData] = useState({
     nombre: "",
     descripcion: "",
@@ -31,7 +32,7 @@ export default function RolCreateView() {
     usuarios: false,
     configuracion: false,
 
-    creadoPor: "admin",
+    creadoPor: perfil._id,
   });
 
   /* =========================
