@@ -98,6 +98,7 @@ import ReporteKardexView from './views/reporte/ReporteKardexView'
 import ReporteFlujoEfectivoView from './views/reporte/ReporteFlujoEfectivoView'
 import ReporteCierresCajaView from './views/reporte/ReporteCierresCajaView'
 import ReporteSolicitudesResumenView from './views/reporte/ReporteSolicitudesResumenView'
+import ProductoMasVendidoPorSucursalView from './views/reporte/ProductoMasVendidoPorSucursalView'
 
 export default function Router() {
 
@@ -159,6 +160,7 @@ export default function Router() {
                         <Route path='/sucursal/:sucursalId/reportes/flujo-efectivo' element={<ReporteFlujoEfectivoView   />} />
                         <Route path='/sucursal/:sucursalId/reportes/cierres-caja' element={<ReporteCierresCajaView   />} />
                         <Route path='/sucursal/:sucursalId/reportes/solicitudes' element={<ReporteSolicitudesResumenView   />} />
+                        <Route path='/sucursal/:sucursalId/reportes/productos-mas-vendidos' element={<ProductoMasVendidoPorSucursalView   />} />
 
 
                         <Route path='/categoriaProducto/' element={<CategoriaProductoDetailView />} />

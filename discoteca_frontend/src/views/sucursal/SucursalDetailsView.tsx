@@ -921,7 +921,7 @@ export default function SucursalDetailsView() {
                 )}
 
                 <Link
-                  to={`${baseSucursal}/reportes/ventas-vendedor`}
+                  to={`${baseSucursal}/reportes/vendedores`}
                   className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-black"
                 >
                   Ver ventas por mesero

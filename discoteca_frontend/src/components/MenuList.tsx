@@ -32,6 +32,7 @@ import {
   UserRoundCheck,
   Users,
   WalletCards,
+  Trophy,
   Warehouse,
   X,
 } from "lucide-react";
@@ -89,7 +90,7 @@ export default function MenuList() {
         ],
       },
 
-      
+
 
       {
         title: "Caja",
@@ -196,6 +197,11 @@ export default function MenuList() {
             to: `${baseSucursal}/reportes/solicitudes`,
             text: "Resumen de solicitudes",
             icon: BarChart3,
+          },
+          {
+            to: `${baseSucursal}/reportes/productos-mas-vendidos`,
+            text: "Productos más vendidos",
+            icon: Trophy,
           },
         ],
       },
@@ -352,10 +358,9 @@ export default function MenuList() {
           transition-transform duration-300
           md:sticky md:translate-x-0
 
-          ${
-            openSidebar
-              ? "translate-x-0"
-              : "-translate-x-full"
+          ${openSidebar
+            ? "translate-x-0"
+            : "-translate-x-full"
           }
         `}
       >
@@ -433,10 +438,9 @@ export default function MenuList() {
                     px-3 py-2.5
                     transition-colors
 
-                    ${
-                      hasActiveItem
-                        ? "bg-gray-100 text-black"
-                        : "text-gray-700 hover:bg-gray-100"
+                    ${hasActiveItem
+                      ? "bg-gray-100 text-black"
+                      : "text-gray-700 hover:bg-gray-100"
                     }
                   `}
                 >
@@ -483,10 +487,9 @@ export default function MenuList() {
                               rounded-lg px-3 py-2
                               text-sm transition-colors
 
-                              ${
-                                isActive
-                                  ? "bg-black font-semibold text-white"
-                                  : "text-gray-600 hover:bg-gray-100 hover:text-black"
+                              ${isActive
+                                ? "bg-black font-semibold text-white"
+                                : "text-gray-600 hover:bg-gray-100 hover:text-black"
                               }
                             `}
                           >

@@ -8,7 +8,8 @@ import type {
   VentasPorCajaResponse,
   VentasPorVendedorResponse,
   VentasPorMetodoPagoResponse,
-  ProductosMasVendidosResponse,
+    
+  ProductosMasVendidosResponse, 
   InventarioGeneralResponse,
   InventarioStockBajoResponse,
   ValorInventarioResponse,
@@ -29,6 +30,7 @@ export type ReporteTestResponse = {
   ok: boolean;
   message: string;
 };
+
 
 /* =====================================================
    ENDPOINTS DEL BACKEND
@@ -110,43 +112,83 @@ const REPORTE_ENDPOINTS = {
  *
  * ?fechaDesde=&fechaHasta=&idSucursal=
  */
+// function limpiarParametros<
+//   T extends Record<string, unknown>
+// >(
+//   parametros: T
+// ): Record<
+//   string,
+//   string | number | boolean
+// > {
+//   return Object.entries(
+//     parametros
+//   ).reduce<
+//     Record<
+//       string,
+//       string | number | boolean
+//     >
+//   >(
+//     (
+//       resultado,
+//       [clave, valor]
+//     ) => {
+//       const esValido =
+//         valor !== undefined &&
+//         valor !== null &&
+//         valor !== "";
+
+//       if (esValido) {
+//         resultado[clave] =
+//           valor as
+//             | string
+//             | number
+//             | boolean;
+//       }
+
+//       return resultado;
+//     },
+//     {}
+//   );
+// }
+
 function limpiarParametros<
-  T extends Record<string, unknown>
+  T extends object
 >(
   parametros: T
 ): Record<
   string,
   string | number | boolean
 > {
-  return Object.entries(
-    parametros
-  ).reduce<
+  const resultado:
     Record<
       string,
       string | number | boolean
-    >
-  >(
-    (
-      resultado,
-      [clave, valor]
-    ) => {
-      const esValido =
-        valor !== undefined &&
-        valor !== null &&
-        valor !== "";
+    > = {};
 
-      if (esValido) {
-        resultado[clave] =
-          valor as
-            | string
-            | number
-            | boolean;
+  Object.entries(
+    parametros
+  ).forEach(
+    ([clave, valor]) => {
+      if (
+        valor === undefined ||
+        valor === null ||
+        valor === ""
+      ) {
+        return;
       }
 
-      return resultado;
-    },
-    {}
+      if (
+        typeof valor === "string" ||
+        typeof valor === "number" ||
+        typeof valor === "boolean"
+      ) {
+        resultado[clave] =
+          valor;
+      }
+    }
   );
+
+  return resultado;
 }
 
 /* =====================================================
@@ -614,5 +656,36 @@ export const ReporteAPI = {
   getSolicitudesResumen:
     getReporteSolicitudesResumen,
 };
+
+
+
+
+
+
+/* =====================================================
+   ENDPOINT
+===================================================== */
+
+const PRODUCTOS_MAS_VENDIDOS_ENDPOINT =
+  "/reportes/ventas/productos-mas-vendidos";
+
+/* =====================================================
+   LIMPIAR PARÁMETROS
+===================================================== */
+
+export async function getProductosMasVendidos(
+  filtros: ReporteFiltros = {}
+): Promise<ProductosMasVendidosResponse> {
+  const { data } =
+    await api.get<ProductosMasVendidosResponse>(
+      "/reportes/ventas/productos-mas-vendidos",
+      {
+        params:
+          limpiarParametros(filtros),
+      }
+    );
+
+  return data;
+}
 
 export default ReporteAPI;

@@ -744,11 +744,7 @@ export type ProductoMasVendido = {
   precioPromedio: number;
 };
 
-export type ProductosMasVendidosResponse = {
-  filtros: ReporteFiltros;
-  limite: number;
-  data: ProductoMasVendido[];
-};
+
 
 /* =====================================================
    8. INVENTARIO GENERAL
@@ -1165,3 +1161,104 @@ export type SolicitudResumenEstado = {
   tiempoPromedioHoras: number;
 };
 
+/* =====================================================
+   PRODUCTO VENDIDO
+===================================================== */
+
+export type ProductoMasVendidoItem = {
+  idProducto: string;
+
+  nombre: string;
+
+  marca: string;
+
+  descripcion?: string;
+
+  idCategoria?:
+    | string
+    | null;
+
+  cantidadVendida:
+    number;
+
+  cantidadVentas:
+    number;
+
+  cantidadDetalles?:
+    number;
+
+  cantidadSucursales?:
+    number;
+
+  totalVendido:
+    number;
+
+  costoTotal:
+    number;
+
+  utilidad:
+    number;
+
+  precioPromedio:
+    number;
+};
+
+/* =====================================================
+   PRODUCTOS VENDIDOS POR SUCURSAL
+===================================================== */
+
+export type ProductosMasVendidosSucursal = {
+  idSucursal:
+    string;
+
+  nombreSucursal:
+    string;
+
+  ubicacionSucursal?:
+    string;
+
+  totalProductosDiferentes:
+    number;
+
+  productoMasVendido:
+    ProductoMasVendidoItem | null;
+
+  productosMasVendidos:
+    ProductoMasVendidoItem[];
+};
+
+/* =====================================================
+   RESUMEN
+===================================================== */
+
+export type ProductosMasVendidosResumen = {
+  cantidadProductosRankingGeneral:
+    number;
+
+  cantidadSucursales:
+    number;
+};
+
+/* =====================================================
+   RESPUESTA COMPLETA
+===================================================== */
+
+export type ProductosMasVendidosResponse = {
+  filtros:
+    ReporteFiltros;
+
+  limite:
+    number;
+
+  resumen:
+    ProductosMasVendidosResumen;
+
+  productoMasVendidoGeneral:
+    ProductoMasVendidoItem | null;
+
+  productosMasVendidosGeneral:
+    ProductoMasVendidoItem[];
+
+  sucursales:
+    ProductosMasVendidosSucursal[];
+};
