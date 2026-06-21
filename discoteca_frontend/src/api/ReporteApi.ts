@@ -323,6 +323,7 @@ export async function getReporteVentasPorVendedor(
           ),
       }
     );
+    console.log(data,"desde api ")
 
   return data;
 }
