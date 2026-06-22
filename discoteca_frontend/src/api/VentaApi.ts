@@ -11,12 +11,14 @@ import {
   VentaArraySchema,
   VentaSchema,
   VentasConDetallesPorPerfilSchema,
+  ReporteVentasMeseroPorCajasSchema,
 
   type VentaForm,
   type VentaType,
   type UpdateVentaType,
   type DeleteVentaType,
   type CortesiaVentaType,
+  type GetReporteVentasMeseroPorCajasParams,
 } from "@/types/VentaType";
 
 /* =========================
@@ -597,6 +599,85 @@ export async function deleteVentaById({
 
   }
 
+}
+/* =========================
+    REPORTE DEL MESERO
+    AGRUPADO POR CAJAS
+========================= */
+
+export async function getReporteVentasMeseroPorCajas({
+  idPerfil,
+  idSucursal,
+  idAperturaCaja,
+}: GetReporteVentasMeseroPorCajasParams) {
+  try {
+    if (!idPerfil) {
+      throw new Error(
+        "El ID del mesero es obligatorio"
+      );
+    }
+
+    if (!idSucursal) {
+      throw new Error(
+        "El ID de la sucursal es obligatorio"
+      );
+    }
+
+    const params =
+      new URLSearchParams();
+
+    params.append(
+      "idSucursal",
+      idSucursal
+    );
+
+    if (idAperturaCaja) {
+      params.append(
+        "idAperturaCaja",
+        idAperturaCaja
+      );
+    }
+
+    const {
+      data,
+    } = await api.get(
+      `/venta/mesero/${idPerfil}/reporte-cajas?${params.toString()}`
+    );
+
+    const response =
+      ReporteVentasMeseroPorCajasSchema
+        .safeParse(data);
+
+    if (!response.success) {
+      console.log(
+        "RESPUESTA REAL DEL REPORTE MESERO POR CAJAS:",
+        data
+      );
+
+      console.log(
+        "ERROR ZOD DEL REPORTE MESERO POR CAJAS:",
+        response.error.format()
+      );
+
+      console.log(
+        "ISSUES ZOD:",
+        response.error.issues
+      );
+
+      throw new Error(
+        "La estructura del reporte del mesero por cajas no coincide con el type"
+      );
+    }
+
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(
+      obtenerMensajeError(
+        error,
+        "Error obteniendo reporte del mesero por cajas"
+      )
+    );
+  }
 }
 
 /* =========================

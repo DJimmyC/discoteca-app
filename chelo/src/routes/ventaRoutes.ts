@@ -370,6 +370,154 @@ router.get(
 
 /**
  * @openapi
+ * /api/venta/mesero/{idPerfil}/reporte-cajas:
+ *   get:
+ *     tags:
+ *       - Venta
+ *     summary: Reporte de ventas del mesero por cajas abiertas
+ *     description: >
+ *       Genera un reporte personalizado para un mesero, agrupando sus ventas
+ *       por caja. Este reporte sirve antes del cierre de caja, para saber
+ *       cuánto efectivo debe entregar el mesero a cada caja y cuánto debe
+ *       justificar mediante QR, transferencia o pago mixto.
+ *
+ *       El reporte toma las ventas desde la fecha de apertura de cada caja
+ *       hasta el momento actual. No requiere fecha de cierre, porque se genera
+ *       antes de cerrar caja.
+ *
+ *       Si se envía idAperturaCaja, el reporte se genera solo para esa caja.
+ *       Si no se envía idAperturaCaja, el reporte se genera para todas las
+ *       cajas abiertas de la sucursal.
+ *
+ *       Importante: las ventas se agrupan correctamente por caja porque cada
+ *       venta tiene idCaja. Las comandas solo pueden relacionarse con una caja
+ *       mediante la venta que las cerró, salvo que el modelo Comanda también
+ *       guarde idCaja.
+ *     parameters:
+ *       - in: path
+ *         name: idPerfil
+ *         required: true
+ *         description: ID del perfil del mesero.
+ *         schema:
+ *           type: string
+ *         example: "69f6927bd7691b4b764a116d"
+ *
+ *       - in: query
+ *         name: idSucursal
+ *         required: true
+ *         description: ID de la sucursal donde trabaja el mesero.
+ *         schema:
+ *           type: string
+ *         example: "64fddd777888"
+ *
+ *       - in: query
+ *         name: idAperturaCaja
+ *         required: false
+ *         description: >
+ *           ID de una apertura de caja específica. Si se envía, el reporte
+ *           se limita a esa caja. Si no se envía, se buscan todas las cajas
+ *           abiertas de la sucursal.
+ *         schema:
+ *           type: string
+ *         example: "66a111bbb222ccc333ddd444"
+ *
+ *     responses:
+ *       200:
+ *         description: Reporte del mesero agrupado por cajas
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Reporte del mesero por cajas generado correctamente"
+ *               general:
+ *                 idPerfil: "69f6927bd7691b4b764a116d"
+ *                 idSucursal: "64fddd777888"
+ *                 fechaReporte: "2026-06-22T23:45:00.000Z"
+ *                 cantidadCajas: 2
+ *               resumenGeneral:
+ *                 cantidadVentas: 12
+ *                 cantidadVentasAnuladas: 1
+ *                 cantidadCortesias: 2
+ *                 totalVentas: 1450
+ *                 totalEfectivo: 800
+ *                 totalQr: 400
+ *                 totalTransferencia: 150
+ *                 totalMixto: 100
+ *                 montoEfectivoAEntregar: 800
+ *                 totalAJustificarConComprobante: 650
+ *                 totalAJustificarSistema: 1450
+ *                 totalVentasAnuladas: 80
+ *                 totalCortesias: 120
+ *               explicacionCaja:
+ *                 porCaja: "El mesero debe entregar o justificar el dinero separado por cada caja donde registró ventas."
+ *                 efectivo: "El efectivo es dinero físico que debe entregarse a la caja correspondiente."
+ *                 qr: "El QR debe justificarse con comprobante o validación de pago."
+ *                 transferencia: "La transferencia debe justificarse con comprobante o validación bancaria."
+ *                 mixto: "El pago mixto se muestra como total completo. Para separar efectivo, QR y transferencia dentro de una venta mixta, el modelo Venta debe guardar el desglose."
+ *                 cortesias: "Las cortesías no generan dinero, pero deben justificarse porque representan productos entregados."
+ *                 anulaciones: "Las ventas anuladas y comandas anuladas deben revisarse con observación y responsable."
+ *               cajas:
+ *                 - idAperturaCaja: "66a111bbb222ccc333ddd444"
+ *                   idCaja: "64fbbb333444"
+ *                   caja: "Caja Principal"
+ *                   fechaApertura: "2026-06-22T20:00:00.000Z"
+ *                   fechaReporte: "2026-06-22T23:45:00.000Z"
+ *                   estadoApertura: "abierta"
+ *                   responsableApertura: "María Cajera"
+ *                   resumen:
+ *                     cantidadVentas: 8
+ *                     cantidadVentasAnuladas: 1
+ *                     cantidadCortesias: 1
+ *                     cantidadComandasRelacionadas: 8
+ *                     cantidadComandasAnuladas: 1
+ *                     totalVentas: 900
+ *                     totalEfectivo: 500
+ *                     totalQr: 250
+ *                     totalTransferencia: 100
+ *                     totalMixto: 50
+ *                     montoEfectivoAEntregar: 500
+ *                     totalAJustificarConComprobante: 400
+ *                     totalAJustificarSistema: 900
+ *                     totalVentasAnuladas: 80
+ *                     totalCortesias: 60
+ *                   ventas: []
+ *                   ventasAnuladas: []
+ *                   cortesias: []
+ *                   comandasRelacionadas: []
+ *                   comandasAnuladas: []
+ *
+ *       400:
+ *         description: Faltan datos obligatorios o la apertura no pertenece a la sucursal
+ *         content:
+ *           application/json:
+ *             examples:
+ *               sinSucursal:
+ *                 value:
+ *                   error: "El ID de la sucursal es obligatorio"
+ *               aperturaNoPertenece:
+ *                 value:
+ *                   error: "La apertura no pertenece a esta sucursal"
+ *
+ *       404:
+ *         description: No se encontró apertura de caja o no existen cajas abiertas
+ *         content:
+ *           application/json:
+ *             examples:
+ *               aperturaNoEncontrada:
+ *                 value:
+ *                   error: "No se encontró la apertura de caja"
+ *               sinCajasAbiertas:
+ *                 value:
+ *                   error: "No existen cajas abiertas para esta sucursal"
+ *
+ *       500:
+ *         description: Error al generar el reporte del mesero por cajas
+ */
+router.get(
+  "/mesero/:idPerfil/reporte-cajas",
+  VentaController.getReporteVentasMeseroPorCajas
+);
+/**
+ * @openapi
  * /api/venta/{id}/cortesia:
  *   patch:
  *     tags:

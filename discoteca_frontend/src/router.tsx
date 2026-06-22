@@ -94,6 +94,7 @@ import ReporteCierresCajaView from "./views/reporte/ReporteCierresCajaView";
 import ReporteSolicitudesResumenView from "./views/reporte/ReporteSolicitudesResumenView";
 import ProductoMasVendidoPorSucursalView from "./views/reporte/ProductoMasVendidoPorSucursalView";
 
+import ReporteMeseroCajaView from "./views/venta/ReporteMeseroCajaView";
 // seguridad
 import RequirePermission from "@/components/security/RequierePermission";
 import RequireRol from "@/components/security/RequireRol";
@@ -122,6 +123,7 @@ export default function Router() {
               <Route path="/mesero/comandas" element={<DetalleComandaView />} />
               <Route path="/comanda/:comandaId/edit" element={<EditDetalleComandaView />} />
               <Route path="/mesero/ventas" element={<VentaDetailView />} />
+              <Route path="/mesero/reporte" element={<ReporteMeseroCajaView />} />
               <Route path="/mesero/perfil" element={<PerfilMeseroView />} />
               <Route path="/mesero/perfil/:perfilId/edit" element={<EditPerfilMeseroView />} />
             </Route>

@@ -415,6 +415,23 @@ export default function MeseroLayout() {
             </span>
           </NavLink>
 
+           <NavLink
+            to="/mesero/reporte"
+            className={({
+              isActive,
+            }) =>
+              navLinkClass(
+                isActive
+              )
+            }
+          >
+            <ReceiptText size={20} />
+
+            <span>
+              Reporte
+            </span>
+          </NavLink>
+
           <NavLink
             to="/mesero/perfil"
             className={({

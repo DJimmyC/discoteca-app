@@ -994,3 +994,429 @@ export type CortesiaVentaType = {
     string;
 
 };
+
+/* =========================
+    REPORTE MESERO POR CAJAS
+========================= */
+
+export const ProductoReporteMeseroSchema =
+  z.object({
+    idDetalleVenta:
+      z.union([
+        z.string(),
+        ObjectIdStringSchema,
+      ])
+        .optional(),
+
+    idDetalleComanda:
+      z.union([
+        z.string(),
+        ObjectIdStringSchema,
+      ])
+        .optional(),
+
+    idProducto:
+      z.string()
+        .optional(),
+
+    producto:
+      z.string()
+        .optional(),
+
+    marca:
+      z.string()
+        .nullable()
+        .optional(),
+
+    idInventario:
+      z.string()
+        .optional(),
+
+    idAlmacen:
+      z.string()
+        .optional(),
+
+    almacen:
+      z.string()
+        .optional(),
+
+    cantidad:
+      z.number()
+        .optional(),
+
+    precioUnitario:
+      z.number()
+        .optional(),
+
+    costoUnitario:
+      z.number()
+        .optional(),
+
+    subtotal:
+      z.number()
+        .optional(),
+
+    estado:
+      z.string()
+        .nullable()
+        .optional(),
+
+    observacion:
+      z.string()
+        .nullable()
+        .optional(),
+  })
+    .passthrough();
+
+export const VentaReporteMeseroSchema =
+  z.object({
+    idVenta:
+      z.union([
+        z.string(),
+        ObjectIdStringSchema,
+      ]),
+
+    numeroVenta:
+      z.union([
+        z.string(),
+        z.number(),
+      ])
+        .optional(),
+
+    idComanda:
+      z.union([
+        z.string(),
+        ObjectIdStringSchema,
+      ])
+        .nullable()
+        .optional(),
+
+    numeroComanda:
+      z.union([
+        z.string(),
+        z.number(),
+      ])
+        .optional(),
+
+    estadoComanda:
+      z.string()
+        .nullable()
+        .optional(),
+
+    fechaVenta:
+      z.string(),
+
+    metodoPago:
+      MetodoPagoVentaSchema,
+
+    estado:
+      EstadoVentaSchema,
+
+    subtotal:
+      z.number(),
+
+    descuento:
+      z.number()
+        .optional(),
+
+    total:
+      z.number(),
+
+    observacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    productos:
+      z.array(
+        ProductoReporteMeseroSchema
+      )
+        .default([]),
+  })
+    .passthrough();
+
+export const ComandaReporteMeseroSchema =
+  z.object({
+    _id:
+      z.union([
+        z.string(),
+        ObjectIdStringSchema,
+      ])
+        .optional(),
+
+    idComanda:
+      z.union([
+        z.string(),
+        ObjectIdStringSchema,
+      ])
+        .optional(),
+
+    numeroComanda:
+      z.union([
+        z.string(),
+        z.number(),
+      ])
+        .optional(),
+
+    estado:
+      z.string()
+        .optional(),
+
+    fechaApertura:
+      z.string()
+        .nullable()
+        .optional(),
+
+    fechaCierre:
+      z.string()
+        .nullable()
+        .optional(),
+
+    observacion:
+      z.string()
+        .nullable()
+        .optional(),
+
+    totalReferencial:
+      z.number()
+        .optional(),
+
+    productos:
+      z.array(
+        ProductoReporteMeseroSchema
+      )
+        .optional(),
+  })
+    .passthrough();
+
+export const ResumenCajaMeseroSchema =
+  z.object({
+    cantidadVentas:
+      z.number(),
+
+    cantidadVentasAnuladas:
+      z.number(),
+
+    cantidadCortesias:
+      z.number(),
+
+    cantidadComandasRelacionadas:
+      z.number(),
+
+    cantidadComandasAnuladas:
+      z.number(),
+
+    totalVentas:
+      z.number(),
+
+    totalEfectivo:
+      z.number(),
+
+    totalQr:
+      z.number(),
+
+    totalTransferencia:
+      z.number(),
+
+    totalMixto:
+      z.number(),
+
+    montoEfectivoAEntregar:
+      z.number(),
+
+    totalAJustificarConComprobante:
+      z.number(),
+
+    totalAJustificarSistema:
+      z.number(),
+
+    totalVentasAnuladas:
+      z.number(),
+
+    totalCortesias:
+      z.number(),
+  })
+    .passthrough();
+
+export const CajaReporteMeseroSchema =
+  z.object({
+    idAperturaCaja:
+      z.union([
+        z.string(),
+        ObjectIdStringSchema,
+      ]),
+
+    idCaja:
+      z.string(),
+
+    caja:
+      z.string(),
+
+    fechaApertura:
+      z.string(),
+
+    fechaReporte:
+      z.string(),
+
+    estadoApertura:
+      z.union([
+        z.string(),
+        z.boolean(),
+      ])
+        .optional(),
+
+    responsableApertura:
+      z.string()
+        .optional(),
+
+    resumen:
+      ResumenCajaMeseroSchema,
+
+    ventas:
+      z.array(
+        VentaReporteMeseroSchema
+      )
+        .default([]),
+
+    ventasAnuladas:
+      z.array(
+        VentaReporteMeseroSchema
+      )
+        .default([]),
+
+    cortesias:
+      z.array(
+        VentaReporteMeseroSchema
+      )
+        .default([]),
+
+    comandasRelacionadas:
+      z.array(
+        ComandaReporteMeseroSchema
+      )
+        .default([]),
+
+    comandasAnuladas:
+      z.array(
+        ComandaReporteMeseroSchema
+      )
+        .default([]),
+  })
+    .passthrough();
+
+export const ResumenGeneralReporteMeseroSchema =
+  z.object({
+    cantidadVentas:
+      z.number(),
+
+    cantidadVentasAnuladas:
+      z.number(),
+
+    cantidadCortesias:
+      z.number(),
+
+    totalVentas:
+      z.number(),
+
+    totalEfectivo:
+      z.number(),
+
+    totalQr:
+      z.number(),
+
+    totalTransferencia:
+      z.number(),
+
+    totalMixto:
+      z.number(),
+
+    montoEfectivoAEntregar:
+      z.number(),
+
+    totalAJustificarConComprobante:
+      z.number(),
+
+    totalAJustificarSistema:
+      z.number(),
+
+    totalVentasAnuladas:
+      z.number(),
+
+    totalCortesias:
+      z.number(),
+  })
+    .passthrough();
+
+export const ReporteVentasMeseroPorCajasSchema =
+  z.object({
+    message:
+      z.string(),
+
+    general:
+      z.object({
+        idPerfil:
+          z.string(),
+
+        idSucursal:
+          z.string(),
+
+        fechaReporte:
+          z.string(),
+
+        cantidadCajas:
+          z.number(),
+      })
+        .passthrough(),
+
+    resumenGeneral:
+      ResumenGeneralReporteMeseroSchema,
+
+    explicacionCaja:
+      z.object({
+        porCaja:
+          z.string()
+            .optional(),
+
+        efectivo:
+          z.string()
+            .optional(),
+
+        qr:
+          z.string()
+            .optional(),
+
+        transferencia:
+          z.string()
+            .optional(),
+
+        mixto:
+          z.string()
+            .optional(),
+
+        cortesias:
+          z.string()
+            .optional(),
+
+        anulaciones:
+          z.string()
+            .optional(),
+      })
+        .passthrough(),
+
+    cajas:
+      z.array(
+        CajaReporteMeseroSchema
+      ),
+  })
+    .passthrough();
+
+export type ReporteVentasMeseroPorCajasType =
+  z.infer<
+    typeof ReporteVentasMeseroPorCajasSchema
+  >;
+
+export type GetReporteVentasMeseroPorCajasParams = {
+  idPerfil: string;
+  idSucursal: string;
+  idAperturaCaja?: string;
+};
