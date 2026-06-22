@@ -431,7 +431,7 @@ export default function MeseroLayout() {
               Mi Perfil
             </span>
           </NavLink>
-           <NavLink
+           {/* <NavLink
             to="/"
             className={({
               isActive,
@@ -446,7 +446,7 @@ export default function MeseroLayout() {
             <span>
               Admin
             </span>
-          </NavLink>
+          </NavLink> */}
 
         </nav>
 

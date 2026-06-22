@@ -34,7 +34,7 @@ export interface VentaType {
 
   idPerfil:
     Types.ObjectId;
-
+c
   idSucursal:
     Types.ObjectId;
 
