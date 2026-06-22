@@ -173,11 +173,11 @@ export default function MenuList() {
             text: "Stock bajo y agotados",
             icon: PackageSearch,
           },
-          {
-            to: `${baseSucursal}/reportes/valor-inventario`,
-            text: "Valor del inventario",
-            icon: Landmark,
-          },
+          // {
+          //   to: `${baseSucursal}/reportes/valor-inventario`,
+          //   text: "Valor del inventario",
+          //   icon: Landmark,
+          // },
           {
             to: `${baseSucursal}/reportes/kardex`,
             text: "Kardex de productos",

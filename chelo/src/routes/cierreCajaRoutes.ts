@@ -1,19 +1,669 @@
+// // src/routes/cierreCajaRoutes.ts
+
+// import {
+//   Router,
+// } from "express";
+
+// import {
+//   CierreCajaController,
+// } from "../controllers/CierreCajaController";
+
+// const router =
+//   Router();
+
+// /* =====================================================
+//     COMPONENTES SWAGGER
+// ===================================================== */
+
+// /**
+//  * @openapi
+//  * components:
+//  *   schemas:
+//  *
+//  *     EstadoCierreCaja:
+//  *       type: string
+//  *       enum:
+//  *         - cuadrado
+//  *         - sobrante
+//  *         - faltante
+//  *         - anulado
+//  *       example: "cuadrado"
+//  *
+//  *     CierreCaja:
+//  *       type: object
+//  *       properties:
+//  *         _id:
+//  *           type: string
+//  *
+//  *         idAperturaCaja:
+//  *           oneOf:
+//  *             - type: string
+//  *             - type: object
+//  *
+//  *         idPerfil:
+//  *           oneOf:
+//  *             - type: string
+//  *             - type: object
+//  *
+//  *         idSucursal:
+//  *           oneOf:
+//  *             - type: string
+//  *             - type: object
+//  *
+//  *         idCaja:
+//  *           oneOf:
+//  *             - type: string
+//  *             - type: object
+//  *
+//  *         fechaApertura:
+//  *           type: string
+//  *           format: date-time
+//  *           example: "2026-06-23T19:00:00-04:00"
+//  *
+//  *         fechaCierre:
+//  *           type: string
+//  *           format: date-time
+//  *           example: "2026-06-24T04:00:00-04:00"
+//  *
+//  *         montoInicial:
+//  *           type: number
+//  *           example: 100
+//  *
+//  *         totalVentas:
+//  *           type: number
+//  *           example: 1500
+//  *
+//  *         totalVentasEfectivo:
+//  *           type: number
+//  *           example: 800
+//  *
+//  *         totalVentasQr:
+//  *           type: number
+//  *           example: 400
+//  *
+//  *         totalVentasTransferencia:
+//  *           type: number
+//  *           example: 200
+//  *
+//  *         totalVentasMixto:
+//  *           type: number
+//  *           example: 100
+//  *
+//  *         totalCortesias:
+//  *           type: number
+//  *           example: 50
+//  *
+//  *         totalVentasAnuladas:
+//  *           type: number
+//  *           example: 80
+//  *
+//  *         totalEgresos:
+//  *           type: number
+//  *           example: 150
+//  *
+//  *         totalEgresosEfectivo:
+//  *           type: number
+//  *           example: 150
+//  *
+//  *         totalEsperadoEfectivo:
+//  *           type: number
+//  *           example: 750
+//  *
+//  *         montoReal:
+//  *           type: number
+//  *           example: 740
+//  *
+//  *         diferencia:
+//  *           type: number
+//  *           example: -10
+//  *
+//  *         cantidadVentas:
+//  *           type: number
+//  *           example: 35
+//  *
+//  *         cantidadProductosVendidos:
+//  *           type: number
+//  *           example: 80
+//  *
+//  *         cantidadEgresos:
+//  *           type: number
+//  *           example: 3
+//  *
+//  *         estado:
+//  *           $ref: '#/components/schemas/EstadoCierreCaja'
+//  *
+//  *         observacion:
+//  *           type: string
+//  *           nullable: true
+//  *
+//  *         fechaCreacion:
+//  *           type: string
+//  *           format: date-time
+//  *
+//  *         creadoPor:
+//  *           type: string
+//  *
+//  *     CierreCajaInput:
+//  *       type: object
+//  *       required:
+//  *         - idPerfil
+//  *         - idCaja
+//  *         - montoReal
+//  *       properties:
+//  *         idPerfil:
+//  *           type: string
+//  *           example: "69f6927bd7691b4b764a116d"
+//  *
+//  *         idCaja:
+//  *           type: string
+//  *           example: "6a1ba6e27ba11e9abf893800"
+//  *
+//  *         fechaCierre:
+//  *           type: string
+//  *           format: date-time
+//  *           example: "2026-06-24T04:00:00-04:00"
+//  *           description: Fecha y hora completa del cierre.
+//  *
+//  *         fecha:
+//  *           type: string
+//  *           format: date
+//  *           example: "2026-06-23"
+//  *           description: Compatibilidad con el frontend anterior.
+//  *
+//  *         horaCierre:
+//  *           type: string
+//  *           pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+//  *           example: "04:00"
+//  *           description: |
+//  *             Si la fecha enviada corresponde al día de apertura
+//  *             y la hora es menor que la hora de apertura, se considera
+//  *             automáticamente que el cierre ocurrió al día siguiente.
+//  *
+//  *         montoReal:
+//  *           type: number
+//  *           minimum: 0
+//  *           example: 740
+//  *           description: Dinero físico contado al cerrar la caja.
+//  *
+//  *         observacion:
+//  *           type: string
+//  *           example: "Cierre de jornada nocturna"
+//  *
+//  *         creadoPor:
+//  *           type: string
+//  *           example: "José"
+//  *
+//  *     ProductoVendidoCierre:
+//  *       type: object
+//  *       properties:
+//  *         idProducto:
+//  *           type: string
+//  *
+//  *         nombre:
+//  *           type: string
+//  *           example: "Cerveza Paceña"
+//  *
+//  *         marca:
+//  *           type: string
+//  *           example: "Paceña"
+//  *
+//  *         cantidadVendida:
+//  *           type: number
+//  *           example: 30
+//  *
+//  *         precioPromedio:
+//  *           type: number
+//  *           example: 15
+//  *
+//  *         totalVendido:
+//  *           type: number
+//  *           example: 450
+//  *
+//  *     JornadaCaja:
+//  *       type: object
+//  *       properties:
+//  *         fechaApertura:
+//  *           type: string
+//  *           format: date-time
+//  *
+//  *         fechaCierre:
+//  *           type: string
+//  *           format: date-time
+//  *
+//  *         duracionMinutos:
+//  *           type: number
+//  *           example: 540
+//  *           description: Duración total de la jornada en minutos.
+//  *
+//  *     ResumenCierreCaja:
+//  *       type: object
+//  *       properties:
+//  *         cantidadVentas:
+//  *           type: number
+//  *
+//  *         cantidadProductosVendidos:
+//  *           type: number
+//  *
+//  *         cantidadEgresos:
+//  *           type: number
+//  *
+//  *         totalVentas:
+//  *           type: number
+//  *
+//  *         totalVentasEfectivo:
+//  *           type: number
+//  *
+//  *         totalVentasQr:
+//  *           type: number
+//  *
+//  *         totalVentasTransferencia:
+//  *           type: number
+//  *
+//  *         totalVentasMixto:
+//  *           type: number
+//  *
+//  *         totalCortesias:
+//  *           type: number
+//  *
+//  *         totalVentasAnuladas:
+//  *           type: number
+//  *
+//  *         totalEgresos:
+//  *           type: number
+//  *
+//  *         totalEgresosEfectivo:
+//  *           type: number
+//  *
+//  *         montoInicial:
+//  *           type: number
+//  *
+//  *         totalEsperadoEfectivo:
+//  *           type: number
+//  *
+//  *         montoReal:
+//  *           type: number
+//  *
+//  *         diferencia:
+//  *           type: number
+//  *
+//  *         estado:
+//  *           $ref: '#/components/schemas/EstadoCierreCaja'
+//  *
+//  *     ReporteCierreCaja:
+//  *       type: object
+//  *       properties:
+//  *         message:
+//  *           type: string
+//  *           example: "Caja cerrada correctamente"
+//  *
+//  *         cierre:
+//  *           $ref: '#/components/schemas/CierreCaja'
+//  *
+//  *         jornada:
+//  *           $ref: '#/components/schemas/JornadaCaja'
+//  *
+//  *         resumen:
+//  *           $ref: '#/components/schemas/ResumenCierreCaja'
+//  *
+//  *         productosVendidos:
+//  *           type: array
+//  *           items:
+//  *             $ref: '#/components/schemas/ProductoVendidoCierre'
+//  *
+//  *         ventas:
+//  *           type: array
+//  *           items:
+//  *             type: object
+//  *
+//  *         egresos:
+//  *           type: array
+//  *           items:
+//  *             type: object
+//  */
+
+// /* =====================================================
+//     CREAR CIERRE
+// ===================================================== */
+
+// /**
+//  * @openapi
+//  * /api/cierrecaja:
+//  *   post:
+//  *     tags:
+//  *       - CierreCaja
+//  *     summary: Cerrar una caja y generar el reporte de jornada
+//  *     description: |
+//  *       Busca la apertura activa de la caja y genera automáticamente
+//  *       el informe completo de cierre.
+//  *
+//  *       El backend consulta:
+//  *
+//  *       - Ventas realizadas entre la apertura y el cierre.
+//  *       - Detalles de productos vendidos.
+//  *       - Ventas en efectivo, QR, transferencia y mixtas.
+//  *       - Ventas anuladas.
+//  *       - Cortesías.
+//  *       - Egresos de la jornada.
+//  *       - Dinero esperado en efectivo.
+//  *       - Diferencia contra el monto físico contado.
+//  *
+//  *       La consulta utiliza el rango exacto entre `fechaApertura`
+//  *       y `fechaCierre`, por lo que una jornada puede atravesar
+//  *       la medianoche.
+//  *
+//  *       Ejemplo:
+//  *
+//  *       - Apertura: 23/06/2026 19:00.
+//  *       - Cierre: 24/06/2026 04:00.
+//  *       - Duración: 540 minutos.
+//  *
+//  *       Si se manda `fecha: 2026-06-23` y `horaCierre: 04:00`,
+//  *       el backend detecta que 04:00 es menor que 19:00 y coloca
+//  *       automáticamente el cierre el 24/06/2026.
+//  *
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             $ref: '#/components/schemas/CierreCajaInput'
+//  *           examples:
+//  *
+//  *             cierreNocturno:
+//  *               summary: Cierre usando la hora del día siguiente
+//  *               value:
+//  *                 idPerfil: "69f6927bd7691b4b764a116d"
+//  *                 idCaja: "6a1ba6e27ba11e9abf893800"
+//  *                 fecha: "2026-06-23"
+//  *                 horaCierre: "04:00"
+//  *                 montoReal: 740
+//  *                 observacion: "Cierre de jornada nocturna"
+//  *                 creadoPor: "José"
+//  *
+//  *             fechaCompleta:
+//  *               summary: Cierre usando una fecha completa
+//  *               value:
+//  *                 idPerfil: "69f6927bd7691b4b764a116d"
+//  *                 idCaja: "6a1ba6e27ba11e9abf893800"
+//  *                 fechaCierre: "2026-06-24T04:00:00-04:00"
+//  *                 montoReal: 740
+//  *                 observacion: "Cierre de jornada nocturna"
+//  *                 creadoPor: "José"
+//  *
+//  *     responses:
+//  *       201:
+//  *         description: Caja cerrada y reporte generado correctamente
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               $ref: '#/components/schemas/ReporteCierreCaja'
+//  *
+//  *       400:
+//  *         description: |
+//  *           Datos no válidos, monto incorrecto o fecha de cierre
+//  *           anterior a la apertura.
+//  *
+//  *       404:
+//  *         description: Caja no encontrada o sin apertura activa
+//  *
+//  *       409:
+//  *         description: La apertura ya cuenta con un cierre
+//  *
+//  *       500:
+//  *         description: Error interno al cerrar la caja
+//  */
+// router.post(
+//   "/",
+//   CierreCajaController.createCierre
+// );
+
+// /* =====================================================
+//     OBTENER TODOS
+// ===================================================== */
+
+// /**
+//  * @openapi
+//  * /api/cierrecaja:
+//  *   get:
+//  *     tags:
+//  *       - CierreCaja
+//  *     summary: Obtener todos los cierres
+//  *     description: Retorna el historial de cierres ordenado desde el más reciente.
+//  *
+//  *     responses:
+//  *       200:
+//  *         description: Lista de cierres
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: array
+//  *               items:
+//  *                 $ref: '#/components/schemas/CierreCaja'
+//  *
+//  *       500:
+//  *         description: Error al obtener cierres
+//  */
+// router.get(
+//   "/",
+//   CierreCajaController.getAllCierres
+// );
+
+// /* =====================================================
+//     CIERRES POR CAJA
+// ===================================================== */
+
+// /**
+//  * @openapi
+//  * /api/cierrecaja/caja/{cajaId}:
+//  *   get:
+//  *     tags:
+//  *       - CierreCaja
+//  *     summary: Obtener cierres por caja
+//  *     description: Retorna el historial completo de cierres de una caja.
+//  *
+//  *     parameters:
+//  *       - in: path
+//  *         name: cajaId
+//  *         required: true
+//  *         description: ID de la caja
+//  *         schema:
+//  *           type: string
+//  *
+//  *     responses:
+//  *       200:
+//  *         description: Lista de cierres de la caja
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               type: array
+//  *               items:
+//  *                 $ref: '#/components/schemas/CierreCaja'
+//  *
+//  *       500:
+//  *         description: Error al obtener cierres
+//  */
+// router.get(
+//   "/caja/:cajaId",
+//   CierreCajaController
+//     .getCierresByCajaId
+// );
+
+// /* =====================================================
+//     CIERRE POR ID
+// ===================================================== */
+
+// /**
+//  * @openapi
+//  * /api/cierrecaja/{id}:
+//  *   get:
+//  *     tags:
+//  *       - CierreCaja
+//  *     summary: Obtener un cierre por ID
+//  *
+//  *     parameters:
+//  *       - in: path
+//  *         name: id
+//  *         required: true
+//  *         description: ID del cierre
+//  *         schema:
+//  *           type: string
+//  *
+//  *     responses:
+//  *       200:
+//  *         description: Cierre encontrado
+//  *         content:
+//  *           application/json:
+//  *             schema:
+//  *               $ref: '#/components/schemas/CierreCaja'
+//  *
+//  *       404:
+//  *         description: Cierre no encontrado
+//  *
+//  *       500:
+//  *         description: Error al obtener cierre
+//  */
+// router.get(
+//   "/:id",
+//   CierreCajaController.getCierreById
+// );
+
+// /* =====================================================
+//     ACTUALIZAR OBSERVACIÓN
+// ===================================================== */
+
+// /**
+//  * @openapi
+//  * /api/cierrecaja/{id}:
+//  *   put:
+//  *     tags:
+//  *       - CierreCaja
+//  *     summary: Actualizar la observación de un cierre
+//  *     description: |
+//  *       No permite modificar manualmente los totales financieros.
+//  *       Únicamente actualiza la observación y los datos de auditoría.
+//  *
+//  *     parameters:
+//  *       - in: path
+//  *         name: id
+//  *         required: true
+//  *         description: ID del cierre
+//  *         schema:
+//  *           type: string
+//  *
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             properties:
+//  *               observacion:
+//  *                 type: string
+//  *                 example: "Cierre revisado por administración"
+//  *
+//  *               actualizadoPor:
+//  *                 type: string
+//  *                 example: "Administrador"
+//  *
+//  *     responses:
+//  *       200:
+//  *         description: Observación actualizada correctamente
+//  *
+//  *       404:
+//  *         description: Cierre no encontrado
+//  *
+//  *       500:
+//  *         description: Error al actualizar cierre
+//  */
+// router.put(
+//   "/:id",
+//   CierreCajaController.updateCierre
+// );
+
+// /* =====================================================
+//     ANULAR CIERRE
+// ===================================================== */
+
+// /**
+//  * @openapi
+//  * /api/cierrecaja/{id}:
+//  *   delete:
+//  *     tags:
+//  *       - CierreCaja
+//  *     summary: Anular un cierre de caja
+//  *     description: |
+//  *       Cambia el estado del cierre a `anulado`.
+//  *
+//  *       El motivo de anulación es obligatorio para mantener
+//  *       la trazabilidad y auditoría financiera.
+//  *
+//  *     parameters:
+//  *       - in: path
+//  *         name: id
+//  *         required: true
+//  *         description: ID del cierre
+//  *         schema:
+//  *           type: string
+//  *
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             required:
+//  *               - motivo
+//  *             properties:
+//  *               motivo:
+//  *                 type: string
+//  *                 example: "Cierre registrado con el monto físico equivocado"
+//  *
+//  *               eliminadoPor:
+//  *                 type: string
+//  *                 example: "Administrador"
+//  *
+//  *     responses:
+//  *       200:
+//  *         description: Cierre anulado correctamente
+//  *
+//  *       400:
+//  *         description: El motivo de anulación es obligatorio
+//  *
+//  *       404:
+//  *         description: Cierre no encontrado
+//  *
+//  *       500:
+//  *         description: Error al anular cierre
+//  */
+// router.delete(
+//   "/:id",
+//   CierreCajaController.deleteCierre
+// );
+
+// export default router;
+
+
 // src/routes/cierreCajaRoutes.ts
 
 import {
   Router,
 } from "express";
 
-import {
-  CierreCajaController,
-} from "../controllers/CierreCajaController";
+import CierreCajaController from "../controllers/CierreCajaController";
 
 const router =
   Router();
 
 /* =====================================================
-    COMPONENTES SWAGGER
+    DOCUMENTACIÓN SWAGGER - CIERRE DE CAJA
 ===================================================== */
+
+/**
+ * @openapi
+ * tags:
+ *   - name: CierreCaja
+ *     description: Gestión de cierres de caja, arqueo, ventas, egresos, cortesías y reporte centralizado.
+ */
 
 /**
  * @openapi
@@ -27,7 +677,57 @@ const router =
  *         - sobrante
  *         - faltante
  *         - anulado
- *       example: "cuadrado"
+ *       example: cuadrado
+ *
+ *     CierreCajaInput:
+ *       type: object
+ *       required:
+ *         - idPerfil
+ *         - idCaja
+ *         - idSucursal
+ *         - montoReal
+ *       properties:
+ *         idPerfil:
+ *           type: string
+ *           example: "69f6927bd7691b4b764a116d"
+ *
+ *         idCaja:
+ *           type: string
+ *           example: "6a1ba6e27ba11e9abf893800"
+ *
+ *         idSucursal:
+ *           type: string
+ *           example: "6a1cd5b395270299cd00bb55"
+ *
+ *         montoReal:
+ *           type: number
+ *           example: 1730
+ *           description: Monto total verificado al cierre. Según la lógica del sistema, representa lo que debe cuadrar con ventas totales menos egresos.
+ *
+ *         fechaCierre:
+ *           type: string
+ *           format: date-time
+ *           example: "2026-06-24T04:00:00-04:00"
+ *           description: Fecha y hora completa del cierre. Si se envía, tiene prioridad.
+ *
+ *         fecha:
+ *           type: string
+ *           format: date
+ *           example: "2026-06-23"
+ *           description: Fecha base del cierre. Se usa junto con horaCierre.
+ *
+ *         horaCierre:
+ *           type: string
+ *           example: "04:00"
+ *           description: Hora local del cierre. Si es menor que la hora de apertura, el backend lo interpreta como cierre del día siguiente.
+ *
+ *         observacion:
+ *           type: string
+ *           example: "Cierre realizado sin observaciones."
+ *
+ *         creadoPor:
+ *           type: string
+ *           example: "69f6927bd7691b4b764a116d"
  *
  *     CierreCaja:
  *       type: object
@@ -36,9 +736,7 @@ const router =
  *           type: string
  *
  *         idAperturaCaja:
- *           oneOf:
- *             - type: string
- *             - type: object
+ *           type: string
  *
  *         idPerfil:
  *           oneOf:
@@ -58,16 +756,14 @@ const router =
  *         fechaApertura:
  *           type: string
  *           format: date-time
- *           example: "2026-06-23T19:00:00-04:00"
  *
  *         fechaCierre:
  *           type: string
  *           format: date-time
- *           example: "2026-06-24T04:00:00-04:00"
  *
  *         montoInicial:
  *           type: number
- *           example: 100
+ *           example: 300
  *
  *         totalVentas:
  *           type: number
@@ -75,7 +771,7 @@ const router =
  *
  *         totalVentasEfectivo:
  *           type: number
- *           example: 800
+ *           example: 500
  *
  *         totalVentasQr:
  *           type: number
@@ -83,47 +779,49 @@ const router =
  *
  *         totalVentasTransferencia:
  *           type: number
- *           example: 200
+ *           example: 300
  *
  *         totalVentasMixto:
  *           type: number
- *           example: 100
+ *           example: 300
  *
  *         totalCortesias:
  *           type: number
- *           example: 50
+ *           example: 80
+ *           description: Valor referencial de cortesías. No suma al dinero, pero afecta inventario.
  *
  *         totalVentasAnuladas:
  *           type: number
- *           example: 80
+ *           example: 50
  *
  *         totalEgresos:
  *           type: number
- *           example: 150
+ *           example: 70
  *
  *         totalEgresosEfectivo:
  *           type: number
- *           example: 150
+ *           example: 70
  *
  *         totalEsperadoEfectivo:
  *           type: number
- *           example: 750
+ *           example: 1730
+ *           description: En esta lógica representa el total esperado general = montoInicial + totalVentas - totalEgresos.
  *
  *         montoReal:
  *           type: number
- *           example: 740
+ *           example: 1730
  *
  *         diferencia:
  *           type: number
- *           example: -10
+ *           example: 0
  *
  *         cantidadVentas:
  *           type: number
- *           example: 35
+ *           example: 20
  *
  *         cantidadProductosVendidos:
  *           type: number
- *           example: 80
+ *           example: 45
  *
  *         cantidadEgresos:
  *           type: number
@@ -134,7 +832,6 @@ const router =
  *
  *         observacion:
  *           type: string
- *           nullable: true
  *
  *         fechaCreacion:
  *           type: string
@@ -143,174 +840,123 @@ const router =
  *         creadoPor:
  *           type: string
  *
- *     CierreCajaInput:
+ *     IngresoPorMesero:
  *       type: object
- *       required:
- *         - idPerfil
- *         - idCaja
- *         - montoReal
  *       properties:
  *         idPerfil:
  *           type: string
- *           example: "69f6927bd7691b4b764a116d"
  *
- *         idCaja:
+ *         nombreMesero:
  *           type: string
- *           example: "6a1ba6e27ba11e9abf893800"
+ *           example: "Juan Pérez"
  *
- *         fechaCierre:
- *           type: string
- *           format: date-time
- *           example: "2026-06-24T04:00:00-04:00"
- *           description: Fecha y hora completa del cierre.
- *
- *         fecha:
- *           type: string
- *           format: date
- *           example: "2026-06-23"
- *           description: Compatibilidad con el frontend anterior.
- *
- *         horaCierre:
- *           type: string
- *           pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
- *           example: "04:00"
- *           description: |
- *             Si la fecha enviada corresponde al día de apertura
- *             y la hora es menor que la hora de apertura, se considera
- *             automáticamente que el cierre ocurrió al día siguiente.
- *
- *         montoReal:
- *           type: number
- *           minimum: 0
- *           example: 740
- *           description: Dinero físico contado al cerrar la caja.
- *
- *         observacion:
- *           type: string
- *           example: "Cierre de jornada nocturna"
- *
- *         creadoPor:
- *           type: string
- *           example: "José"
- *
- *     ProductoVendidoCierre:
- *       type: object
- *       properties:
- *         idProducto:
- *           type: string
- *
- *         nombre:
- *           type: string
- *           example: "Cerveza Paceña"
- *
- *         marca:
- *           type: string
- *           example: "Paceña"
- *
- *         cantidadVendida:
- *           type: number
- *           example: 30
- *
- *         precioPromedio:
- *           type: number
- *           example: 15
- *
- *         totalVendido:
- *           type: number
- *           example: 450
- *
- *     JornadaCaja:
- *       type: object
- *       properties:
- *         fechaApertura:
- *           type: string
- *           format: date-time
- *
- *         fechaCierre:
- *           type: string
- *           format: date-time
- *
- *         duracionMinutos:
- *           type: number
- *           example: 540
- *           description: Duración total de la jornada en minutos.
- *
- *     ResumenCierreCaja:
- *       type: object
- *       properties:
  *         cantidadVentas:
  *           type: number
+ *           example: 8
  *
- *         cantidadProductosVendidos:
+ *         efectivo:
  *           type: number
+ *           example: 300
  *
- *         cantidadEgresos:
+ *         qr:
  *           type: number
+ *           example: 200
+ *
+ *         transferencia:
+ *           type: number
+ *           example: 100
+ *
+ *         mixto:
+ *           type: number
+ *           example: 400
  *
  *         totalVentas:
  *           type: number
+ *           example: 1000
  *
- *         totalVentasEfectivo:
- *           type: number
- *
- *         totalVentasQr:
- *           type: number
- *
- *         totalVentasTransferencia:
- *           type: number
- *
- *         totalVentasMixto:
- *           type: number
- *
- *         totalCortesias:
- *           type: number
- *
- *         totalVentasAnuladas:
- *           type: number
- *
- *         totalEgresos:
- *           type: number
- *
- *         totalEgresosEfectivo:
- *           type: number
- *
- *         montoInicial:
- *           type: number
- *
- *         totalEsperadoEfectivo:
- *           type: number
- *
- *         montoReal:
- *           type: number
- *
- *         diferencia:
- *           type: number
- *
- *         estado:
- *           $ref: '#/components/schemas/EstadoCierreCaja'
+ *         ventas:
+ *           type: array
+ *           items:
+ *             type: object
  *
  *     ReporteCierreCaja:
  *       type: object
  *       properties:
  *         message:
  *           type: string
- *           example: "Caja cerrada correctamente"
+ *           example: "Reporte de cierre de caja generado correctamente."
  *
- *         cierre:
- *           $ref: '#/components/schemas/CierreCaja'
- *
- *         jornada:
- *           $ref: '#/components/schemas/JornadaCaja'
+ *         general:
+ *           type: object
+ *           properties:
+ *             idAperturaCaja:
+ *               type: string
+ *             idCaja:
+ *               type: string
+ *             caja:
+ *               type: string
+ *             idSucursal:
+ *               type: string
+ *             sucursal:
+ *               type: string
+ *             idPerfil:
+ *               type: string
+ *             responsableCierre:
+ *               type: string
+ *             fechaApertura:
+ *               type: string
+ *               format: date-time
+ *             fechaCierre:
+ *               type: string
+ *               format: date-time
+ *             duracionMinutos:
+ *               type: number
  *
  *         resumen:
- *           $ref: '#/components/schemas/ResumenCierreCaja'
+ *           type: object
+ *           properties:
+ *             montoInicial:
+ *               type: number
+ *             totalVentas:
+ *               type: number
+ *             totalVentasEfectivo:
+ *               type: number
+ *             totalVentasQr:
+ *               type: number
+ *             totalVentasTransferencia:
+ *               type: number
+ *             totalVentasMixto:
+ *               type: number
+ *             totalCortesias:
+ *               type: number
+ *             totalVentasAnuladas:
+ *               type: number
+ *             totalEgresos:
+ *               type: number
+ *             totalEgresosEfectivo:
+ *               type: number
+ *             totalEsperadoGeneral:
+ *               type: number
+ *             totalEsperadoEfectivo:
+ *               type: number
+ *             montoReal:
+ *               type: number
+ *             diferencia:
+ *               type: number
+ *             estado:
+ *               $ref: '#/components/schemas/EstadoCierreCaja'
  *
- *         productosVendidos:
+ *         ingresosPorMesero:
  *           type: array
  *           items:
- *             $ref: '#/components/schemas/ProductoVendidoCierre'
+ *             $ref: '#/components/schemas/IngresoPorMesero'
  *
- *         ventas:
+ *         ventasAnuladas:
+ *           type: array
+ *           items:
+ *             type: object
+ *
+ *         cortesias:
  *           type: array
  *           items:
  *             type: object
@@ -319,7 +965,128 @@ const router =
  *           type: array
  *           items:
  *             type: object
+ *
+ *         egresosAnulados:
+ *           type: array
+ *           items:
+ *             type: object
+ *
+ *         comandas:
+ *           type: array
+ *           items:
+ *             type: object
+ *
+ *         comandasAnuladas:
+ *           type: array
+ *           items:
+ *             type: object
+ *
+ *         productosVendidos:
+ *           type: array
+ *           items:
+ *             type: object
+ *
+ *         productosCortesia:
+ *           type: array
+ *           items:
+ *             type: object
+ *
+ *         inventarioAfectado:
+ *           type: array
+ *           items:
+ *             type: object
+ *
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           example: "No se pudo procesar la solicitud."
  */
+
+/* =====================================================
+    PREVIEW CIERRE
+===================================================== */
+
+/**
+ * @openapi
+ * /api/cierre-caja/preview/{cajaId}:
+ *   get:
+ *     tags:
+ *       - CierreCaja
+ *     summary: Generar preview del cierre de caja
+ *     description: |
+ *       Genera un reporte centralizado sin cerrar la caja.
+ *
+ *       Incluye:
+ *       - ingresos por mesero
+ *       - ventas por método de pago
+ *       - egresos
+ *       - cortesías
+ *       - ventas anuladas
+ *       - comandas anuladas
+ *       - productos vendidos
+ *       - inventario afectado
+ *       - total esperado
+ *       - diferencia contra monto real
+ *
+ *       El método de pago es informativo. Para el control general, se suma el total vendido por cada mesero.
+ *     parameters:
+ *       - in: path
+ *         name: cajaId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "6a1ba6e27ba11e9abf893800"
+ *
+ *       - in: query
+ *         name: idSucursal
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "6a1cd5b395270299cd00bb55"
+ *
+ *       - in: query
+ *         name: idPerfil
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "69f6927bd7691b4b764a116d"
+ *
+ *       - in: query
+ *         name: montoReal
+ *         required: false
+ *         schema:
+ *           type: number
+ *         example: 1730
+ *
+ *       - in: query
+ *         name: fechaCierre
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         example: "2026-06-24T04:00:00-04:00"
+ *
+ *     responses:
+ *       200:
+ *         description: Reporte preliminar generado correctamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReporteCierreCaja'
+ *
+ *       400:
+ *         description: Error de validación o caja sin apertura activa.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get(
+  "/preview/:cajaId",
+  CierreCajaController.previewCierre
+);
 
 /* =====================================================
     CREAR CIERRE
@@ -327,90 +1094,46 @@ const router =
 
 /**
  * @openapi
- * /api/cierrecaja:
+ * /api/cierre-caja:
  *   post:
  *     tags:
  *       - CierreCaja
- *     summary: Cerrar una caja y generar el reporte de jornada
+ *     summary: Cerrar caja y generar reporte definitivo
  *     description: |
- *       Busca la apertura activa de la caja y genera automáticamente
- *       el informe completo de cierre.
+ *       Cierra una caja activa y genera el cierre definitivo.
  *
- *       El backend consulta:
+ *       Fórmula usada:
  *
- *       - Ventas realizadas entre la apertura y el cierre.
- *       - Detalles de productos vendidos.
- *       - Ventas en efectivo, QR, transferencia y mixtas.
- *       - Ventas anuladas.
- *       - Cortesías.
- *       - Egresos de la jornada.
- *       - Dinero esperado en efectivo.
- *       - Diferencia contra el monto físico contado.
+ *       totalEsperadoGeneral = montoInicial + totalVentasPagadas - totalEgresosRegistrados
  *
- *       La consulta utiliza el rango exacto entre `fechaApertura`
- *       y `fechaCierre`, por lo que una jornada puede atravesar
- *       la medianoche.
- *
- *       Ejemplo:
- *
- *       - Apertura: 23/06/2026 19:00.
- *       - Cierre: 24/06/2026 04:00.
- *       - Duración: 540 minutos.
- *
- *       Si se manda `fecha: 2026-06-23` y `horaCierre: 04:00`,
- *       el backend detecta que 04:00 es menor que 19:00 y coloca
- *       automáticamente el cierre el 24/06/2026.
- *
+ *       Las cortesías no suman dinero, pero sí aparecen en el reporte y afectan inventario.
+ *       Las ventas anuladas no suman al total, pero aparecen en el detalle del reporte.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/CierreCajaInput'
- *           examples:
- *
- *             cierreNocturno:
- *               summary: Cierre usando la hora del día siguiente
- *               value:
- *                 idPerfil: "69f6927bd7691b4b764a116d"
- *                 idCaja: "6a1ba6e27ba11e9abf893800"
- *                 fecha: "2026-06-23"
- *                 horaCierre: "04:00"
- *                 montoReal: 740
- *                 observacion: "Cierre de jornada nocturna"
- *                 creadoPor: "José"
- *
- *             fechaCompleta:
- *               summary: Cierre usando una fecha completa
- *               value:
- *                 idPerfil: "69f6927bd7691b4b764a116d"
- *                 idCaja: "6a1ba6e27ba11e9abf893800"
- *                 fechaCierre: "2026-06-24T04:00:00-04:00"
- *                 montoReal: 740
- *                 observacion: "Cierre de jornada nocturna"
- *                 creadoPor: "José"
  *
  *     responses:
  *       201:
- *         description: Caja cerrada y reporte generado correctamente
+ *         description: Caja cerrada correctamente.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ReporteCierreCaja'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ReporteCierreCaja'
+ *                 - type: object
+ *                   properties:
+ *                     cierre:
+ *                       $ref: '#/components/schemas/CierreCaja'
  *
  *       400:
- *         description: |
- *           Datos no válidos, monto incorrecto o fecha de cierre
- *           anterior a la apertura.
- *
- *       404:
- *         description: Caja no encontrada o sin apertura activa
- *
- *       409:
- *         description: La apertura ya cuenta con un cierre
- *
- *       500:
- *         description: Error interno al cerrar la caja
+ *         description: Error de validación, caja sin apertura o cierre duplicado.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post(
   "/",
@@ -418,60 +1141,28 @@ router.post(
 );
 
 /* =====================================================
-    OBTENER TODOS
+    LISTAR CIERRES POR CAJA
 ===================================================== */
 
 /**
  * @openapi
- * /api/cierrecaja:
+ * /api/cierre-caja/caja/{cajaId}:
  *   get:
  *     tags:
  *       - CierreCaja
- *     summary: Obtener todos los cierres
- *     description: Retorna el historial de cierres ordenado desde el más reciente.
- *
- *     responses:
- *       200:
- *         description: Lista de cierres
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/CierreCaja'
- *
- *       500:
- *         description: Error al obtener cierres
- */
-router.get(
-  "/",
-  CierreCajaController.getAllCierres
-);
-
-/* =====================================================
-    CIERRES POR CAJA
-===================================================== */
-
-/**
- * @openapi
- * /api/cierrecaja/caja/{cajaId}:
- *   get:
- *     tags:
- *       - CierreCaja
- *     summary: Obtener cierres por caja
- *     description: Retorna el historial completo de cierres de una caja.
- *
+ *     summary: Listar cierres por caja
+ *     description: Devuelve todos los cierres registrados para una caja.
  *     parameters:
  *       - in: path
  *         name: cajaId
  *         required: true
- *         description: ID de la caja
  *         schema:
  *           type: string
+ *         example: "6a1ba6e27ba11e9abf893800"
  *
  *     responses:
  *       200:
- *         description: Lista de cierres de la caja
+ *         description: Lista de cierres de caja.
  *         content:
  *           application/json:
  *             schema:
@@ -479,165 +1170,158 @@ router.get(
  *               items:
  *                 $ref: '#/components/schemas/CierreCaja'
  *
- *       500:
- *         description: Error al obtener cierres
+ *       400:
+ *         description: Error de validación.
  */
 router.get(
   "/caja/:cajaId",
-  CierreCajaController
-    .getCierresByCajaId
+  CierreCajaController.getCierresByCaja
 );
 
+
 /* =====================================================
-    CIERRE POR ID
+    OBTENER CIERRE POR ID
 ===================================================== */
 
 /**
  * @openapi
- * /api/cierrecaja/{id}:
+ * /api/cierre-caja/{cierreId}:
  *   get:
  *     tags:
  *       - CierreCaja
- *     summary: Obtener un cierre por ID
- *
+ *     summary: Obtener cierre por ID
+ *     description: Devuelve la información principal de un cierre de caja.
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: cierreId
  *         required: true
- *         description: ID del cierre
  *         schema:
  *           type: string
+ *         example: "6a1ba6e27ba11e9abf893900"
  *
  *     responses:
  *       200:
- *         description: Cierre encontrado
+ *         description: Cierre encontrado.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/CierreCaja'
  *
  *       404:
- *         description: Cierre no encontrado
- *
- *       500:
- *         description: Error al obtener cierre
+ *         description: Cierre no encontrado.
  */
 router.get(
-  "/:id",
+  "/:cierreId",
   CierreCajaController.getCierreById
 );
 
 /* =====================================================
-    ACTUALIZAR OBSERVACIÓN
+    REPORTE DETALLADO DEL CIERRE
 ===================================================== */
 
 /**
  * @openapi
- * /api/cierrecaja/{id}:
- *   put:
+ * /api/cierrecaja/{cierreId}/reporte:
+ *   get:
  *     tags:
  *       - CierreCaja
- *     summary: Actualizar la observación de un cierre
+ *     summary: Obtener reporte contable detallado de un cierre
  *     description: |
- *       No permite modificar manualmente los totales financieros.
- *       Únicamente actualiza la observación y los datos de auditoría.
+ *       Devuelve el informe completo del cierre de caja.
+ *
+ *       Incluye:
+ *       - datos generales
+ *       - resumen contable
+ *       - ingresos por mesero
+ *       - detalle de ventas
+ *       - egresos
+ *       - cortesías
+ *       - ventas anuladas
+ *       - comandas anuladas
+ *       - inventario afectado
  *
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: cierreId
  *         required: true
- *         description: ID del cierre
  *         schema:
  *           type: string
- *
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               observacion:
- *                 type: string
- *                 example: "Cierre revisado por administración"
- *
- *               actualizadoPor:
- *                 type: string
- *                 example: "Administrador"
+ *         example: "6a3886b010aa00710445f6fc"
  *
  *     responses:
  *       200:
- *         description: Observación actualizada correctamente
+ *         description: Reporte detallado generado correctamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ReporteCierreCaja'
  *
  *       404:
- *         description: Cierre no encontrado
+ *         description: Cierre no encontrado.
  *
- *       500:
- *         description: Error al actualizar cierre
+ *       400:
+ *         description: Error al generar el reporte.
  */
-router.put(
-  "/:id",
-  CierreCajaController.updateCierre
+router.get(
+  "/:cierreId/reporte",
+  CierreCajaController.getReporteCierreById
 );
-
 /* =====================================================
     ANULAR CIERRE
 ===================================================== */
 
 /**
  * @openapi
- * /api/cierrecaja/{id}:
- *   delete:
+ * /api/cierre-caja/{cierreId}/anular:
+ *   patch:
  *     tags:
  *       - CierreCaja
- *     summary: Anular un cierre de caja
+ *     summary: Anular cierre de caja
  *     description: |
- *       Cambia el estado del cierre a `anulado`.
- *
- *       El motivo de anulación es obligatorio para mantener
- *       la trazabilidad y auditoría financiera.
- *
+ *       Cambia el estado del cierre a anulado.
+ *       No recalcula ventas ni egresos. Solo registra auditoría de anulación.
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: cierreId
  *         required: true
- *         description: ID del cierre
  *         schema:
  *           type: string
+ *         example: "6a1ba6e27ba11e9abf893900"
  *
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - motivo
  *             properties:
- *               motivo:
- *                 type: string
- *                 example: "Cierre registrado con el monto físico equivocado"
- *
  *               eliminadoPor:
  *                 type: string
- *                 example: "Administrador"
+ *                 example: "69f6927bd7691b4b764a116d"
+ *
+ *               observacion:
+ *                 type: string
+ *                 example: "Se anula por error de arqueo."
  *
  *     responses:
  *       200:
- *         description: Cierre anulado correctamente
- *
- *       400:
- *         description: El motivo de anulación es obligatorio
+ *         description: Cierre anulado correctamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 cierre:
+ *                   $ref: '#/components/schemas/CierreCaja'
  *
  *       404:
- *         description: Cierre no encontrado
- *
- *       500:
- *         description: Error al anular cierre
+ *         description: Cierre no encontrado.
  */
-router.delete(
-  "/:id",
-  CierreCajaController.deleteCierre
+router.patch(
+  "/:cierreId/anular",
+  CierreCajaController.anularCierre
 );
 
 export default router;

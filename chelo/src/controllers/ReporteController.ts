@@ -29,6 +29,7 @@ import {
 } from "../services/ReporteService";
 import Sucursal from "../models/Sucursal";
 import Producto from "../models/Producto";
+import PerfilUsuario from "../models/PerfilUsuario";
 function obtenerString(
   valor: unknown
 ): string | undefined {
@@ -1568,129 +1569,176 @@ export class ReporteController {
       5. VENTAS POR VENDEDOR / MESERO
   ===================================================== */
 
-  static getVentasPorVendedor =
-    async (
-      req: Request,
-      res: Response
-    ) => {
+static getVentasPorVendedor = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const filtros = obtenerFiltros(req);
 
-      try {
+    const match =
+      ReporteService.construirMatch(
+        filtros,
+        "fechaVenta"
+      );
 
-        const filtros =
-          obtenerFiltros(req);
+    match.estado =
+      filtros.estado || "pagado";
 
-        const match =
-          ReporteService
-            .construirMatch(
-              filtros,
-              "fechaVenta"
-            );
+    const resultado =
+      await Venta.aggregate([
+        {
+          $match: match,
+        },
 
-        match.estado =
-          filtros.estado ||
-          "pagado";
+        {
+          $group: {
+            _id: "$idPerfil",
 
-        const resultado =
-          await Venta.aggregate([
-            {
-              $match:
-                match,
+            cantidadVentas: {
+              $sum: 1,
             },
-            {
-              $group: {
-                _id:
-                  "$idPerfil",
-                cantidadVentas: {
-                  $sum:
-                    1,
-                },
-                subtotal: {
-                  $sum:
-                    "$subtotal",
-                },
-                descuento: {
-                  $sum:
-                    "$descuento",
-                },
-                totalVendido: {
-                  $sum:
-                    "$total",
-                },
-                ticketPromedio: {
-                  $avg:
-                    "$total",
-                },
-              },
-            },
-            ...ReporteService
-              .lookupPerfil(
-                "_id",
-                "perfil"
-              ),
-            {
-              $project: {
-                _id:
+
+            subtotal: {
+              $sum: {
+                $ifNull: [
+                  "$subtotal",
                   0,
-                idPerfil:
-                  "$_id",
-                nombres: {
-                  $ifNull: [
-                    "$perfil.nombres",
-                    "Sin nombre",
-                  ],
-                },
-                apellidos: {
-                  $ifNull: [
-                    "$perfil.apellidos",
-                    "",
-                  ],
-                },
-                email: {
-                  $ifNull: [
-                    "$perfil.email",
-                    "",
-                  ],
-                },
-                cantidadVentas:
-                  1,
-                subtotal:
-                  1,
-                descuento:
-                  1,
-                totalVendido:
-                  1,
-                ticketPromedio: {
-                  $round: [
-                    "$ticketPromedio",
-                    2,
-                  ],
-                },
+                ],
               },
             },
-            {
-              $sort: {
-                totalVendido:
-                  -1,
+
+            descuento: {
+              $sum: {
+                $ifNull: [
+                  "$descuento",
+                  0,
+                ],
               },
             },
-          ]);
 
-        return res.json({
-          filtros,
-          data:
-            resultado,
-        });
+            totalVendido: {
+              $sum: {
+                $ifNull: [
+                  "$total",
+                  0,
+                ],
+              },
+            },
 
-      } catch (error) {
+            ticketPromedio: {
+              $avg: {
+                $ifNull: [
+                  "$total",
+                  0,
+                ],
+              },
+            },
+          },
+        },
 
-        return responderError(
-          res,
-          error,
-          "Error generando ventas por vendedor"
-        );
-      }
-    };
+        {
+          $lookup: {
+            from:
+              PerfilUsuario.collection.name,
 
+            let: {
+              vendedorId: "$_id",
+            },
+
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: [
+                      {
+                        $toString:
+                          "$_id",
+                      },
+                      {
+                        $toString:
+                          "$$vendedorId",
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+
+            as: "perfil",
+          },
+        },
+
+        {
+          $unwind: {
+            path: "$perfil",
+            preserveNullAndEmptyArrays:
+              true,
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+
+            idPerfil: {
+              $toString: "$_id",
+            },
+
+            nombres: {
+              $ifNull: [
+                "$perfil.nombres",
+                "Sin nombre",
+              ],
+            },
+
+            apellidos: {
+              $ifNull: [
+                "$perfil.apellidos",
+                "",
+              ],
+            },
+
+            email: {
+              $ifNull: [
+                "$perfil.email",
+                "",
+              ],
+            },
+
+            cantidadVentas: 1,
+            subtotal: 1,
+            descuento: 1,
+            totalVendido: 1,
+
+            ticketPromedio: {
+              $round: [
+                "$ticketPromedio",
+                2,
+              ],
+            },
+          },
+        },
+
+        {
+          $sort: {
+            totalVendido: -1,
+          },
+        },
+      ]);
+
+    return res.json({
+      filtros,
+      data: resultado,
+    });
+  } catch (error) {
+    return responderError(
+      res,
+      error,
+      "Error generando ventas por vendedor"
+    );
+  }
+};
   /* =====================================================
       6. MÉTODOS DE PAGO
   ===================================================== */

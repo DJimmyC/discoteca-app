@@ -66,7 +66,7 @@ const DetalleEgresoSchema: Schema = new Schema(
     tipoItem: {
       type: String,
       required: true,
-      enum: ["producto", "gasto","servicio","mantenimiento"],
+      enum: ["producto", "gasto","servicio","mantenimiento","otro"],
     },
 
     // 🔥 Auditoría (STRING como pediste)
@@ -78,7 +78,7 @@ const DetalleEgresoSchema: Schema = new Schema(
     creadoPor: {
       type: String,
       trim: true,
-      maxlength: 20,
+      maxlength: 50,
     },
 
     fechaActualizacion: {
@@ -88,7 +88,7 @@ const DetalleEgresoSchema: Schema = new Schema(
     actualizadoPor: {
       type: String,
       trim: true,
-      maxlength: 20,
+      maxlength: 50,
     },
 
     fechaEliminado: {
@@ -98,7 +98,7 @@ const DetalleEgresoSchema: Schema = new Schema(
     eliminadoPor: {
       type: String,
       trim: true,
-      maxlength: 20,
+      maxlength: 50,
     },
   },
   {

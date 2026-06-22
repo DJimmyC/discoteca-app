@@ -96,7 +96,7 @@ const EgresoSchema: Schema = new Schema(
     creadoPor: {
       type: String,
       trim: true,
-      maxlength: 20,
+      maxlength: 50,
     },
 
     fechaActualizacion: {
@@ -106,7 +106,7 @@ const EgresoSchema: Schema = new Schema(
     actualizadoPor: {
       type: String,
       trim: true,
-      maxlength: 20,
+      maxlength: 50,
     },
 
     fechaEliminado: {
@@ -116,7 +116,7 @@ const EgresoSchema: Schema = new Schema(
     eliminadoPor: {
       type: String,
       trim: true,
-      maxlength: 20,
+      maxlength: 50,
     },
   },
   {

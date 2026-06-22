@@ -19,7 +19,7 @@ import {
 } from "@tanstack/react-query";
 
 import Swal from "sweetalert2";
-
+import SolicitudDetalleModal from "@/components/solicitud/SolicitudDetalleModal";
 import {
   AlertTriangle,
   Calendar,
@@ -292,6 +292,15 @@ export default function SolicitudDetailView() {
   }>();
 
   const [search, setSearch] = useState("");
+  const [
+    solicitudSeleccionada,
+    setSolicitudSeleccionada,
+  ] = useState<SolicitudPorSucursalType | null>(null);
+
+  const [
+    modalDetalleAbierto,
+    setModalDetalleAbierto,
+  ] = useState(false);
   const [estadoFiltro, setEstadoFiltro] =
     useState<FiltroEstado>("todos");
   const [tipoFiltro, setTipoFiltro] =
@@ -496,6 +505,17 @@ export default function SolicitudDetailView() {
     );
   };
 
+  const abrirModalDetalle = (
+    solicitud: SolicitudPorSucursalType
+  ) => {
+    setSolicitudSeleccionada(solicitud);
+    setModalDetalleAbierto(true);
+  };
+
+  const cerrarModalDetalle = () => {
+    setModalDetalleAbierto(false);
+    setSolicitudSeleccionada(null);
+  };
   const handleAprobarSolicitud =
     async (
       solicitud:
@@ -649,18 +669,18 @@ export default function SolicitudDetailView() {
           const coincideEstado =
             estadoFiltro === "todos" ||
             solicitud.estado ===
-              estadoFiltro;
+            estadoFiltro;
 
           const coincideTipo =
             tipoFiltro === "todos" ||
             tipo.toLowerCase() ===
-              tipoFiltro;
+            tipoFiltro;
 
           const coincidePrioridad =
             prioridadFiltro ===
-              "todos" ||
+            "todos" ||
             prioridad.toLowerCase() ===
-              prioridadFiltro;
+            prioridadFiltro;
 
           const fechaSolicitud =
             solicitud.fechaCreacion ||
@@ -686,9 +706,9 @@ export default function SolicitudDetailView() {
             coincideFecha =
               coincideFecha &&
               new Date(fechaSolicitud) <=
-                new Date(
-                  `${fechaHasta}T23:59:59`
-                );
+              new Date(
+                `${fechaHasta}T23:59:59`
+              );
           }
 
           return (
@@ -728,9 +748,9 @@ export default function SolicitudDetailView() {
     solicitudes.filter(
       (solicitud) =>
         solicitud.estado ===
-          "atendida" ||
+        "atendida" ||
         solicitud.estado ===
-          "aprobada"
+        "aprobada"
     ).length;
 
   /* =====================================================
@@ -1311,16 +1331,13 @@ export default function SolicitudDetailView() {
                         <button
                           type="button"
                           onClick={() =>
-                            navigate(
-                              `/sucursal/${sucursalId}/solicitudes/${solicitud._id}`
-                            )
+                            abrirModalDetalle(solicitud)
                           }
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
+                          title="Ver"
+                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400"
                         >
-                          <Eye size={17} />
-                          Ver
+                          <Eye size={18} />
                         </button>
-
                         {puedeEditar && (
                           <button
                             type="button"
@@ -1510,9 +1527,7 @@ export default function SolicitudDetailView() {
                                   <button
                                     type="button"
                                     onClick={() =>
-                                      navigate(
-                                        `/sucursal/${sucursalId}/solicitudes/${solicitud._id}`
-                                      )
+                                      abrirModalDetalle(solicitud)
                                     }
                                     title="Ver"
                                     className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400"
@@ -1723,22 +1738,28 @@ export default function SolicitudDetailView() {
               </div>
             </section>
           )}
+          <SolicitudDetalleModal
+            open={modalDetalleAbierto}
+            solicitud={solicitudSeleccionada}
+            onClose={cerrarModalDetalle}
+          />
         </div>
+
       </main>
 
       {(aprobandoSolicitud ||
         anulandoSolicitud) && (
-        <div className="fixed bottom-4 left-4 right-4 z-[90] flex items-center justify-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl sm:left-auto sm:right-5 sm:w-auto">
-          <LoaderCircle
-            size={17}
-            className="animate-spin"
-          />
+          <div className="fixed bottom-4 left-4 right-4 z-[90] flex items-center justify-center gap-3 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl sm:left-auto sm:right-5 sm:w-auto">
+            <LoaderCircle
+              size={17}
+              className="animate-spin"
+            />
 
-          {aprobandoSolicitud
-            ? "Procesando solicitud..."
-            : "Anulando solicitud..."}
-        </div>
-      )}
+            {aprobandoSolicitud
+              ? "Procesando solicitud..."
+              : "Anulando solicitud..."}
+          </div>
+        )}
     </div>
   );
 }
