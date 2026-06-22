@@ -46,30 +46,30 @@ function construirFechaApertura(
 
   const fechaBase =
     typeof body.fecha ===
-    "string"
+      "string"
       ? body.fecha.slice(0, 10)
       : new Date()
-          .toISOString()
-          .slice(0, 10);
+        .toISOString()
+        .slice(0, 10);
 
   const hora =
     typeof body.horaApertura ===
-    "string"
+      "string"
       ? body.horaApertura
       : new Date()
-          .toLocaleTimeString(
-            "es-BO",
-            {
-              hour:
-                "2-digit",
-              minute:
-                "2-digit",
-              hour12:
-                false,
-              timeZone:
-                "America/La_Paz",
-            }
-          );
+        .toLocaleTimeString(
+          "es-BO",
+          {
+            hour:
+              "2-digit",
+            minute:
+              "2-digit",
+            hour12:
+              false,
+            timeZone:
+              "America/La_Paz",
+          }
+        );
 
   const fecha =
     new Date(
@@ -243,7 +243,7 @@ export class AperturaCajaController {
 
       if (
         typeof error ===
-          "object" &&
+        "object" &&
         error !== null &&
         "code" in error &&
         error.code === 11000
@@ -556,4 +556,75 @@ export class AperturaCajaController {
         });
       }
     };
+  /* =========================
+  OBTENER APERTURAS ACTIVAS
+  POR SUCURSAL
+========================= */
+
+  static getAperturasActivasBySucursal = async (
+    req: Request,
+    res: Response
+  ) => {
+    try {
+      const {
+        idSucursal,
+      } = req.params;
+
+      if (
+        !mongoose.isValidObjectId(
+          idSucursal
+        )
+      ) {
+        return res.status(400).json({
+          error:
+            "El ID de la sucursal no es válido",
+        });
+      }
+
+      const aperturas =
+        await AperturaCaja.find({
+          idSucursal,
+          estado:
+            "abierta",
+        })
+          .populate({
+            path:
+              "idCaja",
+            select:
+              "_id nombre descripcion estado idSucursal",
+          })
+          .populate({
+            path:
+              "idPerfil",
+            select:
+              "_id nombres apellidos email ci telefono",
+          })
+          .populate({
+            path:
+              "idSucursal",
+            select:
+              "_id nombreSucursal ubicacionSucursal",
+          })
+          .sort({
+            fechaApertura:
+              -1,
+          });
+
+      return res.json(
+        aperturas
+      );
+    } catch (error) {
+      console.log(
+        "Error obteniendo aperturas activas por sucursal:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          error instanceof Error
+            ? error.message
+            : "Error obteniendo aperturas activas por sucursal",
+      });
+    }
+  };
 }

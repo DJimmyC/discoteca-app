@@ -6,12 +6,12 @@ import { isAxiosError } from "axios";
 import {
   AperturaCajaArraySchema,
   AperturaCajaSchema,
+  AperturaCajaActivaArraySchema,
   CreateAperturaCajaResponseSchema,
   type AperturaCajaForm,
   type UpdateAperturaCajaType,
   type DeleteAperturaCajaType,
 } from "@/types/AperturaCajaType";
-
 function mensajeError(
   error: unknown,
   predeterminado: string
@@ -285,6 +285,59 @@ export async function deleteAperturaCajaById({
       mensajeError(
         error,
         "Error anulando apertura"
+      )
+    );
+  }
+  
+}
+/* =========================
+    OBTENER APERTURAS ACTIVAS
+    POR SUCURSAL
+========================= */
+
+export async function getAperturasActivasBySucursal(
+  idSucursal: string
+) {
+  try {
+    if (!idSucursal) {
+      throw new Error(
+        "El ID de la sucursal es obligatorio"
+      );
+    }
+
+    const { data } =
+      await api.get(
+        `/aperturacaja/sucursal/${idSucursal}/activas`
+      );
+
+    const response =
+      AperturaCajaActivaArraySchema.safeParse(
+        data
+      );
+
+    if (!response.success) {
+      console.error(
+        "RESPUESTA REAL DE APERTURAS ACTIVAS:",
+        data
+      );
+
+      console.error(
+        "ERROR ZOD APERTURAS ACTIVAS:",
+        response.error.format()
+      );
+
+      throw new Error(
+        "La estructura de aperturas activas no coincide con el type"
+      );
+    }
+
+    return response.data;
+
+  } catch (error: unknown) {
+    throw new Error(
+      mensajeError(
+        error,
+        "Error obteniendo aperturas activas por sucursal"
       )
     );
   }

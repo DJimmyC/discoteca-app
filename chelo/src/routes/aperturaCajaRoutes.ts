@@ -319,6 +319,95 @@ router.get(
   AperturaCajaController
     .getAperturaActivaByCaja
 );
+/* =====================================================
+    APERTURAS ACTIVAS POR SUCURSAL
+===================================================== */
+
+/**
+ * @openapi
+ * /api/aperturacaja/sucursal/{idSucursal}/activas:
+ *   get:
+ *     tags:
+ *       - AperturaCaja
+ *     summary: Obtener cajas abiertas por sucursal
+ *     description: |
+ *       Retorna todas las aperturas activas de una sucursal.
+ *
+ *       Este servicio se usa principalmente en el modal de confirmar venta,
+ *       para que el mesero solamente pueda seleccionar cajas que están abiertas
+ *       en la jornada actual.
+ *
+ *       Reglas:
+ *
+ *       - Solo retorna aperturas con estado `abierta`.
+ *       - Cada apertura incluye la caja relacionada.
+ *       - Cada apertura incluye el responsable que abrió la caja.
+ *       - Si no existen cajas abiertas, retorna un array vacío.
+ *
+ *       Ejemplo de uso:
+ *
+ *       - Una sucursal puede tener varias cajas.
+ *       - Solo las cajas con apertura activa deben aparecer para registrar ventas.
+ *
+ *     parameters:
+ *       - in: path
+ *         name: idSucursal
+ *         required: true
+ *         description: ID de la sucursal.
+ *         schema:
+ *           type: string
+ *         example: "6a251234abcd5678ef901234"
+ *
+ *     responses:
+ *       200:
+ *         description: Lista de aperturas activas de la sucursal
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/AperturaCaja'
+ *             example:
+ *               - _id: "66a111bbb222ccc333ddd444"
+ *                 idPerfil:
+ *                   _id: "69f6927bd7691b4b764a116d"
+ *                   nombres: "Marcelo"
+ *                   apellidos: "Quispe"
+ *                   email: "marcelo@test.com"
+ *                 idSucursal:
+ *                   _id: "6a251234abcd5678ef901234"
+ *                   nombreSucursal: "KABANA"
+ *                   ubicacionSucursal: "Centro"
+ *                 idCaja:
+ *                   _id: "6a1ba6e27ba11e9abf893800"
+ *                   nombre: "caja 2"
+ *                   descripcion: "Caja barra principal"
+ *                   estado: true
+ *                 fechaApertura: "2026-06-23T19:00:00.000Z"
+ *                 montoInicial: 100
+ *                 estado: "abierta"
+ *                 observacion: "Apertura de jornada nocturna"
+ *                 fechaCreacion: "2026-06-23T19:00:00.000Z"
+ *                 creadoPor: "Administrador"
+ *
+ *       400:
+ *         description: ID de sucursal inválido
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: "El ID de la sucursal no es válido"
+ *
+ *       500:
+ *         description: Error al obtener aperturas activas por sucursal
+ *         content:
+ *           application/json:
+ *             example:
+ *               error: "Error obteniendo aperturas activas por sucursal"
+ */
+router.get(
+  "/sucursal/:idSucursal/activas",
+  AperturaCajaController.getAperturasActivasBySucursal
+);
 
 /* =====================================================
     HISTORIAL POR CAJA

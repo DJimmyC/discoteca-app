@@ -129,3 +129,22 @@ export type DeleteAperturaCajaType = {
   id: string;
   eliminadoPor?: string;
 };
+/* =========================
+    APERTURAS ACTIVAS
+    POR SUCURSAL
+========================= */
+
+export const AperturaCajaActivaArraySchema =
+  AperturaCajaArraySchema;
+
+export type AperturaCajaActivaType =
+  z.infer<typeof AperturaCajaSchema>;
+
+export type CajaAbiertaOptionType = {
+  _id: string;
+  nombre: string;
+  descripcion?: string;
+  idAperturaCaja: string;
+  fechaApertura: string;
+  montoInicial: number;
+};
