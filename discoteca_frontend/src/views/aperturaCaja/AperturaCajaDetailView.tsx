@@ -40,10 +40,153 @@ import {
 import Swal from "sweetalert2";
 import { useAuth } from "@/hooks/useAuth"
 
+
+
+function formatearFecha(
+  fecha?: string | Date | null
+): string {
+  if (!fecha) {
+    return "-";
+  }
+
+  const fechaConvertida =
+    new Date(fecha);
+
+  if (
+    Number.isNaN(
+      fechaConvertida.getTime()
+    )
+  ) {
+    return "-";
+  }
+
+  return fechaConvertida
+    .toLocaleDateString(
+      "es-BO"
+    );
+}
+
+function formatearHora(
+  fecha?: string | Date | null
+): string {
+  if (!fecha) {
+    return "-";
+  }
+
+  const fechaConvertida =
+    new Date(fecha);
+
+  if (
+    Number.isNaN(
+      fechaConvertida.getTime()
+    )
+  ) {
+    return "-";
+  }
+
+  return fechaConvertida
+    .toLocaleTimeString(
+      "es-BO",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
+}
+
+function obtenerNombreCaja(
+  idCaja: AperturaCajaType["idCaja"]
+): string {
+  if (!idCaja) {
+    return "Sin caja";
+  }
+
+  if (
+    typeof idCaja === "string"
+  ) {
+    return idCaja;
+  }
+
+  const caja =
+    idCaja as any;
+
+  return String(
+    caja.nombre ||
+    caja.descripcion ||
+    caja._id ||
+    "Sin caja"
+  );
+}
+
+function obtenerNombreUsuario(
+  idPerfil: AperturaCajaType["idPerfil"]
+): string {
+  if (!idPerfil) {
+    return "Sin usuario";
+  }
+
+  if (
+    typeof idPerfil === "string"
+  ) {
+    return idPerfil;
+  }
+
+  const perfil =
+    idPerfil as any;
+
+  const nombreCompleto =
+    `${perfil.nombres || ""} ${perfil.apellidos || ""}`
+      .trim();
+
+  return (
+    nombreCompleto ||
+    perfil.email ||
+    perfil._id ||
+    "Sin usuario"
+  );
+}
+
+function obtenerEstadoApertura(
+  estado: AperturaCajaType["estado"]
+): {
+  texto: string;
+  clase: string;
+} {
+  if (estado === "abierta") {
+    return {
+      texto: "Abierta",
+      clase:
+        "bg-emerald-100 text-emerald-700",
+    };
+  }
+
+  if (estado === "cerrada") {
+    return {
+      texto: "Cerrada",
+      clase:
+        "bg-slate-100 text-slate-700",
+    };
+  }
+
+  if (estado === "anulada") {
+    return {
+      texto: "Anulada",
+      clase:
+        "bg-rose-100 text-rose-700",
+    };
+  }
+
+  return {
+    texto: "Sin estado",
+    clase:
+      "bg-slate-100 text-slate-700",
+  };
+}
+
 export default function
   CajaDetailView() {
 
-    
+
   const params =
     useParams();
 
@@ -136,7 +279,7 @@ export default function
 
     });
 
-const   {data:perfil }= useAuth();
+  const { data: perfil } = useAuth();
   /* =========================
       LOADING
   ========================= */
@@ -310,17 +453,9 @@ const   {data:perfil }= useAuth();
 
                       <div className="font-semibold text-slate-700">
 
-                        {
-
-                          typeof apertura.idCaja ===
-                            "string"
-
-                            ? apertura.idCaja
-
-                            : apertura.idCaja
-                              ?.nombre
-
-                        }
+                        {obtenerNombreCaja(
+                          apertura.idCaja
+                        )}
 
                       </div>
 
@@ -330,40 +465,27 @@ const   {data:perfil }= useAuth();
 
                     <td className="px-6 py-5">
 
-                      {
-
-                        typeof apertura.idPerfil ===
-                          "string"
-
-                          ? apertura.idPerfil
-
-                          : `${apertura.idPerfil?.nombres || ""} ${apertura.idPerfil?.apellidos || ""}`
-
-                      }
-
+                      {obtenerNombreUsuario(
+                        apertura.idPerfil
+                      )}
                     </td>
 
                     {/* FECHA */}
 
                     <td className="px-6 py-5 text-slate-600">
 
-                      {
-
-                        new Date(
-                          apertura.fecha
-                        ).toLocaleDateString()
-
-                      }
-
+                      {formatearFecha(
+                        apertura.fechaApertura
+                      )}
                     </td>
 
                     {/* HORA */}
 
                     <td className="px-6 py-5 text-slate-600">
 
-                      {
-                        apertura.horaApertura
-                      }
+                      {formatearHora(
+                        apertura.fechaApertura
+                      )}
 
                     </td>
 
@@ -434,7 +556,7 @@ const   {data:perfil }= useAuth();
 
                       <div className="flex items-center justify-center gap-3">
 
-                          {/* VER */}
+                        {/* VER */}
                         <Link
 
                           to={`?detail=${apertura._id}`}
