@@ -3277,12 +3277,12 @@ export default function VentaModal({
             {isPending ? (
               <>
                 <LoaderCircle className="h-5 w-5 animate-spin" />
-                Confirmando...
+                Confirmando.......
               </>
             ) : (
               <>
                 <Printer className="h-5 w-5" />
-                Confirmar e imprimir
+                Confirmar e imprimir 
               </>
             )}
           </button>
